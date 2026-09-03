@@ -23,7 +23,6 @@
 - Every commit message ends with:
   ```
   Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-  Claude-Session: https://claude.ai/code/session_01ScrVbfA9vopTaUa9sCRKSM
   ```
 
 ## Verification Strategy (read this before Task 1)
@@ -161,7 +160,6 @@ Generated with create-fumadocs-app using the +next+fuma-docs-mdx
 template, with ESLint, Orama search, and OG image generation.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01ScrVbfA9vopTaUa9sCRKSM
 EOF
 )"
 ```
@@ -363,7 +361,6 @@ pages live at the root, and the copy-as-markdown button links to an
 explicit URL anyway.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01ScrVbfA9vopTaUa9sCRKSM
 EOF
 )"
 ```
@@ -494,7 +491,6 @@ gains lecture, source, and readingMinutes. meta.json marks each course
 as a sidebar root and fixes page order.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01ScrVbfA9vopTaUa9sCRKSM
 EOF
 )"
 ```
@@ -754,7 +750,6 @@ Colors come from Fumadocs theme variables, so dark mode works with no
 extra code.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01ScrVbfA9vopTaUa9sCRKSM
 EOF
 )"
 ```
@@ -1010,7 +1005,6 @@ details element so it needs no JavaScript. StepThrough is the only
 client component, animated with motion.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01ScrVbfA9vopTaUa9sCRKSM
 EOF
 )"
 ```
@@ -1130,7 +1124,6 @@ than the content tree knows. Lecture counts are read from the content
 source, so they cannot drift.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01ScrVbfA9vopTaUa9sCRKSM
 EOF
 )"
 ```
@@ -1385,7 +1378,6 @@ CLAUDE.md is committed as Next created it. Deleting them does not
 work: the next dev run writes them back.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01ScrVbfA9vopTaUa9sCRKSM
 EOF
 )"
 ```
@@ -1465,7 +1457,6 @@ Course goals, weekly topics, grading, and policies, taken from the
 syllabus and administrivia slides.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01ScrVbfA9vopTaUa9sCRKSM
 EOF
 )"
 ```
@@ -1526,7 +1517,6 @@ git commit -m "$(cat <<'EOF'
 chore: deployment config for Vercel
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01ScrVbfA9vopTaUa9sCRKSM
 EOF
 )"
 ```
