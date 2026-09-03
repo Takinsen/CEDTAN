@@ -14,7 +14,8 @@ export const courses: Course[] = [
     code: '2110506',
     name: 'Software-Defined Systems I',
     nameTh: 'ระบบที่กำหนดโดยซอฟต์แวร์ 1',
-    description: 'ยกงานที่เคยต้องเดินไปทำกับเครื่องจริง ขึ้นมาอยู่ในไฟล์และคำสั่ง',
+    description:
+      'software-defined servers, networks และ storage, containers และ service orchestration, cloud และ edge computing, infrastructure as code',
   },
 ];
 
