@@ -17,7 +17,7 @@ html > body[data-scroll-locked] {
 }
 
 /* Thai vowels and tone marks stack above and below the line */
-.prose {
+body {
   line-height: 1.85;
 }
 

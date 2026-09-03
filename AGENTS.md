@@ -55,7 +55,7 @@ Every one of these is a blocker, not a preference.
 
 ```yaml
 ---
-title: "Lecture 1 — Introduction to Software Design"
+title: "Lecture 1 — Introduction to Software-Defined Systems"
 description: "หนึ่งประโยคว่าคาบนี้ตอบคำถามอะไร?"
 lecture: 1
 source: "data/2110506-SDS/Lecture-1.pdf"
@@ -65,9 +65,11 @@ readingMinutes: 25
 
 `title` and `description` are required. The rest are optional. A wrong type fails the build.
 
+`lecture`, `source`, and `readingMinutes` are metadata only — no page or component renders them yet.
+
 ## Components
 
-Registered globally. Use them in MDX with no import line.
+The kit below is registered globally. Use it in MDX with no import line.
 
 | Component | Use it for |
 | --- | --- |
@@ -91,6 +93,16 @@ syntax highlighting. `<Steps>`/`<Step>` is not registered — its `Step` clashes
 ## Diagrams
 
 Hand-written inline SVG in `components/figures/<course>/`. One file per diagram.
+
+Figures are not registered globally. Import each one in the MDX file that uses it:
+
+```mdx
+import { LayeredStack } from '@/components/figures/2110506-sds/layered-stack';
+
+<Figure number={1} caption="...">
+  <LayeredStack />
+</Figure>
+```
 
 Use `stroke="currentColor"` and `fill="currentColor"`, or a Fumadocs theme variable. Never a
 hard-coded hex. A hard-coded color disappears in one of the two themes.
