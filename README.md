@@ -1,45 +1,68 @@
-# cedtan-scaffold
+# CEDTAN
 
-This is a Next.js application generated with
-[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
+A website that turns lecture slides into summaries you can actually learn from.
 
-Run development server:
+One page per lecture. Complete coverage of the slides. Written for a reader with no
+background: the reason first, then the concept, then a concrete example, then a picture.
+
+Explanations are in Thai. Technical terms stay in English.
+
+## Run it
 
 ```bash
-npm run dev
-# or
+pnpm install
 pnpm dev
-# or
-yarn dev
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+Open http://localhost:3000
 
-## Explore
+## Check it
 
-In the project, you can see:
+```bash
+pnpm check
+```
 
-- `lib/source.ts`: Code for content source adapter, [`loader()`](https://fumadocs.dev/docs/headless/source-api) provides the interface to access your content.
-- `lib/layout.shared.tsx`: Shared options for layouts, optional but preferred to keep.
+Runs `next typegen`, `tsc --noEmit`, `eslint .`, and `next build`. This is the only test
+suite. There are no unit tests: the repo holds content and presentation, not logic.
 
-| Route                     | Description                                            |
-| ------------------------- | ------------------------------------------------------ |
-| `app/(home)`              | The route group for your landing page and other pages. |
-| `app/docs`                | The documentation layout and pages.                    |
-| `app/api/search/route.ts` | The Route Handler for search.                          |
+## Structure
 
-### Fumadocs MDX
+```
+data/          source PDFs, git-ignored, one folder per course
+content/       the summaries, one folder per course
+components/
+  lecture/     blocks used inside MDX (KeyIdea, Example, Figure, ...)
+  figures/     hand-drawn SVG diagrams, one file each
+lib/
+  source.ts    content collections, frontmatter schema, loader
+  courses.ts   course registry for the landing page
+app/
+  (home)/      landing page
+  (lecture)/   course and lecture pages
+docs/superpowers/   design spec and this project's plans
+```
 
-Collections are defined with the [Macro API](https://fumadocs.dev/docs/mdx/macro) in `lib/source.ts`.
+## URLs
 
-Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
+```
+/                        list of courses
+/2110506-sds             course overview
+/2110506-sds/lecture-1   lecture summary
+```
 
-## Learn More
+The URL comes from the folder name under `content/`.
 
-To learn more about Next.js and Fumadocs, take a look at the following
-resources:
+## Source PDFs
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [Fumadocs](https://fumadocs.dev) - learn about Fumadocs
+Put slides at `data/<COURSE-CODE>/Lecture-N.pdf`.
+
+`data/` is git-ignored. The slides are large and belong to the lecturer, so they are never
+committed and never published.
+
+## Adding a lecture
+
+See [AGENTS.md](./AGENTS.md).
+
+## Deploy
+
+Vercel, Next.js preset, `pnpm build`. No environment variables.
