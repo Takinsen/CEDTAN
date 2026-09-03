@@ -1,46 +1,207 @@
 ---
-title: 2110506 Software Design and Specification
-description: ภาพรวมของวิชา และสารบัญเนื้อหาแต่ละคาบ
+title: 2110506 Software-Defined Systems
+description: ภาพรวมวิชา วิธีวัดผล และสารบัญเนื้อหาแต่ละคาบ
+source: "data/2110506-SDS/Syllabus.pdf"
 ---
 
-<KeyIdea>ทุก block ในหน้านี้คือของจริงที่ใช้เขียนสรุป</KeyIdea>
+<KeyIdea>
+วิชานี้ฝึกให้คุณอธิบายได้ว่า <Term en="Software-Defined Systems" th="ระบบที่กำหนดโดยซอฟต์แวร์" /> คืออะไร ใช้งานมันเป็น และออกแบบกับดูแลมันเองได้
+</KeyIdea>
 
-<Why>ถ้าไม่ลองใช้ทุกตัวในหน้าจริง จะไม่รู้ว่าตัวไหนพัง</Why>
+<Callout type="info" title="ข้อมูลในหน้านี้มาจากไหน">
+วันที่ ตัวเลข และกติกาทุกอย่างในหน้านี้มาจากประมวลรายวิชา (Syllabus) กับสไลด์ Administrivia ของวิชาเท่านั้น ส่วนคำอธิบายศัพท์สั้น ๆ เป็นความหมายทั่วไป ใส่ไว้ให้อ่านตารางเรียนรู้เรื่อง ประมวลรายวิชาไม่ได้ให้นิยามศัพท์พวกนี้ไว้ ของจริงจะอยู่ในหน้าสรุปของแต่ละคาบ
+</Callout>
 
-<Analogy>เหมือนลองเปิดไฟทุกดวงในบ้านก่อนย้ายเข้า</Analogy>
+## ข้อมูลวิชา
 
-<Example title="ตัวอย่างการใช้ Term">
-  <Term en="Coupling" th="ระดับที่โมดูลผูกกันแน่น" /> คือสิ่งที่เราอยากให้ต่ำ
+| หัวข้อ | รายละเอียด |
+| --- | --- |
+| รหัสวิชา | 2110506 |
+| ชื่อวิชา | Software-Defined Systems I |
+| หน่วยกิต | 3 |
+| สถานภาพของวิชา | วิชาบังคับ |
+| หลักสูตร | วิศวกรรมคอมพิวเตอร์และเทคโนโลยีดิจิทัล ระดับปริญญาบัณฑิต |
+| คณะ / ภาควิชา | คณะวิศวกรรมศาสตร์ ภาควิชาวิศวกรรมคอมพิวเตอร์ จุฬาลงกรณ์มหาวิทยาลัย |
+| ภาคการศึกษา | ภาคต้น ปีการศึกษา 2569 (First Semester 2026) |
+| เวลาเรียน | Section CEDT วันพฤหัสบดี 13:00-16:00 เรียน on-site ที่อาคาร Chulapat 4 |
+| ชั่วโมงสอนต่อสัปดาห์ | 3 |
+| วิชาที่ต้องเรียนมาก่อน | 2110313 และ 2110471 |
+| ผู้สอน | ผศ.ดร.กุลวดี ศรีพานิชกุลชัย, ผศ.ดร.วีระ เหมืองสิน, ผศ.ดร.ณัฐวุฒิ หนูไพโรจน์, รศ.ดร.กุลธิดา โรจน์วิบูลย์ชัย |
+| อีเมลติดต่อ | kunwadee (at) cp.eng.chula.ac.th |
+
+สไลด์ Administrivia ระบุว่าวิชานี้อนุญาตให้เฉพาะนิสิตของภาควิชาวิศวกรรมคอมพิวเตอร์ลงทะเบียนเท่านั้น
+
+ชื่อวิชาในสองเอกสารไม่ตรงกันเล็กน้อย ประมวลรายวิชาเขียนว่า Software-Defined Systems I ส่วนสไลด์ Administrivia เขียนว่า Software-Defined Systems ไม่มีเลข I ทั้งสองที่หมายถึงวิชา 2110506 ตัวเดียวกัน
+
+## วิชานี้เรียนอะไร
+
+ประมวลรายวิชาระบุขอบเขตเนื้อหาไว้ 7 เรื่อง
+
+- Software-defined architectures
+- Software-defined servers
+- Software-defined networks
+- Software-defined storage
+- Cloud and edge computing architectures
+- Containers and service orchestration technology
+- Infrastructure as code
+
+สไลด์ Administrivia วางกรอบของวิชาไว้ด้วยคำสี่คำ คือ Compute (Containers), Orchestration, Compute/Storage Resources (Cloud) และ Networks/Connectivity
+
+<Analogy>
+สมัยก่อน ถ้าจะเพิ่มเซิร์ฟเวอร์หนึ่งเครื่อง ต้องซื้อเครื่องจริง ยกไปวางในห้องเครื่อง เสียบสายไฟ เสียบสาย network แล้วตั้งค่าทีละอย่างด้วยมือ คำว่า software-defined คือการย้ายงานพวกนี้ไปอยู่ในไฟล์และคำสั่ง แล้วให้ซอฟต์แวร์ไปจัดการเครื่องกับสายให้แทน เหมือนเปลี่ยนจากการเดินไปสับรางรถไฟทีละราง มาเป็นการเขียนตารางเดินรถแล้วให้ระบบสับรางให้เอง
+</Analogy>
+
+## วัตถุประสงค์ของวิชา
+
+ประมวลรายวิชาเขียนวัตถุประสงค์ไว้ 3 ข้อ และสไลด์ Administrivia เขียนกำกับแต่ละข้อเป็นภาษาอังกฤษไว้ด้วย
+
+1. อธิบายความหมายของระบบที่กำหนดโดยซอฟต์แวร์ได้ — *What are software-defined systems*
+2. ใช้งานระบบที่กำหนดโดยซอฟต์แวร์ได้ — *Use SDS*
+3. ออกแบบและจัดการระบบที่กำหนดโดยซอฟต์แวร์ได้ — *Design and manage SDS*
+
+## ศัพท์ที่จะเจอในตารางเรียน
+
+- <Term en="Container" th="กล่องที่ห่อโปรแกรมกับของที่โปรแกรมต้องใช้ไว้ด้วยกัน" /> — สัปดาห์ 2-3
+- <Term en="Microservices" th="การแตกระบบใหญ่เป็นบริการเล็ก ๆ หลายตัว" /> — สัปดาห์ 4
+- <Term en="Service Orchestration" th="การสั่งการบริการหลายตัวให้ทำงานร่วมกัน" /> — สัปดาห์ 5 ตัวที่วิชานี้ใช้คือ Kubernetes
+- <Term en="Infrastructure as Code" th="การเขียนโครงสร้างพื้นฐานเป็นโค้ด แทนการคลิกตั้งค่าทีละหน้าจอ" /> — สัปดาห์ 5-6
+- <Term en="DevOps" th="การรวมงานพัฒนากับงานดูแลระบบเข้าด้วยกัน" /> — สัปดาห์ 6 พูดถึงตระกูล `*-Ops` ทั้งหมด รวม MLOps และ AIOps
+- <Term en="Cloud Computing" th="การเช่าเครื่องและบริการผ่านอินเทอร์เน็ต แทนการซื้อเครื่องเอง" /> — สัปดาห์ 9-11 และ 14
+- <Term en="Infrastructure-as-a-Service" th="การเช่าเครื่องเปล่าและ network จากผู้ให้บริการคลาวด์" /> ย่อว่า IaaS — สัปดาห์ 9
+- <Term en="Server Virtualization" th="การแบ่งเครื่องจริงหนึ่งเครื่องออกเป็นเครื่องเสมือนหลายเครื่อง" /> — สัปดาห์ 9
+- <Term en="Hybrid Cloud" th="การใช้คลาวด์ควบคู่กับเครื่องของตัวเอง" /> และ <Term en="Multi-Cloud" th="การใช้คลาวด์หลายเจ้าพร้อมกัน" /> — สัปดาห์ 11
+- <Term en="Software-Defined Networking" th="การควบคุมเส้นทางของ network ด้วยซอฟต์แวร์ส่วนกลาง" /> ย่อว่า SDN — สัปดาห์ 12
+- <Term en="Edge Computing" th="การประมวลผลใกล้กับอุปกรณ์ แทนที่จะส่งขึ้นคลาวด์ทั้งหมด" /> — สัปดาห์ 13
+- <Term en="Data Center Network" th="network ภายในศูนย์ข้อมูล ที่เชื่อมเครื่องจำนวนมากเข้าด้วยกัน" /> — สัปดาห์ 14
+
+## ตารางเรียน
+
+เรียนวันพฤหัสบดี 13:00-16:00 ที่อาคาร Chulapat 4 ชั้นเปลี่ยนไปตามสัปดาห์ ตามที่ระบุในคอลัมน์สุดท้าย
+
+| สัปดาห์ | วันที่ | หัวข้อ | กิจกรรม | ผู้สอน | ชั้น |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Aug 6, 2026 | Introduction to Software-Defined Systems | — | Team | 3 |
+| 2 | Aug 13, 2026 | Containers and container networking | Multi-container Application | Veera | 3 |
+| 3 | Aug 20, 2026 | Advanced docker and more examples | Multi-host Application | Veera | 2 |
+| 4 | Aug 27, 2026 | Microservices Architecture | Orchestrating microservices containers | Natawut | 2 |
+| 5 | Sep 3, 2026 | Service Orchestration and Infrastructure as Code | Kubernetes with Multiple Containers | Natawut | 3 |
+| 6 | Sep 10, 2026 | `*-Ops` (all the Ops, DevOps, MLOps, AIOps) | DevOps and Infrastructure as Code | Natawut | 2 |
+| 7 | Sep 17, 2026 | ไม่มีเรียน อ่านหนังสือเตรียมสอบกลางภาคเอง | — | — | — |
+| 8 | Sep 24, 2026 | **Midterm Exam** | — | — | 3 |
+| — | Oct 1, 2026 | Chula Graduation | — | — | — |
+| 9 | Oct 8, 2026 | Cloud Computing, Infrastructure-as-a-Service, Server Virtualization | AWS Academy (EC2) | Kunwadee | 3 |
+| 10 | Oct 15, 2026 | Cloud Storage Services | AWS Academy (S3) | Kunwadee | 3 |
+| 11 | Oct 22, 2026 | Hybrid Clouds, Multi-Clouds | AWS Academy (Deploy Application) | Kunwadee | 3 |
+| 12 | Oct 29, 2026 | Software-Defined Networking | ONOS, Wireless SDN, Mininet | Kultida | 3 |
+| 13 | Nov 5, 2026 | Edge Computing for IoT | Edge Application Implementation | Kultida | 3 |
+| 14 | Nov 12, 2026 | Data Center Networks | AWS Academy (VPC) | Kunwadee | 3 |
+| 15 | Nov 19, 2026 | **Final Exam** | — | — | 3 |
+
+แถว Oct 1, 2026 ในตารางเขียนไว้แค่ว่า Chula Graduation ไม่ได้ระบุหัวข้อ ผู้สอน หรือห้อง และไม่มีเลขสัปดาห์กำกับ
+
+## การวัดผล
+
+| ส่วนที่คิดคะแนน | น้ำหนัก |
+| --- | --- |
+| Activity / Homework (ทุกสัปดาห์) | 60% |
+| Midterm Exam | 20% |
+| Final Exam | 20% |
+| รวม | 100% |
+
+เกณฑ์ตัดเกรด
+
+| เกรด | คะแนนรวม |
+| --- | --- |
+| A | 80 ขึ้นไป |
+| B+ | 76-79 |
+| B | 70-75 |
+| C+ | 66-69 |
+| C | 60-65 |
+| D+ | 56-59 |
+| D | 50-55 |
+| F | ต่ำกว่า 50 |
+
+<Example title="ลองคิดเกรดดู (ตัวเลขสมมติ)">
+
+คนที่ทำงานรายสัปดาห์ได้ดี เก็บ activity/homework ได้ 48 จาก 60 สอบ midterm ได้ 13 จาก 20 สอบ final ได้ 15 จาก 20 รวมเป็น 76 คะแนน ตกในช่วง 76-79 ได้ B+
+
+คนเดียวกันที่ทำข้อสอบได้เท่าเดิม แต่เก็บ activity ได้แค่ 40 จาก 60 จะเหลือ 68 คะแนน ตกในช่วง 66-69 ได้ C+
+
+งานรายสัปดาห์เพียงอย่างเดียวมีน้ำหนัก 60% มากกว่าข้อสอบสองตัวรวมกัน
+
 </Example>
 
-<Pitfall>เขียนสรุปโดยข้ามสไลด์ที่ดูไม่สำคัญ</Pitfall>
+<Pitfall>
+คะแนน activity ไม่ได้มาจากการบ้านอย่างเดียว ข้อตกลงข้อ 1 เขียนไว้ว่ามีการเช็คชื่อแบบสุ่มวัน และคะแนนเช็คชื่อถือเป็นส่วนหนึ่งของคะแนน activity การขาดเรียนจึงหักคะแนนก้อนที่ใหญ่ที่สุดของวิชา
+</Pitfall>
+
+<Quiz question="ส่งการบ้านช้าไป 1 ชั่วโมงเพราะเน็ตล่ม จะได้คะแนนเท่าไร">
+0 คะแนนสำหรับงานชิ้นนั้น ข้อตกลงข้อ 4 เขียนไว้ว่า หากไม่ส่งตามกำหนด ไม่ว่าด้วยเหตุผลใด จะได้รับคะแนน 0 ในส่วนของงานชิ้นนั้น ประมวลรายวิชาไม่ได้เขียนข้อยกเว้นไว้เลย
+</Quiz>
+
+## การสอบ
+
+สอบทั้งหมด 2 ครั้ง ทั้งสองครั้งเป็นแบบ on-site ต้องมาสอบที่มหาวิทยาลัย
+
+| การสอบ | วันที่ | ที่ไหน |
+| --- | --- | --- |
+| Midterm Exam | Sep 24, 2026 (สัปดาห์ 8) | Chulapat 4 ชั้น 3 |
+| Final Exam | Nov 19, 2026 (สัปดาห์ 15) | Chulapat 4 ชั้น 3 |
+
+สัปดาห์ 7 (Sep 17, 2026) ไม่มีการเรียนการสอน ให้อ่านหนังสือเตรียมสอบกลางภาคเอง
+
+การสอบต้องปฏิบัติตามประกาศจุฬาลงกรณ์มหาวิทยาลัย เรื่อง ข้อปฏิบัติในการสอบของนิสิต พ.ศ. 2564
+
+## ข้อตกลงในการเรียน
+
+ประมวลรายวิชาและสไลด์ Administrivia เขียนข้อตกลงไว้ตรงกัน 5 ข้อ
+
+1. วิชานี้สอนแบบ on-site นิสิตต้องเข้าเรียนทุกครั้ง มีการเช็คชื่อแบบสุ่มวัน โดยคะแนนเช็คชื่อถือเป็นส่วนหนึ่งของคะแนน activity
+2. การจัดสอบมีทั้งหมด 2 ครั้ง เป็นแบบ on-site นิสิตต้องมาสอบที่มหาวิทยาลัยและปฏิบัติตามประกาศจุฬาลงกรณ์มหาวิทยาลัย เรื่อง ข้อปฏิบัติในการสอบของนิสิต พ.ศ. 2564
+3. นิสิตที่มาสายหรือขาดเรียนต้องติดตามเนื้อหาการเรียน การนัดสอบ หรือประกาศต่าง ๆ เอง จะอ้างว่ามาสายหรือขาดเรียนเป็นเหตุผลว่าไม่ทราบไม่ได้
+4. นิสิตต้องส่งชิ้นงานตามวันและเวลาที่กำหนดเท่านั้น หากไม่ส่งตามกำหนดไม่ว่าด้วยเหตุผลใด จะได้รับคะแนน 0 ในส่วนของงานชิ้นนั้น
+5. นิสิตต้องทำงานทุกชิ้นเอง หากมีการลอกงานคนอื่น ไม่ว่าในรูปแบบใด จะได้ 0 ทุกคนทุกกรณี
+
+<Callout type="warn" title="สองข้อที่ไม่มีข้อยกเว้น">
+ส่งงานช้า ได้ 0 ในงานชิ้นนั้น และลอกงาน ได้ 0 ทุกคนที่เกี่ยวข้อง ทั้งสองข้อเขียนไว้แบบไม่มีเงื่อนไขผ่อนผัน
+</Callout>
+
+## ความซื่อสัตย์ทางวิชาการ
+
+สไลด์ Administrivia ยกตารางของ MIT มาอธิบายว่าอะไรนับเป็นการทุจริต แบ่งเป็น 4 กลุ่ม
+
+- **Plagiarism** — อย่าซื้อรายงานหรือให้คนอื่นเขียนแทน อย่าลอกไอเดีย ข้อมูล หรือถ้อยคำโดยไม่อ้างอิงแหล่งที่มา
+- **Unauthorized Collaboration** — อย่าทำงานร่วมกับเพื่อนเกินขอบเขตที่อาจารย์อนุญาตไว้
+- **Cheating** — อย่าลอกคำตอบเพื่อน อย่าให้เพื่อนทำงานแทน อย่าสร้างผลลัพธ์ปลอม อย่าใช้อุปกรณ์อิเล็กทรอนิกส์ระหว่างสอบ อย่าแก้ข้อสอบที่ตรวจแล้วส่งขอตรวจใหม่ และอย่าส่งงานที่เคยส่งในวิชาอื่นมาแล้ว
+- **Facilitating Academic Dishonesty** — อย่าให้เพื่อนลอกคำตอบของเรา และอย่าสอบหรือทำงานแทนเพื่อน
+
+สไลด์อ้างอิงคู่มือของ MIT ที่ [integrity.mit.edu](https://integrity.mit.edu/handbook/academic-integrity-mit/what-academic-integrity)
+
+## ช่องทางประกาศและการติดต่อ
+
+- ทุกคาบเรียนสด on-site (All classes will be live, on-site)
+- myCourseVille ที่ [www.mycourseville.com](https://www.mycourseville.com) เปิดให้ลงทะเบียนเข้าห้องเรียนเอง รหัสผ่านอยู่ในสไลด์ Administrivia หน้า 4
+- Discord ของวิชา ลิงก์อยู่ใน myCourseVille
+- ประกาศที่แจ้งในคาบ หรือใน Discord หรือใน myCourseVille ถือว่านิสิตทุกคนรับทราบแล้ว
+- TA Office Hours ยังไม่ประกาศ (TBA)
+- คำถามที่ถามนอกเวลา office hour อาจไม่ได้คำตอบจนถึงรอบถัดไป จึงควรเริ่มทำการบ้านล่วงหน้า
+- ห้าม DM หา TA หรืออาจารย์ เพราะไม่มีการตอบ DM ให้ถามใน Discord ของวิชาเท่านั้น จะใช้ channel หรือ forum ก็ได้
+- ถ้าต้องการความเป็นส่วนตัว สร้าง private channel ของตัวเองในเซิร์ฟเวอร์ของวิชา แล้ว TA กับอาจารย์จะเป็นคนเดียวที่เห็น
+- เรื่องส่วนตัว ให้อีเมลหา อ.กุลวดี ที่ kunwadee (at) cp.eng.chula.ac.th
+
+## หนังสืออ่านประกอบ
+
+กุลวดี ศรีพานิชกุลชัย, *คลาวด์คอมพิวติง Cloud Computing*
 
 <Recap>
-- block ทุกตัวเรนเดอร์ได้
-- theme สลับ light/dark ได้
+
+- Software-Defined Systems I, 3 หน่วยกิต, วิชาบังคับ, ต้องผ่าน 2110313 และ 2110471 มาก่อน
+- เรียนพฤหัสบดี 13:00-16:00 on-site ที่ Chulapat 4 ทุกคาบ มีเช็คชื่อแบบสุ่มวัน
+- คะแนน: Activity/Homework รายสัปดาห์ 60%, Midterm 20%, Final 20% งานรายสัปดาห์หนักกว่าข้อสอบสองตัวรวมกัน
+- เกรด A ที่ 80 ขึ้นไป และ F ที่ต่ำกว่า 50
+- Midterm วันที่ Sep 24, 2026 และ Final วันที่ Nov 19, 2026 สอบ on-site ทั้งคู่
+- ครึ่งแรกเป็น container, microservices, orchestration, infrastructure as code และ `*-Ops` ครึ่งหลังเป็น cloud, storage, SDN, edge computing และ data center network
+- ส่งงานช้าได้ 0 ลอกงานได้ 0 ทุกคน ไม่มีข้อยกเว้นเขียนไว้
+- ต้องตามประกาศใน myCourseVille และ Discord เอง เพราะถือว่าทุกคนรับทราบแล้ว
+
 </Recap>
-
-<Figure number={1} caption="ตัวอย่างรูปประกอบ วาดเป็น SVG ใช้สีจาก theme">
-  <svg viewBox="0 0 240 60" className="w-full max-w-sm mx-auto">
-    <rect x="4" y="14" width="90" height="32" rx="6" fill="none" stroke="currentColor" />
-    <rect x="146" y="14" width="90" height="32" rx="6" fill="none" stroke="currentColor" />
-    <line x1="94" y1="30" x2="146" y2="30" stroke="currentColor" />
-    <text x="49" y="34" textAnchor="middle" fontSize="12" fill="currentColor">Module A</text>
-    <text x="191" y="34" textAnchor="middle" fontSize="12" fill="currentColor">Module B</text>
-  </svg>
-</Figure>
-
-<Compare>
-  <Wrong>เรียก database ตรงจาก UI</Wrong>
-  <Right>ให้ UI คุยกับ service layer แล้ว service คุยกับ database</Right>
-</Compare>
-
-<StepThrough>
-  <Step title="รับ request">ผู้ใช้กดปุ่ม ระบบรับ request เข้ามา</Step>
-  <Step title="ตรวจสิทธิ์">ระบบเช็คว่าผู้ใช้มีสิทธิ์ทำสิ่งนี้ไหม</Step>
-  <Step title="ตอบกลับ">ระบบส่งผลลัพธ์กลับไป</Step>
-</StepThrough>
-
-<Quiz question="ทำไม coupling ต่ำถึงดีกว่า">
-แก้โมดูลหนึ่งแล้วไม่ต้องตามไปแก้โมดูลอื่น
-</Quiz>
