@@ -169,6 +169,9 @@ EOF
 
 ## Task 2: Move pages to the site root and switch to Thai fonts
 
+Body font is **Bai Jamjuree**. Code font is **IBM Plex Mono**. Bai Jamjuree has no monospace
+cut, so do not try to use it for code.
+
 **Files:**
 - Modify: `lib/shared.ts`
 - Move: `app/docs/[[...slug]]/page.tsx` → `app/(lecture)/[...slug]/page.tsx`
@@ -251,9 +254,9 @@ Replace the font block in `app/layout.tsx`:
 ```tsx
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
-import { IBM_Plex_Sans_Thai, IBM_Plex_Mono } from 'next/font/google';
+import { Bai_Jamjuree, IBM_Plex_Mono } from 'next/font/google';
 
-const sans = IBM_Plex_Sans_Thai({
+const sans = Bai_Jamjuree({
   subsets: ['latin', 'thai'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-sans-thai',
@@ -334,7 +337,8 @@ pnpm dev
 Open `http://localhost:3000/docs` with `browser_navigate`, then take a snapshot.
 
 Expected: the sample page renders, the sidebar is on the left, the table of contents is on
-the right, and Thai text uses IBM Plex Sans Thai rather than a fallback. The URL is `/docs`
+the right, and Thai text uses Bai Jamjuree rather than a fallback. Bai Jamjuree is loopless,
+so the Thai letters have no small circles at their corners — that is how you tell it loaded. The URL is `/docs`
 because `docs` is still the folder name under `content/`; Task 3 replaces it with a real
 course folder.
 
@@ -346,7 +350,7 @@ Also open `http://localhost:3000/` and confirm the scaffold home page still rend
 ```bash
 git add -A
 git commit -m "$(cat <<'EOF'
-feat: serve lecture pages from the site root and load Thai fonts
+feat: serve lecture pages from the site root and load Bai Jamjuree
 
 Course pages move from /docs/<course> to /<course>. The catch-all is
 required, not optional, so it never collides with the landing page.

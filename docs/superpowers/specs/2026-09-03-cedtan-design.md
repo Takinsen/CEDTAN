@@ -116,7 +116,11 @@ copyright.
 
 ### Typography
 
-`IBM Plex Sans Thai` for body, `IBM Plex Mono` for code, both via `next/font/google`.
+`Bai Jamjuree` for body, `IBM Plex Mono` for code, both via `next/font/google`.
+
+Bai Jamjuree is a loopless Thai face. Loopless reads as modern on screen and keeps Latin and
+Thai on the same rhythm, which matters here because every paragraph mixes them. It has no
+monospace cut, so code keeps IBM Plex Mono.
 
 Body `line-height` is raised to about 1.85. Thai vowels and tone marks sit above and below
 the line and collide at the default prose value.
