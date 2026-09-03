@@ -21,6 +21,6 @@ body {
   line-height: 1.85;
 }
 
-.prose :is(h1, h2, h3, h4) {
+:is(h1, h2, h3, h4) {
   line-height: 1.4;
 }
