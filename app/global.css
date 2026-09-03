@@ -10,3 +10,17 @@ html > body[data-scroll-locked] {
   margin-right: 0px !important;
   --removed-body-scroll-bar-size: 0px !important;
 }
+
+@theme {
+  --font-sans: var(--font-sans-thai), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-code), ui-monospace, monospace;
+}
+
+/* Thai vowels and tone marks stack above and below the line */
+.prose {
+  line-height: 1.85;
+}
+
+.prose :is(h1, h2, h3, h4) {
+  line-height: 1.4;
+}

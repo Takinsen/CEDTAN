@@ -1,11 +1,12 @@
-export const appName = 'My App';
-export const docsRoute = '/docs';
-export const docsImageRoute = '/og/docs';
-export const docsContentRoute = '/llms.mdx/docs';
+export const appName = 'CEDTAN';
 
-// fill this with your actual GitHub info, for example:
+// lecture pages live at the site root, e.g. /2110506-sds/lecture-1
+export const docsRoute = '/';
+export const docsImageRoute = '/og';
+export const docsContentRoute = '/llms.mdx';
+
 export const gitConfig = {
-  user: 'fuma-nama',
-  repo: 'fumadocs',
+  user: 'Takinsen',
+  repo: 'CEDTAN',
   branch: 'main',
 };
