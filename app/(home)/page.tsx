@@ -1,16 +1,31 @@
 import Link from 'next/link';
+import { courses, countLectures } from '@/lib/courses';
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col justify-center text-center flex-1">
-      <h1 className="text-2xl font-bold mb-4">Hello World</h1>
-      <p>
-        You can open{' '}
-        <Link href="/docs" className="font-medium underline">
-          /docs
-        </Link>{' '}
-        and see the documentation.
+    <main className="mx-auto w-full max-w-3xl px-4 py-16">
+      <h1 className="text-3xl font-bold">CEDTAN</h1>
+      <p className="mt-2 text-fd-muted-foreground">
+        สรุปเนื้อหา lecture แต่ละคาบ อ่านแล้วเข้าใจ ไม่ต้องมีพื้นฐานมาก่อน
       </p>
-    </div>
+
+      <div className="mt-10 grid gap-4">
+        {courses.map((course) => (
+          <Link
+            key={course.slug}
+            href={`/${course.slug}`}
+            className="rounded-xl border border-fd-border bg-fd-card p-5 transition-colors hover:bg-fd-accent"
+          >
+            <div className="text-sm text-fd-muted-foreground">{course.code}</div>
+            <div className="mt-1 text-lg font-semibold">{course.name}</div>
+            <div className="text-sm text-fd-muted-foreground">{course.nameTh}</div>
+            <p className="mt-2 text-sm">{course.description}</p>
+            <div className="mt-3 text-sm text-fd-muted-foreground">
+              {countLectures(course.slug)} คาบ
+            </div>
+          </Link>
+        ))}
+      </div>
+    </main>
   );
 }
