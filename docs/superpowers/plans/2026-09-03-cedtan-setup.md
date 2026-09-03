@@ -13,7 +13,8 @@
 ## Global Constraints
 
 - Package manager is **pnpm**. Never run `npm install` or `yarn`.
-- Node 24, pnpm 11. Next.js `16.3.4` or newer. Fumadocs `16.15.5` or newer.
+- Node 24, pnpm 11. Next.js `16.3.4` or newer. `fumadocs-core` and `fumadocs-ui` `16.15.5`
+  or newer. `fumadocs-mdx` `15.4.0` (a separate version line — 15.4.0 IS its latest).
 - `data/` is git-ignored. Never commit a PDF. Never copy slide images into the repo.
 - Explanations in content are **Thai**. Technical terms stay in **English**.
 - Code, comments, commit messages, README, and AGENTS.md are in **plain English (A1–B2)**.
@@ -169,8 +170,11 @@ EOF
 
 ## Task 2: Move pages to the site root and switch to Thai fonts
 
-Body font is **Bai Jamjuree**. Code font is **IBM Plex Mono**. Bai Jamjuree has no monospace
-cut, so do not try to use it for code.
+Body font is **Bai Jamjuree** (static, needs an explicit weight list). Code font is
+**Red Hat Mono** (variable 300-700, so it needs no weight list).
+
+No monospace font on Google Fonts covers the `thai` subset. Thai text inside a code block
+falls back to Bai Jamjuree, which is expected.
 
 **Files:**
 - Modify: `lib/shared.ts`
@@ -254,7 +258,7 @@ Replace the font block in `app/layout.tsx`:
 ```tsx
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
-import { Bai_Jamjuree, IBM_Plex_Mono } from 'next/font/google';
+import { Bai_Jamjuree, Red_Hat_Mono } from 'next/font/google';
 
 const sans = Bai_Jamjuree({
   subsets: ['latin', 'thai'],
@@ -262,10 +266,9 @@ const sans = Bai_Jamjuree({
   variable: '--font-sans-thai',
 });
 
-const mono = IBM_Plex_Mono({
+const mono = Red_Hat_Mono({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-mono-plex',
+  variable: '--font-mono-code',
 });
 
 export default function Layout({ children }: LayoutProps<'/'>) {
@@ -288,7 +291,7 @@ Append to `app/global.css`:
 ```css
 @theme {
   --font-sans: var(--font-sans-thai), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-mono-plex), ui-monospace, monospace;
+  --font-mono: var(--font-mono-code), ui-monospace, monospace;
 }
 
 /* Thai vowels and tone marks stack above and below the line */
@@ -350,7 +353,7 @@ Also open `http://localhost:3000/` and confirm the scaffold home page still rend
 ```bash
 git add -A
 git commit -m "$(cat <<'EOF'
-feat: serve lecture pages from the site root and load Bai Jamjuree
+feat: serve lecture pages from the site root and load the project fonts
 
 Course pages move from /docs/<course> to /<course>. The catch-all is
 required, not optional, so it never collides with the landing page.

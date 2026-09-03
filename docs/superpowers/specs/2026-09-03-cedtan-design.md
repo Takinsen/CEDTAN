@@ -116,11 +116,18 @@ copyright.
 
 ### Typography
 
-`Bai Jamjuree` for body, `IBM Plex Mono` for code, both via `next/font/google`.
+`Bai Jamjuree` for body, `Red Hat Mono` for code, both via `next/font/google`.
 
 Bai Jamjuree is a loopless Thai face. Loopless reads as modern on screen and keeps Latin and
-Thai on the same rhythm, which matters here because every paragraph mixes them. It has no
-monospace cut, so code keeps IBM Plex Mono.
+Thai on the same rhythm, which matters here because every paragraph mixes them.
+
+Red Hat Mono pairs with it on measured metrics, not taste: cap-height is identical at
+0.700 em, and x-height is within 2.2%, so inline code does not jump out of the line. It is
+variable from 300 to 700, which matters because Shiki sets keywords bold — a mono that stops
+at 500 forces the browser to synthesize bold, and synthesized bold looks broken.
+
+No monospace font on Google Fonts covers the `thai` subset, so Thai text inside a code block
+falls back to Bai Jamjuree. That is expected, not a bug.
 
 Body `line-height` is raised to about 1.85. Thai vowels and tone marks sit above and below
 the line and collide at the default prose value.
