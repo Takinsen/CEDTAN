@@ -13,7 +13,7 @@ export const courses: Course[] = [
     slug: '2110506-sds',
     code: '2110506',
     name: 'Software-Defined Systems I',
-    nameTh: 'ระบบที่กำหนดโดยซอฟต์แวร์ 1',
+    nameTh: 'ระบบที่กำหนดโดยซอฟต์แวร์',
     description:
       'software-defined servers, networks และ storage, containers และ service orchestration, cloud และ edge computing, infrastructure as code',
   },
