@@ -19,3 +19,28 @@ description: ภาพรวมของวิชา และสารบัญ
 - block ทุกตัวเรนเดอร์ได้
 - theme สลับ light/dark ได้
 </Recap>
+
+<Figure number={1} caption="ตัวอย่างรูปประกอบ วาดเป็น SVG ใช้สีจาก theme">
+  <svg viewBox="0 0 240 60" className="w-full max-w-sm mx-auto">
+    <rect x="4" y="14" width="90" height="32" rx="6" fill="none" stroke="currentColor" />
+    <rect x="146" y="14" width="90" height="32" rx="6" fill="none" stroke="currentColor" />
+    <line x1="94" y1="30" x2="146" y2="30" stroke="currentColor" />
+    <text x="49" y="34" textAnchor="middle" fontSize="12" fill="currentColor">Module A</text>
+    <text x="191" y="34" textAnchor="middle" fontSize="12" fill="currentColor">Module B</text>
+  </svg>
+</Figure>
+
+<Compare>
+  <Wrong>เรียก database ตรงจาก UI</Wrong>
+  <Right>ให้ UI คุยกับ service layer แล้ว service คุยกับ database</Right>
+</Compare>
+
+<StepThrough>
+  <Step title="รับ request">ผู้ใช้กดปุ่ม ระบบรับ request เข้ามา</Step>
+  <Step title="ตรวจสิทธิ์">ระบบเช็คว่าผู้ใช้มีสิทธิ์ทำสิ่งนี้ไหม</Step>
+  <Step title="ตอบกลับ">ระบบส่งผลลัพธ์กลับไป</Step>
+</StepThrough>
+
+<Quiz question="ทำไม coupling ต่ำถึงดีกว่า">
+แก้โมดูลหนึ่งแล้วไม่ต้องตามไปแก้โมดูลอื่น
+</Quiz>
