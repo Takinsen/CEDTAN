@@ -62,7 +62,9 @@ content/
 
 ### Frontmatter
 
-Defined in `source.config.ts` as a Zod schema on top of Fumadocs' `frontmatterSchema`.
+Defined in `lib/source.ts`. Fumadocs 16 has no `source.config.ts`. Content collections are
+declared with `defineDocs` from `fumadocs-mdx/macro`, and the frontmatter schema extends
+`pageSchema` from `fumadocs-core/source/schema` (Zod 4).
 
 ```yaml
 title: "Lecture 1 — Introduction to Software Design"
@@ -144,13 +146,13 @@ This list is repeated in AGENTS.md, which is the file an agent reads.
 README.md              what it is, setup, structure, deploy
 AGENTS.md              authoring contract and component reference
 .gitignore             data/ .source/ .next/ node_modules/
-source.config.ts       frontmatter schema and MDX options
-lib/source.ts          content loader
+lib/source.ts          content collections, frontmatter schema, loader
+lib/courses.ts         course registry for the landing page
 lib/layout.shared.tsx  shared nav options
 app/layout.tsx         root layout, fonts, RootProvider
-app/page.tsx           landing
-app/[...slug]/page.tsx lecture and course pages
-app/[...slug]/layout.tsx
+app/(home)/page.tsx    landing
+app/(lecture)/[...slug]/page.tsx  lecture and course pages
+app/(lecture)/layout.tsx
 app/api/search/route.ts
 components/mdx.tsx     global MDX component map
 components/lecture/*   component kit
