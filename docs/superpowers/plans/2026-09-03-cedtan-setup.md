@@ -432,7 +432,7 @@ mkdir -p content/2110506-sds
 ```json
 {
   "title": "2110506 SDS",
-  "description": "Software Design and Specification",
+  "description": "Software-Defined Systems I",
   "root": true,
   "pages": ["index"]
 }
@@ -454,7 +454,7 @@ dropped, which hides typos. So the list starts at `["index"]` and grows one entr
 
 ```mdx
 ---
-title: 2110506 Software Design and Specification
+title: 2110506 Software-Defined Systems
 description: ภาพรวมของวิชา และสารบัญเนื้อหาแต่ละคาบ
 ---
 
@@ -1045,9 +1045,9 @@ export const courses: Course[] = [
   {
     slug: '2110506-sds',
     code: '2110506',
-    name: 'Software Design and Specification',
-    nameTh: 'การออกแบบและระบุรายละเอียดซอฟต์แวร์',
-    description: 'ออกแบบซอฟต์แวร์ให้แก้ง่าย ทดสอบได้ และอธิบายให้คนอื่นเข้าใจ',
+    name: 'Software-Defined Systems I',
+    nameTh: 'ระบบที่กำหนดโดยซอฟต์แวร์ 1',
+    description: 'ยกงานที่เคยต้องเดินไปทำกับเครื่องจริง ขึ้นมาอยู่ในไฟล์และคำสั่ง',
   },
 ];
 
@@ -1302,7 +1302,7 @@ Every one of these is a blocker, not a preference.
 
 ```yaml
 ---
-title: "Lecture 1 — Introduction to Software Design"
+title: "Lecture 1 — Introduction to Software-Defined Systems"
 description: "หนึ่งประโยคว่าคาบนี้ตอบคำถามอะไร"
 lecture: 1
 source: "data/2110506-SDS/Lecture-1.pdf"
@@ -1419,7 +1419,7 @@ Rewrite `content/2110506-sds/index.mdx` against the coverage list. Frontmatter:
 
 ```yaml
 ---
-title: 2110506 Software Design and Specification
+title: 2110506 Software-Defined Systems
 description: ภาพรวมวิชา วิธีวัดผล และสารบัญเนื้อหาแต่ละคาบ
 source: "data/2110506-SDS/Syllabus.pdf"
 ---

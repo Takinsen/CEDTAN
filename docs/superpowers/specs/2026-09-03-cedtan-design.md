@@ -67,7 +67,7 @@ declared with `defineDocs` from `fumadocs-mdx/macro`, and the frontmatter schema
 `pageSchema` from `fumadocs-core/source/schema` (Zod 4).
 
 ```yaml
-title: "Lecture 1 — Introduction to Software Design"
+title: "Lecture 1 — Introduction to Software-Defined Systems"
 description: "One sentence on what this lecture answers."
 lecture: 1
 source: "data/2110506-SDS/Lecture-1.pdf"
@@ -104,7 +104,13 @@ use them without importing.
 | `<Quiz>` | Self-check question with a hidden answer. |
 | `<Recap>` | Bullet summary at the end of a lecture. |
 
-From Fumadocs, already available: `Callout`, `Tabs`, `Steps`, `Accordion`, `Files`, code blocks.
+From Fumadocs, already available through `defaultMdxComponents`: `Callout`, `Card`, `Cards`,
+and code blocks. `Tabs`/`Tab`, `Accordions`/`Accordion`, and `Files`/`File`/`Folder` are
+registered explicitly in `components/mdx.tsx`.
+
+Fumadocs' `Steps`/`Step` are deliberately NOT registered: its `Step` collides with the `Step`
+that `StepThrough` uses, and `StepThrough` covers the same need better here because it is
+interactive.
 
 ### Diagrams
 
