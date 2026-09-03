@@ -12,9 +12,9 @@ export const courses: Course[] = [
   {
     slug: '2110506-sds',
     code: '2110506',
-    name: 'Software Design and Specification',
-    nameTh: 'การออกแบบและระบุรายละเอียดซอฟต์แวร์',
-    description: 'ออกแบบซอฟต์แวร์ให้แก้ง่าย ทดสอบได้ และอธิบายให้คนอื่นเข้าใจ',
+    name: 'Software-Defined Systems I',
+    nameTh: 'ระบบที่กำหนดโดยซอฟต์แวร์ 1',
+    description: 'ยกงานที่เคยต้องเดินไปทำกับเครื่องจริง ขึ้นมาอยู่ในไฟล์และคำสั่ง',
   },
 ];
 

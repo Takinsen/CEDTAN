@@ -22,8 +22,10 @@ Not a shorter version of the slides. A better explanation of the same material.
 ## Steps
 
 1. Confirm the PDF is at `data/<COURSE-CODE>/Lecture-N.pdf`.
-2. Read every page of the PDF. The Read tool takes at most 20 pages per call, so a 60-page
-   deck is three calls. Do not skim, and do not stop at the first call.
+2. Read every page of the PDF. Try the Read tool first, at most 20 pages per call, so a
+   60-page deck is three calls. It may fail to render on a machine without `poppler-utils`
+   installed — if so, extract the text with `pdfjs-dist` instead. Do not skim, and do not
+   stop at the first call or the first page of extracted text.
 3. Write a coverage list before writing any prose: every topic on the slides that the page
    must contain. Keep it visible while you write and tick items off.
 4. Write `content/<course>/lecture-<n>.mdx`.
@@ -81,8 +83,10 @@ Registered globally. Use them in MDX with no import line.
 | `<Quiz question="...">` | Self-check, answer hidden. |
 | `<Recap>` | Bullet summary at the end. |
 
-From Fumadocs, also available: `<Callout>`, `<Tabs>`, `<Steps>`, `<Accordion>`, `<Files>`,
-and fenced code blocks with syntax highlighting.
+From Fumadocs, also available: `<Callout>`, `<Card>`, `<Cards>`, `<Tabs>`/`<Tab>`,
+`<Accordions>`/`<Accordion>`, `<Files>`/`<File>`/`<Folder>`, and fenced code blocks with
+syntax highlighting. `<Steps>`/`<Step>` is not registered — its `Step` clashes with
+`StepThrough`'s.
 
 ## Diagrams
 
