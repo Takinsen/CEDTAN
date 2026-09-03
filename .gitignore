@@ -1,0 +1,15 @@
+data/*
+!data/.gitkeep
+
+node_modules/
+.next/
+.source/
+out/
+build/
+
+.env*
+!.env.example
+.vercel
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
