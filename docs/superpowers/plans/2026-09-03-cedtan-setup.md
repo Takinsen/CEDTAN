@@ -1140,8 +1140,8 @@ EOF
 ## Task 7: README.md and AGENTS.md
 
 **Files:**
-- Create: `README.md` (overwrite the scaffold's), `AGENTS.md`
-- Verify: read both back and check every command in them actually runs
+- Create: `README.md` (overwrite the scaffold's), `AGENTS.md`, `CLAUDE.md`
+- Verify: read all three back and check every command in them actually runs
 
 **Interfaces:**
 - Consumes: nothing
@@ -1150,6 +1150,20 @@ EOF
 AGENTS.md is the contract a future agent reads before writing a lecture. It is the most
 load-bearing file in the repo: everything else can be re-derived from the code, but the
 quality bar cannot.
+
+### Next.js writes to these files too
+
+`next dev` in Next.js 16 detects an AI coding agent and upserts a managed block into
+`AGENTS.md`, between the markers `<!-- BEGIN:nextjs-agent-rules -->` and
+`<!-- END:nextjs-agent-rules -->`. When neither `AGENTS.md` nor `CLAUDE.md` exists it creates
+both — `CLAUDE.md` holding just `@AGENTS.md`.
+
+The upsert preserves everything outside the markers (verified in
+`node_modules/next/dist/server/lib/generate-agent-files.js`), so our content is safe. But
+deleting the block does not stop it: the next `pnpm dev` writes it back, leaving the tree
+permanently dirty.
+
+So commit it. Run `pnpm dev` once, let Next write the block, and keep it.
 
 - [ ] **Step 1: Write README.md**
 
@@ -1226,9 +1240,28 @@ See [AGENTS.md](./AGENTS.md).
 Vercel, Next.js preset, `pnpm build`. No environment variables.
 ````
 
-- [ ] **Step 2: Write AGENTS.md**
+- [ ] **Step 2: Let Next.js write its managed block first**
 
-Create `AGENTS.md`:
+```bash
+cd /home/tanakrit/projects/CEDTAN
+pnpm dev
+```
+
+Wait for the ready line, then stop the server. Confirm both files appeared:
+
+```bash
+cat AGENTS.md
+cat CLAUDE.md
+```
+
+Expected: `AGENTS.md` holds the block between the two markers, and `CLAUDE.md` holds the
+single line `@AGENTS.md`. Do not edit or reflow the block — Next compares it byte for byte
+and rewrites it if it differs.
+
+- [ ] **Step 3: Write AGENTS.md**
+
+Keep the managed block exactly where Next put it and add our contract **below** it. The file
+becomes: the `<!-- BEGIN:nextjs-agent-rules -->` block verbatim, then everything below.
 
 ````markdown
 # AGENTS.md
@@ -1325,16 +1358,18 @@ Never extract an image from the slides. It cannot be re-themed and it is the lec
 - Comments in code: one line, saying what the block does.
 ````
 
-- [ ] **Step 3: Verify every command in the docs actually runs**
+- [ ] **Step 4: Verify every command in the docs actually runs**
 
 ```bash
 cd /home/tanakrit/projects/CEDTAN
 pnpm check
+git status --short
 ```
 
-Expected: PASS. If `pnpm check` fails, the README is lying and must be fixed before commit.
+Expected: `pnpm check` PASS, and `git status` clean of any surprise file. If `pnpm check`
+fails, the README is lying and must be fixed before commit.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -1344,6 +1379,10 @@ docs: add README and AGENTS contract
 README covers how to run, check, and deploy the site. AGENTS.md is the
 contract for writing a lecture summary: the steps, the quality bar, the
 component list, and the mistakes that are easy to make by accident.
+
+AGENTS.md also keeps the managed block that `next dev` writes, and
+CLAUDE.md is committed as Next created it. Deleting them does not
+work: the next dev run writes them back.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01VJVzAQ8HGxUs82xd4yEqkB
