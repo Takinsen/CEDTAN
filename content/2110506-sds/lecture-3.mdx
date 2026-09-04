@@ -1,0 +1,1731 @@
+---
+title: "Lecture 3 — Managing Multi-container Application"
+description: "จาก Dockerfile ที่สร้าง image ซ้ำได้ ไปจนถึง Docker Compose ที่สั่งทั้งระบบขึ้นลงด้วยคำสั่งเดียว"
+lecture: 3
+source: "data/2110506-SDS/Lecture-3.pdf"
+credit: "เรียบเรียงจากสไลด์ Lecture 3 ของ รศ.ดร.วีระ เหมืองสิน"
+readingMinutes: 50
+---
+
+import { BuildPushRun } from '@/components/figures/2110506-sds/build-push-run';
+import { DockerfileToLayers } from '@/components/figures/2110506-sds/dockerfile-to-layers';
+import { MultiStageBuild } from '@/components/figures/2110506-sds/multi-stage-build';
+import { ComposeProject } from '@/components/figures/2110506-sds/compose-project';
+import { MonitoringStack } from '@/components/figures/2110506-sds/monitoring-stack';
+import { ScaleReplicas } from '@/components/figures/2110506-sds/scale-replicas';
+import { MultiNetwork } from '@/components/figures/2110506-sds/multi-network';
+import { SingleVsCluster } from '@/components/figures/2110506-sds/single-vs-cluster';
+import { MultiHostProblem } from '@/components/figures/2110506-sds/multi-host-problem';
+
+<KeyIdea>
+คาบนี้ไล่แก้ปัญหาสามชั้นต่อกัน: **Dockerfile** ทำให้สร้าง image เดิมซ้ำได้แทนที่จะประกอบมือ **Docker Compose** ทำให้สั่งหลาย container พร้อมกันเป็นก้อนเดียวแทนที่จะพิมพ์ `docker run` ทีละตัว และเมื่อ container ล้นออกไปหลายเครื่อง ก็ถึงคิวของ **container orchestration** ซึ่งเป็นเรื่องของคาบถัดไป
+</KeyIdea>
+
+<Callout type="info" title="ข้อมูลในหน้านี้มาจากไหน">
+เนื้อหามาจากสไลด์ Lecture 3 ทั้ง 71 หน้า คำสั่ง ไฟล์ตั้งค่า และผลลัพธ์บนหน้าจอทุกอันยกมาจากสไลด์จริง ส่วนคำอธิบาย รูป และตัวอย่างที่ระบุว่าเสริม เขียนขึ้นใหม่
+</Callout>
+
+## คาบนี้จะพาไปไหน
+
+คาบที่แล้วจบตรงที่เราสร้าง container ได้แล้ว ต่อเน็ตให้มันคุยกันได้แล้ว และเก็บข้อมูลไม่ให้หายได้แล้ว — แต่ทุกอย่างยังทำด้วยมือทีละคำสั่ง
+
+คาบนี้ตอบสามคำถามที่ตามมาทันที
+
+| คำถาม | คำตอบของคาบนี้ |
+| --- | --- |
+| จะสร้าง image เดิมซ้ำได้ยังไง ไม่ต้องจำว่ากดอะไรไปบ้าง | Dockerfile |
+| แอปหนึ่งตัวใช้ 4 container จะสั่งขึ้นลงพร้อมกันยังไง | Docker Compose |
+| ถ้า container ล้นเครื่องเดียวไม่พอ ต้องกระจายหลายเครื่อง | Container orchestration (คาบหน้า) |
+
+ท้ายคาบมีแล็บ Raspberry Pi ที่พาเอาเครื่องที่สองเข้ามาจริง ๆ เพื่อให้เห็นด้วยตาว่าปัญหาข้อสามหน้าตาเป็นยังไง
+
+---
+
+# ส่วนที่ 1 — Dockerfile
+
+## ปัญหาที่ Dockerfile เกิดมาแก้
+
+<Why>
+คาบที่แล้วสร้าง image ด้วยวิธี "เข้าไปใน container แล้วติดตั้งของ แล้วค่อย `docker commit`" วิธีนี้ได้ image จริง แต่มันมีปัญหาที่แก้ไม่ได้เลยสามข้อ
+
+1. **ไม่มีใครรู้ว่าข้างในมีอะไร** เพราะสิ่งที่คุณพิมพ์ไปหายไปกับ shell แล้ว
+2. **ทำซ้ำไม่ได้** อีกสามเดือนอยากได้ image เดิมแต่อัปเดตเวอร์ชันไลบรารี ต้องนั่งนึกใหม่ทั้งหมด
+3. **เอาเข้า Git ไม่ได้** image เป็นไฟล์ไบนารีขนาดหลายร้อยเมกะไบต์ จะรีวิวว่าใครเปลี่ยนอะไรก็ทำไม่ได้
+</Why>
+
+<Term en="Dockerfile" th="ไฟล์ข้อความที่บอกวิธีสร้าง image" /> แก้ทั้งสามข้อพร้อมกัน เพราะมันเป็น**ไฟล์ข้อความธรรมดา** ที่บอก Docker engine ว่าจะประกอบ image ขึ้นมายังไง
+
+สิ่งที่เขียนสั่งได้มีสี่แบบ
+
+- รันคำสั่ง (ติดตั้งของ ตั้งค่า)
+- ก๊อปไฟล์หรือโฟลเดอร์เข้าไปใน image
+- ตั้งตัวแปรสภาพแวดล้อม
+- บอกว่าเวลาสตาร์ต container ให้รันอะไร
+
+หน้าตาสั้นที่สุดที่ใช้งานได้จริงมีแค่สี่บรรทัด
+
+```dockerfile
+FROM python:3.13-slim
+WORKDIR /app
+COPY hello.py .
+CMD ["python", "hello.py"]
+```
+
+<Analogy>
+Dockerfile คือ**สูตรอาหาร** ส่วน image คือ**อาหารที่ทำเสร็จแล้ว** และ container คือ**จานที่ยกมาเสิร์ฟ**
+
+`docker commit` เหมือนทำอาหารเสร็จแล้วถ่ายรูปไว้ — ได้ภาพ แต่ทำซ้ำไม่ได้ ส่วน Dockerfile คือจดสูตรไว้ ใครหยิบไปก็ทำได้เหมือนกัน และแก้ปริมาณน้ำตาลได้โดยไม่ต้องทำใหม่ทั้งจาน
+</Analogy>
+
+## Dockerfile ใช้ทำอะไรในงานจริง
+
+ประโยชน์ตัวจริงโผล่ตอนที่เครื่องที่ build กับเครื่องที่รัน**ไม่ใช่เครื่องเดียวกัน**
+
+<Figure number={1} caption="Dockerfile ถูก build เป็น image บนเครื่องพัฒนา ส่งขึ้น registry แล้วเครื่องให้บริการดึงลงมารัน">
+  <BuildPushRun />
+</Figure>
+
+เครื่องปลายทางไม่ต้องมี Python ไม่ต้องมี compiler ไม่ต้องมี source code เลย มันได้ image ที่ประกอบเสร็จแล้วมาทั้งก้อน
+
+## คำสั่งใน Dockerfile
+
+สไลด์ไล่คำสั่งไว้ตามลำดับที่ใช้จริง เริ่มจากสามตัวที่แทบทุกไฟล์ต้องมี
+
+### FROM, WORKDIR, COPY
+
+```dockerfile
+FROM <image>
+WORKDIR <path>
+COPY <host-path> <image-path>
+```
+
+- **`FROM`** เริ่มขั้นตอนการ build และบอกว่าใช้ image ไหนเป็นฐาน มักเป็นบรรทัดแรกของไฟล์ ฐานเป็น image ทางการอย่าง `ubuntu` หรือ `alpine` ก็ได้ หรือเป็น image ที่เราสร้างเองก็ได้
+- **`WORKDIR`** ตั้งโฟลเดอร์ทำงานให้คำสั่งที่ตามมาข้างล่าง ถ้าโฟลเดอร์ยังไม่มี Docker สร้างให้
+- **`COPY`** ก๊อปไฟล์จากเครื่องที่ build เข้าไปวางใน image ที่ตำแหน่งที่ระบุ
+
+```dockerfile
+FROM python:3.13-slim
+WORKDIR /app
+COPY hello.py .
+```
+
+<Pitfall>
+`COPY` มองเห็นแค่ไฟล์ที่อยู่ใน <Term en="build context" th="โฟลเดอร์ที่ส่งให้ Docker ตอน build" /> — ก็คือโฟลเดอร์ที่คุณใส่เป็นจุดสุดท้ายของคำสั่ง `docker build -t app .` (จุดนั้นแหละ)
+
+`COPY ../secrets.txt .` จึงพังเสมอ ไม่ใช่เพราะไฟล์ไม่มี แต่เพราะมันอยู่นอกโฟลเดอร์ที่ Docker ได้รับมา
+</Pitfall>
+
+### USER — เรื่องความปลอดภัยที่คนมองข้าม
+
+```dockerfile
+USER <username>
+```
+
+ตั้งว่าคำสั่งที่ตามมา (และตัวโปรแกรมตอนรัน) จะรันในนามผู้ใช้คนไหน
+
+<Pitfall>
+**โดยปริยาย container รันเป็น root** และ root ใน container คือ root ตัวเดียวกับบนเครื่อง host ในสายตาของ kernel เพียงแต่ถูกจำกัดด้วย namespace และตัดสิทธิ์บางส่วนออก
+
+ถ้ามีช่องโหว่ที่ทำให้หลุดออกจาก container ได้ (เรียกว่า <Term en="container escape" th="การหลุดออกจากกรอบของ container" />) ผู้โจมตีจะได้สิทธิ์ระดับ root บนเครื่องจริง
+</Pitfall>
+
+วิธีแก้คือสร้างผู้ใช้ธรรมดาขึ้นมาแล้วสลับไปใช้
+
+```dockerfile
+RUN useradd appuser
+USER appuser
+```
+
+### RUN — รันตอน build ไม่ใช่ตอนรัน
+
+```dockerfile
+RUN ["<command>", "<arg1>"]
+RUN <command> <arg1>
+```
+
+`RUN` รันคำสั่ง **ตอน build** และผลลัพธ์กลายเป็น layer ใหม่ใน image ใช้ติดตั้งแพ็กเกจ ตั้งค่า หรือเตรียมอะไรก็ตามที่ต้องมีอยู่แล้วก่อน container จะสตาร์ต
+
+มันเขียนได้สองรูปแบบ และสองรูปแบบนี้**ทำงานไม่เหมือนกัน**
+
+| รูปแบบ | หน้าตา | ต่างกันตรงไหน |
+| --- | --- | --- |
+| <Term en="exec form" th="แบบรายการ" /> | `RUN ["apt-get", "update"]` | รันตรง ๆ ไม่ผ่าน shell |
+| <Term en="shell form" th="แบบบรรทัดคำสั่ง" /> | `RUN apt-get update && apt-get install -y python3` | รันผ่าน shell |
+
+shell form ใช้ความสามารถของ shell ได้ครบ — ท่อ `|`, ต่อคำสั่ง `&&`, เปลี่ยนทิศทาง `>`, และแทนค่าตัวแปร `$VAR` ส่วน exec form ทำไม่ได้เพราะไม่มี shell มาแปลให้
+
+<Example added title="ทำไม exec form ถึงพัง">
+```dockerfile
+RUN ["echo", "$HOME"]
+```
+
+ได้ผลลัพธ์ตรงตัวว่า `$HOME` เพราะไม่มี shell มาแทนค่าให้ ถ้าอยากได้ `/root` ต้องใช้ shell form
+
+```dockerfile
+RUN echo $HOME
+```
+</Example>
+
+### ENTRYPOINT กับ CMD — คู่ที่สับสนที่สุด
+
+ทั้งสองตัวบอกว่า "เวลาสตาร์ต container ให้รันอะไร" แต่มันตอบสนองต่อสิ่งที่ผู้ใช้พิมพ์ต่อท้าย `docker run` คนละแบบ
+
+<Term en="ENTRYPOINT" th="คำสั่งหลักที่ตายตัว" /> — สิ่งที่ผู้ใช้พิมพ์ต่อท้าย `docker run` จะถูก**เติมต่อท้าย** คำสั่งนี้
+
+<Term en="CMD" th="คำสั่งหรืออาร์กิวเมนต์ตั้งต้น" /> — สิ่งที่ผู้ใช้พิมพ์ต่อท้าย `docker run` จะ**แทนที่** ค่านี้ทั้งอัน
+
+สรุปเป็นตารางว่าใช้ตัวไหนเมื่อไร
+
+| อยากได้แบบไหน | ใช้ | เหตุผล |
+| --- | --- | --- |
+| image ที่มีหน้าที่เดียวตายตัว ห้ามใครเปลี่ยน | `ENTRYPOINT` | ผู้ใช้เปลี่ยนได้แค่อาร์กิวเมนต์ |
+| image เครื่องมือที่ให้ผู้ใช้สั่งคำสั่งอะไรก็ได้ | `CMD` | ผู้ใช้พิมพ์คำสั่งใหม่ทับได้เลย |
+
+เมื่อมีทั้งคู่ `CMD` จะกลายเป็นอาร์กิวเมนต์ตั้งต้นของ `ENTRYPOINT`
+
+<Example title="หกกรณีที่สไลด์ยกมา — image ฐานคือ alpine:3.23">
+ทุกแถวคือ Dockerfile ที่ต่างกันแค่สองบรรทัดสุดท้าย
+
+| ใน Dockerfile | สั่งว่า | ได้ผลจริงว่า |
+| --- | --- | --- |
+| `ENTRYPOINT ["/bin/echo","ENTRYPOINT"]` | `docker run demo` | พิมพ์ `ENTRYPOINT` |
+| `ENTRYPOINT ["/bin/echo","ENTRYPOINT"]` | `docker run demo hello` | พิมพ์ `ENTRYPOINT hello` |
+| `ENTRYPOINT` + `CMD ["CMD-default"]` | `docker run demo` | พิมพ์ `ENTRYPOINT CMD-default` |
+| `ENTRYPOINT` + `CMD ["CMD-default"]` | `docker run demo argument` | พิมพ์ `ENTRYPOINT argument` |
+| `CMD ["/bin/echo","CMD-default"]` | `docker run demo` | พิมพ์ `CMD-default` |
+| `CMD ["/bin/echo","CMD-default"]` | `docker run demo /bin/uname -a` | รัน `/bin/uname -a` แทนทั้งอัน |
+
+สองแถวสุดท้ายคือหัวใจ: `CMD` โดนแทนที่ได้ทั้งคำสั่ง ส่วน `ENTRYPOINT` แถวที่สี่แค่โดนเปลี่ยนอาร์กิวเมนต์ ตัวคำสั่ง `/bin/echo` ยังอยู่
+</Example>
+
+### EXPOSE, VOLUME, ENV, LABEL
+
+สี่ตัวนี้ไม่ได้รันอะไร มันแค่**บันทึกข้อมูลไว้ใน image**
+
+```dockerfile
+EXPOSE 8080
+VOLUME /data
+ENV NODE_ENV=production
+LABEL maintainer="John Doe <johndoe@example.com>"
+```
+
+- **`EXPOSE`** บอกว่า container นี้จะฟังที่พอร์ตไหน — เป็นการประกาศให้คนอ่านและเครื่องมืออื่นรู้เท่านั้น
+- **`VOLUME`** ทำจุดต่อไว้ที่ path ที่ระบุ ถ้าตอน `docker run` ไม่ได้ผูก volume หรือ bind mount มาให้ Docker จะสร้าง <Term en="anonymous volume" th="volume ไม่มีชื่อ" /> ให้อัตโนมัติ
+- **`ENV`** ตั้งตัวแปรสภาพแวดล้อมที่ติดไปกับ image และมีผลตอนรันด้วย
+- **`LABEL`** แปะข้อมูลกำกับ เช่น เวอร์ชัน ผู้ดูแล วันที่ build
+
+<Pitfall>
+**`EXPOSE` ไม่ใช่ `-p`** สไลด์เขียนไว้ตรง ๆ ว่า `expose ≠ publish`
+
+`EXPOSE 8080` ไม่ได้เปิดพอร์ตให้เข้าจากข้างนอกแม้แต่นิดเดียว มันเป็นแค่หมายเหตุ ถ้าอยากเข้าถึงจากเครื่อง host ได้จริงต้องสั่ง `docker run -p 8080:8080` เอง
+</Pitfall>
+
+## จาก Dockerfile กลายเป็น image
+
+คำสั่งเดียว
+
+```bash
+docker build -t my-app:1.0 .
+```
+
+- `-t my-app:1.0` ตั้งชื่อและ tag ให้ image เอาไว้อ้างถึงทีหลัง
+- `.` บอกว่าให้หา Dockerfile และไฟล์ที่จะ copy จากโฟลเดอร์ปัจจุบัน
+
+**แต่ละคำสั่งใน Dockerfile กลายเป็นหนึ่ง layer ใน image**
+
+<Figure number={2} caption="ห้าบรรทัดใน Dockerfile กลายเป็นห้าชั้นใน image และชั้นที่ไม่ได้เพิ่มไฟล์มีขนาด 0 ไบต์">
+  <DockerfileToLayers />
+</Figure>
+
+<Callout type="info">
+เรื่อง layer และ union file system อธิบายไว้ละเอียดใน [Lecture 2](/2110506-sds/lecture-2) ตรงหัวข้อ image เป็นชั้น ๆ ถ้ายังไม่ชัดว่าทำไม image ถึงแชร์ชั้นกันได้ อ่านตรงนั้นก่อน
+</Callout>
+
+### เปิดดูว่า image ถูกสร้างมายังไง
+
+`docker image history` เล่าย้อนกลับได้ว่า image หนึ่งเกิดจากคำสั่งอะไรบ้าง
+
+```bash
+docker image history nginx:alpine
+```
+
+บรรทัดที่บอกความจริงคือสองบรรทัดนี้
+
+```text
+IMAGE          CREATED     CREATED BY                                 SIZE
+c7b4f26a7d93   3 weeks ago RUN /bin/sh -c set -x && apkArch="$(cat …  31.5MB
+<missing>      3 weeks ago ENV NJS_RELEASE=1                          0B
+```
+
+บรรทัดแรกคือ `RUN` ที่ติดตั้งของจริง กินไป 31.5MB ส่วนบรรทัดที่สองเป็นแค่การตั้งตัวแปร จึงมีขนาด **0B**
+
+<Detail label="ดูประวัติทั้งหมดของ nginx:alpine">
+```text
+$ docker pull nginx:alpine
+$ docker image ls nginx:alpine
+REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
+nginx        alpine    c7b4f26a7d93   3 weeks ago   43.2MB
+
+$ docker image history nginx:alpine
+IMAGE          CREATED       CREATED BY                                      SIZE
+c7b4f26a7d93   3 weeks ago   RUN /bin/sh -c set -x     && apkArch="$(cat …   31.5MB
+<missing>      3 weeks ago   ENV NJS_RELEASE=1                               0B
+<missing>      3 weeks ago   ENV NJS_VERSION=0.8.5                           0B
+<missing>      3 weeks ago   CMD ["nginx" "-g" "daemon off;"]                0B
+<missing>      3 weeks ago   STOPSIGNAL SIGQUIT                              0B
+<missing>      3 weeks ago   EXPOSE map[80/tcp:{}]                           0B
+<missing>      3 weeks ago   ENTRYPOINT ["/docker-entrypoint.sh"]            0B
+<missing>      3 weeks ago   COPY 30-tune-worker-processes.sh /docker-ent…   4.62kB
+<missing>      3 weeks ago   COPY 20-envsubst-on-templates.sh /docker-ent…   3.02kB
+<missing>      3 weeks ago   COPY 15-local-resolvers.envsh /docker-entryp…   336B
+<missing>      3 weeks ago   COPY 10-listen-on-ipv6-by-default.sh /docker…   2.12kB
+<missing>      3 weeks ago   COPY docker-entrypoint.sh / # buildkit          1.62kB
+<missing>      3 weeks ago   RUN /bin/sh -c set -x     && addgroup -g 101…   3.97MB
+<missing>      3 weeks ago   ENV DYNPKG_RELEASE=2                            0B
+<missing>      3 weeks ago   ENV PKG_RELEASE=1                               0B
+<missing>      3 weeks ago   ENV NGINX_VERSION=1.27.1                        0B
+<missing>      3 weeks ago   LABEL maintainer=NGINX Docker Maintainers <d…   0B
+<missing>      3 weeks ago   /bin/sh -c #(nop)  CMD ["/bin/sh"]              0B
+<missing>      3 weeks ago   /bin/sh -c #(nop) ADD file:5758b97d8301c84a2…   7.8MB
+```
+
+`<missing>` ในคอลัมน์ IMAGE ไม่ได้แปลว่าหาย มันแปลว่าชั้นนั้นไม่มี ID ของตัวเองบนเครื่องนี้ เพราะมันถูกดึงมาพร้อม image ไม่ได้ถูก build ที่นี่
+</Detail>
+
+## สร้าง image แรกจริง ๆ
+
+<Example title="Dockerfile สองบรรทัดที่ทำงานได้">
+สร้างไฟล์ชื่อ `dockerfile` ที่มีแค่นี้
+
+```dockerfile
+FROM ubuntu
+CMD ["bash"]
+```
+
+แล้วรันสามคำสั่งนี้ในโฟลเดอร์เดียวกัน
+
+```bash
+docker build -t ubuntu_bash .
+docker image ls
+docker run -it ubuntu_bash
+```
+
+บรรทัดที่พิสูจน์ว่าสำเร็จคือสองบรรทัดนี้
+
+```text
+Successfully tagged ubuntu_bash:latest
+root@a002cb5b70b2:/#
+```
+
+ตัวที่สองคือ prompt ของ bash **ที่อยู่ข้างใน container** — คุณเข้าไปอยู่ในนั้นแล้ว
+</Example>
+
+<Detail label="ดูผลลัพธ์เต็มของการ build และ run">
+```text
+$ cat dockerfile
+FROM ubuntu
+CMD ["bash"]
+
+$ docker build -t ubuntu_bash .
+Sending build context to Docker daemon  2.048kB
+Step 1/2 : FROM ubuntu
+ ---> a2a15febcdf3
+Step 2/2 : CMD ["bash"]
+ ---> Running in e3bffa3d087c
+Removing intermediate container e3bffa3d087c
+ ---> c7824c8113f5
+Successfully built c7824c8113f5
+Successfully tagged ubuntu_bash:latest
+
+$ docker image ls
+REPOSITORY    TAG      IMAGE ID       CREATED          SIZE
+ubuntu_bash   latest   c7824c8113f5   21 seconds ago   64.2MB
+python        latest   780bbecceca6   32 hours ago     919MB
+ubuntu        latest   a2a15febcdf3   4 weeks ago      64.2MB
+hello-world   latest   fce289e99eb9   8 months ago     1.84kB
+
+$ docker run -it ubuntu_bash
+root@a002cb5b70b2:/#
+```
+
+สังเกตว่า `ubuntu_bash` กับ `ubuntu` มีขนาด 64.2MB เท่ากันเป๊ะ เพราะบรรทัด `CMD` ไม่ได้เพิ่มไฟล์อะไรเลย มันแชร์ชั้นเดียวกันทั้งหมด
+</Detail>
+
+## เขียน Dockerfile ให้ image ไม่บวม
+
+<Example title="image ubuntu ที่มีเครื่องมือเน็ตเวิร์กติดมาด้วย">
+เครื่องมือที่คาบที่แล้วใช้ตรวจเน็ตเวิร์กใน container ไม่ได้ติดมากับ `ubuntu` เปล่า ๆ ต้องติดตั้งเอง
+
+| คำสั่งที่อยากใช้ | แพ็กเกจที่ต้องลง |
+| --- | --- |
+| `ping` | `iputils-ping` |
+| `ifconfig` | `net-tools` |
+| `ip` | `iproute2` |
+| `curl` | `curl` |
+</Example>
+
+เขียนตรง ๆ ได้แบบนี้ — แต่มันไม่ดี
+
+<Compare>
+<Wrong>
+```dockerfile
+FROM ubuntu
+# add tools
+RUN apt-get update
+RUN apt-get install -y iputils-ping
+RUN apt-get install -y net-tools
+RUN apt-get install -y iproute2
+RUN apt-get install -y curl
+CMD ["bash"]
+```
+
+`RUN` ห้าบรรทัด = **ห้าชั้น** และแคชของ apt ที่ดาวน์โหลดมาก็ค้างอยู่ในชั้นเหล่านั้นตลอดไป
+</Wrong>
+<Right>
+```dockerfile
+FROM ubuntu
+# Add tools in one RUN command to minimize the number of layers
+# and clean up package manager cache to reduce image size
+RUN apt-get update && \
+    apt-get install -y \
+      iputils-ping \
+      net-tools \
+      iproute2 \
+      curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+CMD ["bash"]
+```
+
+`RUN` บรรทัดเดียว = **หนึ่งชั้น** และการลบแคชเกิดขึ้น**ในชั้นเดียวกัน** ไฟล์แคชจึงไม่เคยถูกบันทึกลง image เลย
+</Right>
+</Compare>
+
+<Pitfall>
+ทำไมต้องล้างแคช**ในบรรทัดเดียวกัน** ไม่ใช่บรรทัดถัดไป?
+
+เพราะ layer เป็นของถาวร ถ้าเขียนแยกเป็น
+
+```dockerfile
+RUN apt-get install -y curl
+RUN rm -rf /var/lib/apt/lists/*
+```
+
+ชั้นแรกยังเก็บไฟล์แคชไว้ครบ ชั้นที่สองแค่บันทึกว่า "มองไม่เห็นไฟล์พวกนี้แล้ว" ขนาด image รวมไม่ได้ลดลงเลย นี่เป็นเหตุผลเดียวกับที่ทำให้เรื่องความลับในหัวข้อถัดไปเป็นปัญหา
+</Pitfall>
+
+## ตัวอย่างที่ใช้จริง
+
+<StepThrough>
+<Step title="โปรแกรม Python บรรทัดเดียว">
+ไฟล์ `hello.py` มีแค่ `print("hello")` และ `dockerfile` อยู่ในโฟลเดอร์ `hello` เดียวกัน
+
+```dockerfile
+FROM python:3.13-slim
+# Copy current folder which contains python code
+# into directory /usr/src/hello of the Docker image
+COPY . /usr/src/hello
+# Specify working directory
+WORKDIR /usr/src/hello
+# Run program
+CMD ["python", "hello.py"]
+```
+
+```bash
+cd hello
+docker build -t hello .
+docker run hello
+```
+</Step>
+
+<Step title="เว็บแอป Flask">
+`index.py` เปิดเว็บที่พอร์ต 5000 และผูกกับ `0.0.0.0` ไม่ใช่ `127.0.0.1`
+
+```python
+from flask import Flask
+app = Flask(__name__)
+
+@app.route("/")
+def hello():
+    return "Hello World!"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int("5000"), debug=True)
+```
+
+```dockerfile
+FROM python:3.13-slim
+COPY . /app
+WORKDIR /app
+RUN pip install flask
+EXPOSE 5000
+ENTRYPOINT ["python", "./index.py"]
+```
+
+```bash
+cd hello_web
+docker build -t hello_web .
+docker run --name hello_web --detach -p 5000:5000 hello_web
+```
+
+เปิด `http://localhost:5000` ก็เจอ `Hello World!`
+</Step>
+
+<Step title="รัน image เดิมซ้ำอีกตัวที่พอร์ตอื่น">
+```bash
+docker run --name hello_web_2 --detach -p 80:5000 hello_web
+```
+
+เปิด `http://localhost/` ได้อีกตัว **image เดิม container คนละตัว พอร์ตบนเครื่องคนละพอร์ต**
+
+พอร์ตในวงเล็บซ้ายคือพอร์ตบนเครื่อง host พอร์ตขวาคือพอร์ตในคอนเทนเนอร์ที่ยังเป็น 5000 เหมือนเดิมเสมอ
+</Step>
+</StepThrough>
+
+<Pitfall>
+ถ้าเขียน `app.run(host="127.0.0.1")` เว็บจะรันได้ปกติในบันทึกของ container แต่เปิดจากเครื่องคุณไม่ติดเลย เพราะ `127.0.0.1` ในสายตาของ container หมายถึงตัวมันเอง ไม่ใช่เครื่องคุณ
+
+ต้อง `0.0.0.0` เท่านั้น มันแปลว่า "รับจากทุกหน้าต่างที่มี" รวมถึงหน้าต่างที่ต่อกับเครื่อง host
+</Pitfall>
+
+## Multi-stage build — ทิ้งเครื่องมือ เก็บแค่ผลลัพธ์
+
+<Why>
+บาง `RUN` สร้าง layer ที่ใหญ่มาก และของที่มันติดตั้งมา **จำเป็นตอน build เท่านั้น** เช่น Go compiler, .NET SDK, หรือ `node_modules` ของเครื่องมือ build
+
+image สุดท้ายไม่ต้องใช้ของพวกนี้เลย แต่มันติดอยู่ในชั้นล่าง ๆ ลบทีหลังก็ไม่ช่วย
+</Why>
+
+<Term en="Multi-stage build" th="การ build หลายขั้นแล้วเลือกเก็บ" /> แบ่งการ build เป็นหลายขั้น แล้วประกอบ image สุดท้ายจาก**บางขั้นเท่านั้น**
+
+วิธีคิดมีสองก้าว
+
+1. ใช้ image ฐานที่มีเครื่องมือครบ build โปรแกรมออกมาเป็นไฟล์
+2. ใช้ image ฐานตัวเล็กที่มีแค่ของจำเป็นตอนรัน แล้ว copy เฉพาะไฟล์ผลลัพธ์จากขั้นแรกข้ามมา
+
+<Figure number={3} caption="ขั้นแรกมี compiler และ source ครบ ขั้นสุดท้ายเก็บแค่ไฟล์ที่ compile เสร็จ">
+  <MultiStageBuild />
+</Figure>
+
+<Example title="Go จาก golang:1.23 ลงมาเหลือ scratch">
+```dockerfile
+FROM golang:1.23 AS build
+WORKDIR /src
+COPY <<EOF /src/main.go
+package main
+
+import "fmt"
+
+func main() {
+  fmt.Println("hello, world")
+}
+EOF
+RUN go build -o /bin/hello ./main.go
+
+FROM scratch
+COPY --from=build /bin/hello /bin/hello
+USER 65534:65534
+CMD ["/bin/hello"]
+```
+
+อ่านทีละก้อน
+
+- ขั้นแรกชื่อ `build` (ตั้งชื่อด้วย `AS build`) ใช้ฐาน `golang` compile โปรแกรมออกมาเป็น `/bin/hello`
+- ขั้นที่สองไม่มีชื่อ ใช้ฐาน `scratch` ซึ่งคือ image **ว่างเปล่าจริง ๆ** ไม่มีแม้แต่ shell
+- `COPY --from=build` ดึงเฉพาะไฟล์ `/bin/hello` จากขั้นแรกข้ามมา ที่เหลือถูกทิ้งทั้งหมด
+- `USER 65534:65534` ตั้งให้รันเป็นผู้ใช้ `nobody` — ต้องใช้ตัวเลขเพราะ `scratch` ไม่มี `useradd` ไม่มี shell และไม่มีแม้แต่ไฟล์ `/etc/passwd` ให้แปลชื่อเป็นตัวเลข
+</Example>
+
+<Callout type="warn">
+`COPY <<EOF /src/main.go` เขียนไฟล์ลงไปตรง ๆ ใน Dockerfile เรียกว่า here-document รูปแบบนี้ต้องใช้ BuildKit ซึ่งเป็นตัว build มาตรฐานของ Docker รุ่นใหม่ ในงานจริงคุณจะเขียน `main.go` เป็นไฟล์แยกแล้ว `COPY . .` มากกว่า
+</Callout>
+
+## เขียน Dockerfile ให้ปลอดภัย
+
+สไลด์ยกไว้สองเรื่อง และทั้งสองเรื่องเป็นความผิดพลาดที่พบบ่อยมาก
+
+### เรื่องที่หนึ่ง — อย่ารันเป็น root
+
+<Compare>
+<Wrong>
+```dockerfile
+FROM python:3.13-slim
+WORKDIR /app
+COPY . .
+RUN pip install -r requirements.txt
+# runs as root
+CMD ["python", "app.py"]
+```
+
+ไม่ได้เขียน `USER` เลย แปลว่าโปรแกรมรันเป็น root ซึ่งเป็น UID 0 ตัวเดียวกับ root บนเครื่อง host
+</Wrong>
+<Right>
+```dockerfile
+FROM python:3.13-slim
+WORKDIR /app
+COPY . .
+RUN pip install -r requirements.txt && \
+    useradd -m appuser
+USER appuser
+CMD ["python", "app.py"]
+```
+
+สร้างผู้ใช้ธรรมดาแล้วสลับไปใช้ก่อนบรรทัดที่รันโปรแกรมจริง
+</Right>
+</Compare>
+
+<Pitfall>
+ลำดับสำคัญ `USER` ต้องอยู่**หลัง** `RUN pip install` เพราะการติดตั้งแพ็กเกจต้องใช้สิทธิ์ root ถ้าสลับไปเป็น `appuser` ก่อน การติดตั้งจะพังเพราะเขียนลงโฟลเดอร์ระบบไม่ได้
+</Pitfall>
+
+### เรื่องที่สอง — อย่าฝังความลับลงใน layer
+
+<Why>
+layer เป็นของถาวรและแก้ไม่ได้ ความลับที่ใส่ไว้ในชั้นหนึ่ง **จะค้างอยู่ในประวัติของ image ตลอดไป** แม้ชั้นถัดมาจะลบมันทิ้งแล้วก็ตาม
+
+ใครก็ตามที่ `docker pull` image นั้นไป อ่านมันกลับออกมาได้ด้วย `docker history` หรือ `docker image inspect`
+</Why>
+
+<Compare>
+<Wrong>
+```dockerfile
+COPY .env .
+ENV API_KEY=sk-123...
+ARG DB_PASSWORD
+```
+
+ทั้งสามบรรทัดฝังความลับลง image อย่างถาวร อ่านกลับได้ด้วย
+
+```bash
+docker history IMAGE
+docker image inspect IMAGE
+```
+</Wrong>
+<Right>
+```bash
+# ส่งตอนรัน
+docker run --env-file .env my-app
+
+# หรือส่งตอน build แบบไม่ทิ้งร่องรอย
+docker build --secret id=db_pass,env=DB_PASS -t my-image .
+```
+
+ในฝั่ง Dockerfile รับด้วย
+
+```dockerfile
+RUN --mount=type=secret,id=key ...
+```
+</Right>
+</Compare>
+
+<Callout type="warn">
+อย่าลืมใส่ `.env` ลงในไฟล์ `.dockerignore` ด้วย ไม่งั้น `COPY . .` จะลากมันเข้าไปให้เองโดยที่คุณไม่ได้ตั้งใจ
+</Callout>
+
+<Quiz question="Dockerfile เขียน `EXPOSE 3000` ไว้ แล้วสั่ง `docker run --detach my-app` เปิด http://localhost:3000 จะเจออะไร">
+เจอหน้า error ต่อไม่ติด
+
+`EXPOSE` เป็นแค่การประกาศ ไม่ได้เปิดพอร์ตจริง ต้องสั่ง `docker run -p 3000:3000 my-app` ถึงจะเข้าถึงจากเครื่อง host ได้
+</Quiz>
+
+---
+
+# ส่วนที่ 2 — Docker Compose
+
+## ปัญหาที่ Compose เกิดมาแก้
+
+<Why>
+container ตัวเดียวจัดการด้วย `docker run` และ `docker stop` ก็จบ ง่ายมาก
+
+แต่แอปจริงแทบไม่เคยมี container ตัวเดียว ระบบมอนิเตอร์จากคาบที่แล้วใช้สามตัว เว็บที่มีฐานข้อมูลใช้สองตัวเป็นอย่างน้อย พอเป็นแบบนั้นจะเจอปัญหาทันที
+
+- ต้องจำลำดับว่าสร้าง network ก่อน แล้วค่อย volume แล้วค่อย container
+- แต่ละตัวมี flag ยาวเป็นบรรทัด ต้องจำให้ครบและพิมพ์ให้ถูก
+- จะปิดทั้งระบบต้องไล่ `docker stop` ทีละตัว ลืมตัวเดียวก็เหลือค้าง
+- เพื่อนที่มารับงานต่อไม่มีทางรู้ว่าคุณเคยพิมพ์อะไรไป
+</Why>
+
+คำถามคือ **สั่งหลาย container เป็นก้อนเดียวได้ไหม?**
+
+<Term en="Docker Compose" th="เครื่องมือสั่งหลาย container พร้อมกัน" /> คือคำตอบ มันเป็นเครื่องมือสำหรับนิยามและรันแอปที่ประกอบด้วยหลาย container
+
+หลักการมีสามข้อ
+
+- แอปหนึ่งตัวประกอบขึ้นจาก <Term en="service" th="หน่วยบริการหนึ่งอย่าง" /> หลายตัว
+- Compose มีคำสั่งสำหรับจัดการ service เหล่านั้นทั้งชุด
+- ทุกอย่างเขียนไว้ในไฟล์ตั้งค่าที่เรียกว่า <Term en="Compose file" th="ไฟล์อธิบายทั้งแอป" /> รูปแบบ YAML ชื่อโดยปริยายคือ `compose.yaml` หรือ `compose.yml`
+
+## Compose อยู่ตรงไหนของขั้นตอนพัฒนา
+
+สไลด์ยกภาพขั้นตอนพัฒนาแอปแบบ Docker มาเจ็ดขั้น
+
+<StepThrough>
+<Step title="1. เขียนโค้ดแอป">
+งานปกติที่ทำอยู่แล้ว ยังไม่เกี่ยวกับ Docker
+</Step>
+<Step title="2. เขียน Dockerfile">
+บอกว่าจะห่อโค้ดนั้นเป็น image ยังไง — ส่วนที่ 1 ของหน้านี้ทั้งหมด
+</Step>
+<Step title="3. สร้าง image ด้วย docker build">
+ได้ image ไว้ในคลังบนเครื่องตัวเอง หรือดัน push ขึ้น registry
+</Step>
+<Step title="4. นิยาม service ด้วย compose file">
+ขั้นนี้เป็นทางเลือก แต่จำเป็นทันทีที่มี container เกินหนึ่งตัว
+</Step>
+<Step title="5. รันด้วย docker run หรือ docker compose up">
+ถ้าข้ามขั้น 4 ก็ต้องพิมพ์ `docker run` ทีละตัว
+</Step>
+<Step title="6. ทดสอบแอป">
+เปิดเว็บ ยิง API ดู log ว่าถูกต้องไหม
+</Step>
+<Step title="7. push ขึ้น Git หรือกลับไปแก้โค้ด">
+วนกลับไปขั้น 1
+</Step>
+</StepThrough>
+
+## ติดตั้ง Compose
+
+เช็กก่อนว่ามีอยู่แล้วหรือยัง
+
+```bash
+docker compose version
+```
+
+- **Windows และ Mac** — Docker Desktop แถม Compose มาให้แล้ว ไม่ต้องทำอะไร
+- **Linux** — ติดตั้งเพิ่ม
+
+```bash
+sudo apt-get install docker-compose-plugin
+```
+
+## Project — กล่องที่ครอบทุกอย่างไว้
+
+<Why>
+ถ้าคุณและเพื่อนใช้ compose file หน้าตาเหมือนกันบนเครื่องเดียวกัน จะเกิดอะไรขึ้น? network ชื่อเดียวกัน volume ชื่อเดียวกัน container ชื่อเดียวกัน — ชนกันหมด
+
+Compose แก้ด้วยการห่อทุกอย่างไว้ในกล่องที่มีชื่อ
+</Why>
+
+<Term en="Project" th="กลุ่มของ container เครือข่าย และที่เก็บข้อมูลที่ถูกจัดการเป็นก้อนเดียว" /> คือการรวม service, network และ volume ที่เกี่ยวข้องกันไว้เป็นหน่วยเดียว สร้างขึ้นจาก compose file หนึ่งไฟล์
+
+<Figure number={4} caption="ทุกอย่างใน project ได้ชื่อที่ขึ้นต้นด้วยชื่อ project จึงไม่มีทางชนกับ project อื่น">
+  <ComposeProject />
+</Figure>
+
+**การแยกขาดจากกัน** — แต่ละ project สร้างทรัพยากรของตัวเองแยกกัน ต่อให้ใช้ compose file ไฟล์เดียวกันเป๊ะ และโดยปริยาย service คุยกันได้เฉพาะภายใน project เดียวกันเท่านั้น
+
+**ชื่อ project มาจากไหน** มีสี่ทาง เรียงจากที่ใช้บ่อยที่สุด
+
+| วิธี | ทำยังไง |
+| --- | --- |
+| โดยปริยาย | ชื่อโฟลเดอร์ที่มี compose file อยู่ |
+| ตอนสั่ง | ใส่ flag `-p <ชื่อ>` |
+| ตัวแปรสภาพแวดล้อม | ตั้ง `COMPOSE_PROJECT_NAME` |
+| ในไฟล์ | ใส่ `name:` ที่ระดับบนสุดของ compose file |
+
+**ชื่อของแต่ละอย่างถูกประกอบขึ้นตามแบบ**
+
+| ประเภท | รูปแบบ | ตัวอย่าง |
+| --- | --- | --- |
+| Container | `{project}-{service}-{replica}` | `webapp-frontend-1` |
+| Network | `{project}_{network}` | `webapp_app-network` |
+| Volume | `{project}_{volume}` | `webapp_db-data` |
+
+<Pitfall>
+สังเกตว่า container ใช้ขีดกลาง `-` คั่น แต่ network กับ volume ใช้ขีดล่าง `_` คั่น ไม่มีเหตุผลลึกซึ้ง เป็นแค่ธรรมเนียมของ Compose แต่มันทำให้คนพิมพ์ชื่อผิดบ่อยมากตอนไปอ้างถึงในคำสั่ง `docker` ธรรมดา
+</Pitfall>
+
+## Service — หนึ่งบริการ
+
+project หนึ่งประกอบด้วย service ตั้งแต่หนึ่งตัวขึ้นไป แต่ละ service นิยามด้วย
+
+- image ที่จะใช้
+- คำสั่งที่จะรัน
+- เครือข่ายที่จะเข้าร่วม
+- พอร์ต
+- ขีดจำกัด CPU และหน่วยความจำ
+- จำนวนสำเนา
+
+<Callout type="info">
+**service ไม่เท่ากับ container** service คือคำอธิบายว่า "ต้องมีของแบบนี้กี่ตัว" ส่วน container คือของจริงที่ถูกสร้างขึ้นตามคำอธิบายนั้น service เดียวขยายเป็น 5 container ได้ — เดี๋ยวได้เห็นตอนหัวข้อ scaling
+</Callout>
+
+## หน้าตาของ compose file
+
+องค์ประกอบระดับบนสุดมีห้าอย่าง
+
+| ระดับบนสุด | หน้าที่ |
+| --- | --- |
+| `name` | ชื่อ project — ถ้าไม่ใส่ Compose ใช้ชื่อโฟลเดอร์ |
+| `services` | นิยาม container และการตั้งค่าทั้งหมด |
+| `networks` | เครือข่ายที่จะสร้างเอง |
+| `volumes` | ที่เก็บข้อมูลถาวร |
+| `configs` และ `secrets` | ข้อมูลตั้งค่าและความลับ (ใส่หรือไม่ใส่ก็ได้) |
+
+### YAML เขียนได้สองแบบ และห้ามผสมกัน
+
+นี่คือจุดที่คนเขียน compose file ครั้งแรกพลาดบ่อยที่สุด
+
+| หัวข้อ | มักใช้แบบ | ตัวอย่าง |
+| --- | --- | --- |
+| `ports:` | รายการ | `- "8080:80"` |
+| `environment:` | ได้ทั้งสองแบบ | `- KEY=value` หรือ `KEY: value` |
+| `volumes:` | รายการ | `- "./app:/var/www"` |
+| `deploy:` | คู่คีย์-ค่า | `replicas: 3` |
+| `labels:` | ได้ทั้งสองแบบ | `- "key=value"` หรือ `key: value` |
+
+กฎที่ใช้ตัดสิน
+
+- **ชื่อ service ชื่อ network ชื่อ volume** เป็นคู่คีย์-ค่าเสมอ เพราะมันคือคีย์
+- **ของหลายชิ้นชนิดเดียวกัน** ใช้รายการ
+- **ค่าเดี่ยว ๆ** ใช้คู่คีย์-ค่า
+- **ห้ามผสมสองแบบในหัวข้อเดียวกัน** เลือกอย่างใดอย่างหนึ่ง
+
+## project ที่เล็กที่สุดที่เป็นไปได้
+
+<Example title="หนึ่ง service ไม่มีอะไรเลยนอกจาก image กับพอร์ต">
+```yaml
+services:
+  node-exporter:
+    image: prom/node-exporter
+    ports:
+      - 9100:9100
+```
+
+ทั้งหมดนี้แทนคำสั่งเดียว
+
+```bash
+docker run --rm -d -p 9100:9100 --network mynet --name node-exporter prom/node-exporter
+```
+
+อ่านทีละส่วน
+
+- `services:` คือองค์ประกอบระดับบนสุด
+- `node-exporter:` คือ**ชื่อ service** ที่เราตั้งเอง
+- `image:` คือ image ที่จะใช้
+- `ports:` คือการเปิดพอร์ตออกมาที่เครื่อง host
+</Example>
+
+## สั่ง Compose
+
+Compose ทำงานกับ **project ทีละอัน** และเลือก project ได้สามทาง
+
+```bash
+# 1. เข้าไปในโฟลเดอร์ที่มี compose file
+cd <project_directory>
+docker compose COMMAND
+
+# 2. ระบุด้วยชื่อ project
+docker compose -p <project_name> COMMAND
+
+# 3. ระบุด้วย path เต็มของ compose file
+docker compose -f <compose_file> COMMAND
+```
+
+ดูรายการคำสั่งทั้งหมดได้ด้วย `docker compose` เปล่า ๆ และดูวิธีใช้ของแต่ละคำสั่งด้วย `docker compose COMMAND --help`
+
+### คำสั่งพื้นฐาน
+
+```bash
+## สร้าง image ให้ service
+docker compose build [SERVICE...]
+
+## สั่งขึ้น
+docker compose up -d [SERVICE...]
+docker compose up --build -d [SERVICE...]
+
+## สั่งลง
+docker compose down    # ลบ container และเครือข่ายด้วย
+docker compose stop    # หยุดเฉย ๆ ไม่ลบ
+
+## ดูสถานะ
+docker compose ls      # รายการ project ที่รันอยู่
+docker compose ps      # รายการ container ของ project นี้
+docker compose top     # รายการ process ข้างใน
+```
+
+- `-d` รันแบบเบื้องหลัง ไม่ยึด terminal
+- `--build` สร้าง image ใหม่ก่อนสตาร์ต
+
+<Pitfall>
+`down` กับ `stop` ต่างกันมาก
+
+`down` ลบ container และลบเครือข่ายที่สร้างไว้ด้วย (และลบ volume ด้วยถ้าใส่ `-v`) ส่วน `stop` แค่หยุด ทุกอย่างยังอยู่ครบ สั่ง `start` กลับมาได้ทันทีโดยไม่เสียข้อมูลใน container
+
+ใช้ `stop` เมื่อยังไม่อยากลบ
+</Pitfall>
+
+### ลองสั่งจริง
+
+<Example title="สั่งขึ้นแล้วสั่งลง project node-exporter">
+รันในโฟลเดอร์ที่มี `compose.yml`
+
+```text
+$ docker compose up -d
+[+] Running 2/2
+ ✔ Network node-exporter_default            Created
+ ✔ Container node-exporter-node-exporter-1  Started
+```
+
+สองบรรทัดนี้บอกความจริงทั้งหมด — Compose สร้าง**เครือข่ายให้เองโดยไม่ได้สั่ง** และตั้งชื่อ container ตามแบบที่ว่าไว้
+
+ชื่อสามชั้นที่ต้องแยกให้ออก
+
+| เห็นตรงไหน | ค่าที่ได้ | มาจาก |
+| --- | --- | --- |
+| `docker compose ls` | `node-exporter` | ชื่อ project = ชื่อโฟลเดอร์ |
+| `docker compose ps` คอลัมน์ SERVICE | `node-exporter` | ชื่อ service ใน compose file |
+| `docker compose ps` คอลัมน์ NAME | `node-exporter-node-exporter-1` | ชื่อ container ที่ประกอบขึ้น |
+
+เปิด `http://localhost:9100/metrics` ก็เห็นตัวเลขจากเครื่อง
+
+สั่งลง
+
+```text
+$ docker compose down
+[+] Running 2/2
+ ✔ Container node-exporter-node-exporter-1  Removed
+ ✔ Network node-exporter_default            Removed
+```
+
+ทั้ง container และเครือข่ายหายไปพร้อมกัน
+</Example>
+
+<Callout type="info">
+ในตัวอย่างนี้ชื่อ project กับชื่อ service บังเอิญเหมือนกัน เพราะโฟลเดอร์ชื่อ `node-exporter` และ service ก็ชื่อ `node-exporter` ชื่อ container เลยกลายเป็น `node-exporter-node-exporter-1` ที่อ่านแล้วงง ในงานจริงตั้งชื่อโฟลเดอร์ให้ต่างจากชื่อ service จะอ่านง่ายกว่ามาก
+</Callout>
+
+## ตัวอย่างใหญ่ที่หนึ่ง — ระบบมอนิเตอร์
+
+นี่คือระบบเดียวกับที่คาบที่แล้วสร้างด้วยมือ คราวนี้เอามาเขียนเป็น compose file
+
+<Figure number={5} caption="สาม container ต่อกันเป็นสายบนเครือข่ายเดียว — โครงเดิมจากคาบที่แล้ว">
+  <MonitoringStack />
+</Figure>
+
+### เดิมต้องพิมพ์ห้าคำสั่ง
+
+```bash
+docker volume create grafana-vol
+docker network create mynet
+docker run --rm -d -p 9100:9100 --network mynet --name node-exporter prom/node-exporter:v1.12.0
+docker run --rm -d -p 9090:9090 --network mynet --name prometheus -v ./prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus:v3.0.1
+docker run --rm -d -p 3000:3000 --network mynet -v grafana-vol:/var/lib/grafana --name grafana grafana/grafana:11.4.0
+```
+
+ห้าบรรทัดนี้ต้องรันตามลำดับ ต้องจำ flag ให้ครบ และไม่มีที่ไหนบันทึกไว้ว่าคุณเคยรันอะไรไป
+
+### เขียนใหม่เป็น compose file
+
+```yaml
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  grafana-vol:
+    external: true
+
+services:
+  node-exporter:
+    image: prom/node-exporter:v1.12.0
+    container_name: node-exporter
+    expose:
+      - 9100
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    expose:
+      - 9090
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: grafana
+    volumes:
+      - grafana-vol:/var/lib/grafana
+    ports:
+      - 3000:3000
+    networks:
+      - monitoring
+```
+
+อ่านทีละจุดที่สไลด์ชี้ไว้
+
+| บรรทัด | หมายความว่า |
+| --- | --- |
+| `networks: monitoring: driver: bridge` | สร้างเครือข่ายแบบ bridge ชื่อ `monitoring` |
+| `volumes: grafana-vol: external: true` | volume นี้**มีอยู่แล้ว** Compose จะไม่สร้างให้ และจะฟ้อง error ถ้าหาไม่เจอ |
+| `container_name:` | ตั้งชื่อ container ตายตัว ทับแบบ `{project}-{service}-{n}` |
+| `expose: - 9100` | ประกาศว่าเพื่อนบนเครือข่ายเดียวกันเรียกพอร์ตนี้ได้ แต่**ไม่เปิดออกไปที่เครื่อง host** |
+| `ports: - 3000:3000` | เปิดออกไปที่เครื่อง host จริง ๆ |
+| `volumes: - ./prometheus.yml:/etc/...` | <Term en="bind mount" th="ผูกไฟล์จริงบนเครื่องเข้าไป" /> — เอาไฟล์บนเครื่องยัดเข้าไปในตำแหน่งนั้น |
+| `volumes: - grafana-vol:/var/lib/grafana` | <Term en="volume mapping" th="ผูก volume ของ Docker เข้าไป" /> — เอา volume ที่ Docker ดูแลมาแปะ |
+
+<Pitfall>
+`external: true` มีผลสองอย่างที่ต้องรู้
+
+**มี** — Compose ไม่สร้างและไม่ลบ volume นี้ ถ้ายังไม่มีอยู่ก่อน `docker compose up` จะ error ทันที ต้องสร้างเองด้วย `docker volume create grafana-vol` ก่อน
+
+**ไม่มี** — Compose สร้าง volume ให้เองในการรันครั้งแรก แล้วใช้ตัวเดิมในครั้งถัดไป และชื่อจะกลายเป็น `monitoring_grafana-vol` ตามแบบของ project
+
+เลือก `external: true` เมื่อข้อมูลนั้นสำคัญกว่า project — เช่นแดชบอร์ด Grafana ที่คุณตั้งไว้ ไม่อยากให้หายไปพร้อมกับ `docker compose down -v`
+</Pitfall>
+
+### สั่งขึ้นแล้วดูว่าได้อะไรมา
+
+```text
+$ docker compose up -d
+[+] Running 4/4
+ ✔ Network monitoring_monitoring  Created
+ ✔ Container prometheus           Started
+ ✔ Container grafana              Started
+ ✔ Container node-exporter        Started
+```
+
+สามบรรทัดล่างใช้ชื่อสั้น เพราะเราตั้ง `container_name` ไว้เอง ส่วนเครือข่ายยังใช้แบบมาตรฐาน `{project}_{network}` = `monitoring_monitoring`
+
+**ไม่มีบรรทัดที่บอกว่าสร้าง volume** เพราะเราสั่ง `external: true` ไว้ มันไปใช้ `grafana-vol` ตัวที่มีอยู่แล้ว
+
+<Detail label="ดูผลของคำสั่งตรวจสอบทั้งสี่คำสั่ง">
+```text
+$ docker compose ls
+NAME         STATUS       CONFIG FILES
+monitoring   running(3)   /home/veera/docker/monitoring/compose.yml
+
+$ docker compose ps
+NAME            IMAGE                     COMMAND                 SERVICE         STATUS   PORTS
+grafana         grafana/grafana           "/run.sh"               grafana         Up       0.0.0.0:3000->3000/tcp
+node-exporter   prom/node-exporter        "/bin/node_exporter"    node-exporter   Up       9100/tcp
+prometheus      prom/prometheus           "/bin/prometheus --c…"  prometheus      Up       9090/tcp
+
+$ docker compose top
+grafana
+UID    PID    PPID   C   STIME   TTY   TIME       CMD
+472    6601   6566   0   01:00   ?     00:00:01   grafana server --homepath=/usr/share/grafana …
+
+node-exporter
+UID      PID    PPID   C   STIME   TTY   TIME       CMD
+nobody   6550   6531   0   01:00   ?     00:00:00   /bin/node_exporter
+
+prometheus
+UID      PID    PPID   C   STIME   TTY   TIME       CMD
+nobody   6637   6597   0   01:00   ?     00:00:00   /bin/prometheus --config.file=/etc/prometheus/prometheus.yml …
+
+$ docker network ls
+NETWORK ID     NAME                    DRIVER   SCOPE
+d2b832013cbc   bridge                  bridge   local
+5583bf467cc2   host                    host     local
+10287c1b3112   monitoring_monitoring   bridge   local
+d03f7c53291d   mynet                   bridge   local
+114d0b600a15   none                    null     local
+
+$ docker volume ls
+DRIVER   VOLUME NAME
+local    e036ac688866b6631b8cb539ee610bc52cfb73eb7c4e8f9e4430c79bf2ac8f08
+local    grafana-vol
+```
+
+จุดที่ควรสังเกต — `docker compose ps` แสดง `9100/tcp` เฉย ๆ ให้ node-exporter (แค่ expose) แต่แสดง `0.0.0.0:3000->3000/tcp` ให้ grafana (publish จริง) ความต่างของ `expose` กับ `ports` อยู่ตรงนี้
+</Detail>
+
+<Callout type="warn">
+`docker compose ls` และ `ps` ใช้ compose file ในโฟลเดอร์ปัจจุบันโดยปริยาย ถ้าสั่งจากที่อื่นต้องใส่ `-f` หรือ `-p` ระบุ project ให้ชัด ไม่งั้นจะได้ผลว่าง ๆ แล้วนึกว่าไม่มีอะไรรันอยู่
+</Callout>
+
+สั่งลงก็จบทุกอย่างในคำสั่งเดียว
+
+```text
+$ docker compose down
+[+] Running 4/4
+ ✔ Container node-exporter        Removed
+ ✔ Container prometheus           Removed
+ ✔ Container grafana              Removed
+ ✔ Network monitoring_monitoring  Removed
+```
+
+## docker compose up สั่งซ้ำได้ไม่พัง
+
+<Term en="Idempotent" th="สั่งซ้ำกี่ครั้งผลเท่าเดิม" /> แปลว่าสั่งหลายครั้งได้ผลเหมือนสั่งครั้งเดียว ปลอดภัยที่จะทำซ้ำ
+
+`docker compose up` เป็นแบบนั้น
+
+- ครั้งแรก — สร้าง service, network, volume ทั้งหมด
+- ครั้งต่อไป (ก่อนสั่ง `down`) — Compose **เทียบ** compose file กับของที่รันอยู่จริง
+  - ถ้าตรงกันหมด ไม่เกิดอะไรขึ้นเลย
+  - ถ้ามีอะไรไม่ตรง เฉพาะส่วนนั้นถูกสร้างใหม่หรือลบทิ้งให้ตรงกับไฟล์
+
+<Example added title="แก้ไฟล์แล้วสั่งซ้ำ">
+สมมติแก้ `compose.yml` เปลี่ยน `grafana/grafana:11.4.0` เป็น `11.5.0` แล้วสั่ง `docker compose up -d` ใหม่
+
+Compose จะลบ container `grafana` ตัวเก่าแล้วสร้างใหม่ด้วย image ใหม่ ส่วน `prometheus` และ `node-exporter` **ไม่ถูกแตะเลย** เพราะนิยามของสองตัวนั้นไม่ได้เปลี่ยน
+
+นี่คือสาเหตุที่ compose file เป็นเครื่องมือที่ดีต่อการดูแลระบบ — คุณแก้ไฟล์แล้วสั่งซ้ำ ไม่ต้องคิดเองว่าต้องหยุดตัวไหนบ้าง
+</Example>
+
+### คำสั่งอื่นที่ใช้บ่อย
+
+```bash
+## ขยายจำนวนสำเนาของ service
+docker compose up --scale [SERVICE=NUM] -d
+
+## หยุดโดยไม่ลบ / สตาร์ตกลับ
+docker compose stop [SERVICE...]
+docker compose start [SERVICE...]
+
+## ลบ container ที่หยุดแล้ว
+docker compose rm
+
+## สั่งคำสั่งเข้าไปใน container ที่รันอยู่
+docker compose exec [SERVICE] [COMMAND]
+
+## ดู log
+docker compose logs [SERVICE...]
+```
+
+## ตัวอย่างใหญ่ที่สอง — เว็บนับจำนวนผู้เข้าชม
+
+เว็บง่าย ๆ ที่นับว่ามีคนเข้ามากี่ครั้ง ใช้สอง service คือเว็บกับฐานข้อมูล
+
+โครงไฟล์
+
+```text
+.
+├── compose.yml
+└── web
+    ├── Dockerfile
+    ├── app.py
+    └── requirements.txt
+```
+
+<StepThrough>
+<Step title="โค้ดแอป — web/app.py">
+```python
+from flask import Flask
+from pymongo import MongoClient, ReturnDocument
+
+app = Flask(__name__)
+
+# Connect to MongoDB
+client = MongoClient('mongo', 27017)
+db = client['mydb']
+visitors = db.visitors
+
+@app.route('/')
+def hello():
+    visitor = visitors.find_one_and_update(
+        {"_id": "visit-counter"},
+        {"$inc": {"count": 1}},
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
+    )
+    return f"Visit count: {visitor['count']}"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+```
+
+จุดสำคัญคือบรรทัด `MongoClient('mongo', 27017)` — มันต่อไปที่ชื่อ `mongo` ตรง ๆ ไม่ใช่หมายเลข IP ชื่อนี้คือ **ชื่อ service ใน compose file** และ Compose มี DNS ในตัวที่แปลงชื่อ service เป็น IP ให้เอง
+</Step>
+
+<Step title="web/requirements.txt">
+```text
+Flask
+pymongo
+```
+</Step>
+
+<Step title="web/Dockerfile">
+```dockerfile
+FROM python:3.13-slim
+WORKDIR /code
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN useradd -m appuser && chown -R appuser /code
+USER appuser
+CMD ["python", "app.py"]
+```
+
+สังเกตว่า `COPY requirements.txt .` มาก่อน `COPY . .` — เขียนแบบนี้เพราะ layer ของ `pip install` จะถูกใช้แคชซ้ำได้ตราบใดที่ `requirements.txt` ไม่เปลี่ยน แก้โค้ดแอปกี่รอบก็ไม่ต้องติดตั้งไลบรารีใหม่
+
+และมี `useradd` + `USER appuser` ตามที่หัวข้อความปลอดภัยบอกไว้
+</Step>
+
+<Step title="compose.yml">
+```yaml
+services:
+  web:
+    build: ./web                # build image from dockerfile in ./web
+    ports:
+      - "5000"                  # No host port binding
+    environment:
+      - MONGO_URL=mongodb://mongo:27017/mydb
+    depends_on:
+      - mongo                   # Ensure web service wait for mongo to start
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
+```
+
+สามบรรทัดที่ต่างจากตัวอย่างก่อนหน้า
+
+- `build: ./web` — service นี้ไม่ได้ดึง image สำเร็จรูป แต่ให้ Compose ไป build จาก Dockerfile ในโฟลเดอร์ `./web`
+- `ports: - "5000"` — ใส่พอร์ตเดียวไม่มีเครื่องหมายทวิภาค แปลว่า **ไม่จับพอร์ตบนเครื่อง host ตายตัว** Docker จะเลือกพอร์ตว่างให้เอง เดี๋ยวได้เห็นว่าทำไมถึงสำคัญ
+- `depends_on: - mongo` — บอกให้ `web` รอ `mongo` สตาร์ตก่อน
+</Step>
+</StepThrough>
+
+<Pitfall>
+`depends_on` รับประกันแค่ว่า **mongo สตาร์ตแล้ว** ไม่ได้รับประกันว่า **mongo พร้อมรับงานแล้ว** ฐานข้อมูลใช้เวลาอีกหลายวินาทีหลังจาก process เริ่มทำงาน กว่าจะรับ connection ได้จริง
+
+ถ้าอยากได้ของจริง ต้องเพิ่มสองอย่าง — `healthcheck` ในฝั่ง `mongo` และ `condition: service_healthy` ในฝั่ง `web`
+
+```yaml
+services:
+  web:
+    depends_on:
+      mongo:
+        condition: service_healthy
+  mongo:
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      retries: 5
+```
+
+สังเกตว่ารูปแบบเปลี่ยนจากรายการเป็นคู่คีย์-ค่า ตามกฎ YAML ที่ว่าไว้ข้างบน
+</Pitfall>
+
+### สั่งขึ้น
+
+```text
+$ docker compose up
+ ✔ web                          Built
+ ✔ Network web_counting_default Created
+ ✔ Container web_counting-mongo-1 Started
+ ✔ Container web_counting-web-1   Started
+```
+
+Compose ทำสี่อย่างตามลำดับ — build image, สร้างเครือข่าย, สตาร์ต mongo, แล้วค่อยสตาร์ต web (ตาม `depends_on`)
+
+พอร์ตที่ได้มาเป็นแบบสุ่ม
+
+```text
+$ docker compose ps
+NAME                  IMAGE             SERVICE   PORTS
+web_counting-mongo-1  mongo             mongo     27017/tcp
+web_counting-web-1    web_counting-web  web       0.0.0.0:65233->5000/tcp
+```
+
+เปิด `http://localhost:65233` แล้วรีเฟรชสามครั้ง ได้ `Visit count: 1`, `2`, `3` ตามลำดับ
+
+<Detail label="ดูว่าเครือข่ายและ volume ถูกสร้างชื่ออะไร">
+```text
+$ docker network ls
+NETWORK ID     NAME                  DRIVER   SCOPE
+d2b832013cbc   bridge                bridge   local
+5583bf467cc2   host                  host     local
+d03f7c53291d   mynet                 bridge   local
+114d0b600a15   none                  null     local
+65cca95c5723   web_counting_default  bridge   local
+
+$ docker volume ls
+DRIVER   VOLUME NAME
+local    262714c1cf0136099445c01e552e3fd1e1fa75daf8c118f9d5873bfb334b4f4b
+local    grafana-vol
+local    web_counting_mongo-data
+```
+
+`web_counting_default` คือเครือข่ายที่ Compose สร้างให้เอง เพราะ compose file ไม่ได้ประกาศ `networks:` ไว้ ส่วน `web_counting_mongo-data` คือ volume ที่ประกาศไว้ในไฟล์ ได้ชื่อขึ้นต้นด้วยชื่อ project ตามแบบ
+</Detail>
+
+### ขยายเป็นหลายสำเนา
+
+<Why>
+เว็บตัวเดียวรับคนได้จำกัด ถ้าอยากรับมากขึ้นก็เพิ่มสำเนาของ service เดิม แต่ถ้าเพิ่มด้วย `docker run` ต้องตั้งชื่อใหม่ทุกตัวและเลือกพอร์ตเองทุกตัว
+</Why>
+
+```bash
+docker compose up --scale web=3 -d
+```
+
+<Figure number={6} caption="สาม web ใช้ mongo ตัวเดียวกัน ตัวนับจึงเดินต่อจากกัน">
+  <ScaleReplicas />
+</Figure>
+
+ผลลัพธ์ต่างกันตามว่ามี `depends_on` หรือไม่
+
+<Compare>
+<Wrong title="ไม่มี depends_on">
+```text
+$ docker compose up --scale web=3 -d
+[+] Running 6/6
+ ✔ Network web_counting_default      Created
+ ✔ Volume "web_counting_mongo-data"  Created
+ ✔ Container web_counting-web-3      Started
+ ✔ Container web_counting-web-1      Started
+ ✔ Container web_counting-mongo-1    Started
+ ✔ Container web_counting-web-2      Started
+```
+
+`web` ทั้งสามตัวสตาร์ตพร้อม ๆ กับ mongo ไม่ได้รอ ถ้า mongo ยังไม่พร้อม web จะต่อฐานข้อมูลไม่ติดในวินาทีแรก ๆ
+</Wrong>
+<Right title="มี depends_on">
+```text
+$ docker compose up --scale web=3 -d
+[+] Running 5/5
+ ✔ Network web_counting_default    Created
+ ✔ Container web_counting-mongo-1  Started
+ ✔ Container web_counting-web-3    Started
+ ✔ Container web_counting-web-1    Started
+ ✔ Container web_counting-web-2    Started
+```
+
+`mongo` ขึ้นเป็นตัวแรกเสมอ และไม่มีบรรทัด `Volume Created` เพราะรันครั้งที่สองแล้ว volume ตัวเดิมยังอยู่
+</Right>
+</Compare>
+
+ดูพอร์ตที่แต่ละสำเนาได้
+
+```text
+$ docker compose ps
+NAME                   IMAGE              SERVICE  PORTS
+web_counting-mongo-1   mongo              mongo    27017/tcp
+web_counting-web-1     web_counting-web   web      0.0.0.0:53468->5000/tcp
+web_counting-web-2     web_counting-web   web      0.0.0.0:53467->5000/tcp
+web_counting-web-3     web_counting-web   web      0.0.0.0:53469->5000/tcp
+```
+
+**นี่คือเหตุผลที่ compose file เขียน `ports: - "5000"` เฉย ๆ** ถ้าเขียน `"5000:5000"` สำเนาที่สองจะสตาร์ตไม่ขึ้น เพราะพอร์ต 5000 บนเครื่อง host ถูกจองไปแล้ว
+
+เข้าเว็บสำเนาไหนก็ได้ ตัวนับเดินต่อจากกัน — 53467 ได้ 1, 53468 ได้ 2, 53469 ได้ 3, กลับมา 53467 ได้ 4 เพราะทั้งสามอ่านเขียน mongo ตัวเดียวกัน
+
+<Example title="ลดแล้วเพิ่มใหม่ — Compose เลือกตัวไหนก่อน">
+**ลดเหลือ 1** — สั่ง `docker compose up -d` เฉย ๆ (ไม่ใส่ `--scale` แปลว่ากลับไปค่าปริยายคือ 1)
+
+```text
+[+] Running 4/4
+ ✔ Container web_counting-mongo-1  Running
+ ✔ Container web_counting-web-2    Removed
+ ✔ Container web_counting-web-1    Removed
+ ✔ Container web_counting-web-3    Started
+```
+
+`web-1` และ `web-2` ถูกลบ เหลือ `web-3`
+
+**เพิ่มเป็น 5**
+
+```text
+$ docker compose up --scale web=5 -d
+[+] Running 6/6
+ ✔ Container web_counting-web-3    Running
+ ✔ Container web_counting-web-7    Started
+ ✔ Container web_counting-web-4    Started
+ ✔ Container web_counting-web-5    Started
+ ✔ Container web_counting-mongo-1  Running
+ ✔ Container web_counting-web-6    Started
+```
+
+ได้ `web-4` ถึง `web-7` เพิ่มมา ส่วน `web-3` ยังเป็นตัวเดิมที่ไม่ถูกแตะ (สถานะ `Running` ไม่ใช่ `Started`)
+
+**หมายเลขไม่ได้เริ่มนับใหม่** มันเดินต่อจากเลขสูงสุดที่เคยใช้ไป อย่าไปคาดหวังว่าจะได้ `web-1` ถึง `web-5`
+</Example>
+
+### กำหนดจำนวนสำเนาและขีดจำกัดทรัพยากรในไฟล์
+
+แทนที่จะใส่ `--scale` ตอนสั่งทุกครั้ง เขียนไว้ในไฟล์ได้เลย
+
+```yaml
+services:
+  web:
+    build: ./web
+    ports:
+      - "5000"
+    environment:
+      - MONGO_URL=mongodb://mongo:27017/mydb
+    restart: always
+    depends_on:
+      - mongo
+    deploy:
+      replicas: 3              # Create 3 replicas of web service
+      resources:
+        limits:
+          memory: 512M         # Maximum memory usage
+          cpus: '0.5'          # Maximum 50% of one CPU core
+        reservations:
+          memory: 256M         # Guaranteed minimum memory
+          cpus: '0.25'         # Guaranteed minimum 25% of one CPU core
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
+```
+
+ของใหม่สามอย่าง
+
+| คีย์ | ทำอะไร |
+| --- | --- |
+| `restart: always` | ถ้า container ตาย ให้สตาร์ตใหม่ให้อัตโนมัติ |
+| `limits` | เพดาน — ใช้ได้ไม่เกินนี้ |
+| `reservations` | พื้น — รับประกันว่าจะได้อย่างน้อยเท่านี้ |
+
+`cpus: '0.5'` ไม่ได้แปลว่าครึ่งหนึ่งของทั้งเครื่อง แต่แปลว่า **ครึ่งหนึ่งของหนึ่งแกน** ถ้าเครื่องมี 8 แกน `1.0` ก็ยังใช้ได้แค่แกนเดียวเต็ม ๆ
+
+## หลายเครือข่ายใน project เดียว
+
+<Why>
+ในระบบจริงไม่ใช่ทุก container ควรคุยกันได้หมด ฐานข้อมูลไม่ควรถูกเรียกจากอินเทอร์เน็ต และไม่ควรมีสิทธิ์ต่อออกอินเทอร์เน็ตด้วยซ้ำ
+
+ทางที่ปลอดภัยกว่าคือแยกเครือข่ายตามระดับความเชื่อใจ แล้วให้ service อยู่เฉพาะเครือข่ายที่มันต้องอยู่จริง ๆ
+</Why>
+
+```yaml
+networks:
+  frontend:          # Public-facing services
+    driver: bridge
+  backend:           # Internal services only
+    driver: bridge
+    internal: true   # No external access
+
+services:
+  nginx:             # Load balancer
+    image: nginx
+    networks:
+      - frontend
+    ports:
+      - "80:80"
+
+  web:               # Application server
+    image: my-app
+    networks:
+      - frontend     # Can receive requests from nginx
+      - backend      # Can connect to database
+
+  db:                # Database
+    image: postgres:16
+    networks:
+      - backend      # Only accessible from backend network
+    # No ports exposed to host
+```
+
+<Figure number={7} caption="db อยู่บนเครือข่ายที่ออกอินเทอร์เน็ตไม่ได้ และไม่มีใครถึงได้นอกจากผ่าน web">
+  <MultiNetwork />
+</Figure>
+
+สามจุดที่ทำให้ปลอดภัย
+
+1. **`db` ไม่มี `ports:` เลย** จึงไม่มีพอร์ตไหนบนเครื่อง host ที่ชี้ไปหามัน
+2. **`db` อยู่แค่ `backend`** ส่วน `nginx` อยู่แค่ `frontend` ทั้งสองไม่มีทางเจอกัน
+3. **`internal: true`** ตัดทางออกสู่ภายนอกของทั้งเครือข่าย `backend` ถ้าฐานข้อมูลถูกเจาะ มันก็ส่งข้อมูลออกไปข้างนอกไม่ได้
+
+`web` เป็นตัวเดียวที่อยู่ทั้งสองเครือข่าย มันจึงเป็นทางผ่านเดียวจากโลกภายนอกไปหาฐานข้อมูล
+
+<Quiz question="ถ้าอยากเข้า postgres จากเครื่องตัวเองเพื่อดีบัก ตั้งค่ายังไงให้ยังปลอดภัยพอควร">
+เพิ่ม `ports: - "127.0.0.1:5432:5432"` ให้ `db` ชั่วคราว
+
+การใส่ `127.0.0.1:` ข้างหน้าทำให้พอร์ตเปิดเฉพาะกับตัวเครื่องเอง ไม่ใช่ทุกหน้าต่างเครือข่าย เครื่องอื่นในวงแลนจึงยังต่อไม่ได้ แต่ก็ยังไม่ควรทิ้งไว้ตอนขึ้นระบบจริง
+
+ทางที่สะอาดกว่าคือใช้ `docker compose exec db psql` เข้าไปข้างในเลย โดยไม่ต้องเปิดพอร์ตอะไรเพิ่ม
+</Quiz>
+
+---
+
+# ส่วนที่ 3 — เมื่อเครื่องเดียวไม่พอ
+
+## ปัญหาถัดไป
+
+<Why>
+Compose แก้ปัญหา "หลาย container" ได้หมดจด แต่มันมีขอบเขตที่ชัดมาก — **ทุกอย่างอยู่บนเครื่องเดียว**
+
+พอระบบโตขึ้น เครื่องเดียวไม่พอ ทั้งเรื่องแรงและเรื่องความทนทาน ถ้าเครื่องนั้นดับ ทุก container ดับพร้อมกัน
+</Why>
+
+คำถามคือ **จะจัดการ container หลายตัวบนเครื่องหลายเครื่องยังไง?**
+
+## Container orchestration
+
+<Term en="Container orchestration" th="ระบบจัดวางและดูแล container ข้ามเครื่อง" /> คือแพลตฟอร์มที่ทำให้การ deploy จัดการ และขยายแอปแบบ container บนคลัสเตอร์ใหญ่ ๆ ทำได้ง่ายขึ้น
+
+พูดอีกแบบคือ **การทำ cluster computing ด้วย container**
+
+<Figure number={8} caption="บนเครื่องเดียวคุณวาง container เอง บนคลัสเตอร์มี orchestrator ตัดสินใจแทนว่า container ไหนไปลงเครื่องไหน">
+  <SingleVsCluster />
+</Figure>
+
+<Analogy>
+เครื่องเดียวเหมือนร้านอาหารร้านเดียว เจ้าของจัดโต๊ะเองได้หมด
+
+คลัสเตอร์เหมือนสายการบิน มีเครื่องบินร้อยลำและผู้โดยสารหมื่นคน ต้องมีระบบกลางที่ตัดสินว่าใครขึ้นลำไหน ลำไหนซ่อมอยู่ ถ้าลำหนึ่งเสียต้องย้ายคนไปลำอื่นให้อัตโนมัติ — orchestrator ทำหน้าที่นั้นให้ container
+</Analogy>
+
+## Compose กับ Kubernetes ต่างกันตรงไหน
+
+| ด้าน | Docker Compose | Kubernetes |
+| --- | --- | --- |
+| ขอบเขต | พัฒนาบนเครื่องตัวเอง งานเล็ก | ระบบจริงขนาดใหญ่ คลัสเตอร์หลายเครื่อง |
+| การติดตั้ง | ง่ายมาก ไฟล์ YAML เดียวกับ `docker compose up` | ซับซ้อน มี control plane, kubelet, ปลั๊กอินเครือข่าย |
+| ความยากในการเรียน | ต่ำ เหมาะกับคนเริ่มต้นและงานต้นแบบ | สูง มีแนวคิดให้เรียนเยอะ (Pod, Service, Deployment, Ingress) |
+| ขนาดที่รองรับ | เครื่องเดียว container ไม่กี่ตัว | container หลายพันตัวข้ามหลายเครื่อง |
+| เครือข่าย | เครือข่ายในเครื่องเดียว หากันด้วยชื่อ | เครือข่ายทั้งคลัสเตอร์ มี DNS และ load balancing ในตัว |
+| ที่เก็บข้อมูล | volume แบบง่าย | persistent volume และการจัดการที่เก็บข้อมูลขั้นสูง |
+| ความทนทาน | ไม่มีตัวจัดวางข้ามเครื่อง ไม่ย้าย container ให้อัตโนมัติ | ซ่อมตัวเองได้ รีสตาร์ตอัตโนมัติ อัปเดตแบบไม่ดับ ขยายอัตโนมัติ |
+| เหมาะกับ | สภาพแวดล้อมทดสอบ สอนพื้นฐาน โปรเจกต์เล็ก | microservices ที่ขึ้นจริง ระบบ cloud-native แอปที่ห้ามล่ม |
+
+<KeyIdea>
+Compose ไม่ได้แย่กว่า Kubernetes มันแก้คนละปัญหา Compose แก้ "หลาย container หนึ่งเครื่อง" ส่วน Kubernetes แก้ "หลาย container หลายเครื่อง"
+
+ใช้ Kubernetes กับงานที่ Compose พอ คือการจ่ายความซับซ้อนไปฟรี ๆ
+</KeyIdea>
+
+เรื่อง Kubernetes ต่อในคาบถัดไป
+
+---
+
+# ส่วนที่ 4 — แล็บ Raspberry Pi
+
+<Why>
+ทุกอย่างในหน้านี้ยังอยู่บนเครื่องเดียว การจะเข้าใจว่าทำไมถึงต้องมี orchestrator ต้องเห็นด้วยตาก่อนว่า **เครื่องที่สองทำให้อะไรพัง**
+
+แล็บนี้เอา Raspberry Pi มาเป็นเครื่องที่สอง แล้วลองย้าย container ตัวหนึ่งไปอยู่บนนั้น
+</Why>
+
+ขั้นตอนทั้งหมดมีหกก้าว
+
+1. เตรียมฮาร์ดแวร์
+2. ลงระบบปฏิบัติการ
+3. เลือกวิธีใช้งาน
+4. ต่อเครือข่าย
+5. ติดตั้ง Docker
+6. รัน container
+
+## เตรียมฮาร์ดแวร์
+
+ใช้ได้ทั้ง **Raspberry Pi 3 Model B+** และ **Raspberry Pi 4 Model B** เช็กว่ามี SD card มาด้วย เพราะ Pi ไม่มีที่เก็บข้อมูลในตัว ระบบปฏิบัติการทั้งหมดอยู่บน SD card
+
+## ลงระบบปฏิบัติการ
+
+ใช้โปรแกรม **Raspberry Pi Imager** เขียน Raspberry Pi OS ลง SD card ดาวน์โหลดจาก [raspberrypi.com/software](https://www.raspberrypi.com/software/)
+
+ตั้งค่าใน Imager ก่อนเขียนลงการ์ด
+
+| ตั้งค่า | ค่าที่ใช้ในแล็บ |
+| --- | --- |
+| Hostname | `raspberrypi` |
+| Username | `pi` |
+| Password | `raspberry` |
+| Wi-Fi SSID และรหัส | **ของ mobile hotspot ตัวเอง** |
+
+<Callout type="warn">
+ตั้งชื่อ hotspot ให้ไม่ซ้ำกับเพื่อน ไม่งั้น Pi อาจไปเกาะ hotspot ของคนอื่นแล้วหาไม่เจอ
+
+เรื่องเครือข่าย — **mobile hotspot ดีที่สุด** Wi-Fi ที่บ้านก็ใช้ได้ แต่ **Wi-Fi สาธารณะอย่าง ChulaWiFi ใช้ไม่ได้** เพราะมีหน้าล็อกอินและมักกันไม่ให้อุปกรณ์ในวงเดียวกันคุยกัน
+
+และควรใช้คลื่น **2.4 GHz** เพราะ Pi 3 รองรับแค่นั้น
+</Callout>
+
+## เลือกวิธีใช้งาน
+
+มีสองทาง
+
+| ทาง | ต้องมีอะไร | เหมาะเมื่อ |
+| --- | --- | --- |
+| หน้าจอ Desktop | จอ คีย์บอร์ด เมาส์ | อยากเห็นหน้าตาระบบ ต่อ Wi-Fi ผ่าน GUI ได้ |
+| SSH จากคอมพิวเตอร์ | ไม่ต้องมีจออะไรเลย | ก๊อปวางคำสั่งได้ สะดวกกว่ามาก |
+
+แบบที่สองเรียกว่า <Term en="headless" th="ไม่ต้องต่อจอ" /> และเป็นวิธีที่แล็บแนะนำ
+
+## ต่อด้วย SSH
+
+Raspberry Pi รองรับ <Term en="multicast DNS" th="ระบบชื่อในวงแลนที่ไม่ต้องมีเซิร์ฟเวอร์" /> เครื่องอื่นในวงเดียวกันจึงเรียกมันด้วยชื่อ `raspberrypi` หรือ `raspberrypi.local` ได้เลย ไม่ต้องรู้หมายเลข IP
+
+<StepThrough>
+<Step title="เปิด hotspot บนมือถือ">
+ใช้ SSID และรหัสตัวเดียวกับที่ตั้งไว้ใน Imager
+</Step>
+<Step title="ต่อทั้งคอมพิวเตอร์และ Pi เข้า hotspot เดียวกัน">
+Pi จะต่อเองอัตโนมัติเมื่อเสียบไฟ เพราะรหัสถูกฝังไว้ตอนเขียนการ์ดแล้ว
+</Step>
+<Step title="เปิด terminal บนคอมพิวเตอร์แล้วสั่ง">
+```bash
+ssh pi@raspberrypi
+# หรือ
+ssh pi@raspberrypi.local
+```
+</Step>
+<Step title="ตอบคำถามเรื่องกุญแจ">
+เมื่อถูกถามว่า `Are you sure you want to continue connecting (yes/no/[fingerprint])?` ให้พิมพ์ `yes`
+</Step>
+<Step title="ใส่รหัสผ่าน">
+พิมพ์ `raspberry` — **จะไม่เห็นตัวอักษรที่พิมพ์** นั่นเป็นเรื่องปกติของ terminal ไม่ใช่คีย์บอร์ดเสีย
+
+สำเร็จแล้วจะเห็น prompt
+
+```text
+pi@raspberrypi:~ $
+```
+</Step>
+</StepThrough>
+
+<Pitfall>
+ถ้าเจอข้อความ
+
+```text
+Host key verification failed.
+```
+
+แปลว่าคอมพิวเตอร์เคยจำกุญแจของเครื่องชื่อ `raspberrypi` ตัวเก่าไว้ แล้วคราวนี้เจอกุญแจไม่ตรง (เพราะเขียน SD card ใหม่ หรือเป็น Pi คนละตัว)
+
+แก้ด้วยการลบไฟล์ที่จำไว้แล้วต่อใหม่
+
+```bash
+rm ~/.ssh/known_hosts
+```
+
+การเช็กนี้มีไว้กันการถูกดักกลางทาง ในแล็บที่รู้แน่ว่าเราเขียนการ์ดใหม่เอง การลบทิ้งไม่มีปัญหา แต่บนเซิร์ฟเวอร์จริงถ้าเจอข้อความนี้แบบไม่มีสาเหตุ ให้สงสัยไว้ก่อน
+</Pitfall>
+
+## เปลี่ยนชื่อเครื่อง
+
+ถ้ามี Pi หลายตัวในวงเดียวกัน ชื่อ `raspberrypi` เหมือนกันหมดจะชนกัน เปลี่ยนได้ทีหลังโดยแก้สองไฟล์
+
+```bash
+sudo nano /etc/hostname
+sudo nano /etc/hosts
+```
+
+เปลี่ยนชื่อเดิมเป็นชื่อใหม่ในทั้งสองไฟล์ แล้ว reboot
+
+## ติดตั้ง Docker บน Pi
+
+```bash
+sudo apt-get update
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+```
+
+แล้วเพิ่มผู้ใช้ `pi` เข้ากลุ่ม `docker` เพื่อจะได้ไม่ต้องพิมพ์ `sudo` ทุกครั้ง
+
+```bash
+sudo usermod -aG docker pi
+```
+
+ต้อง **ออกจากระบบแล้วเข้าใหม่** สิทธิ์กลุ่มถึงจะมีผล
+
+เช็กว่าใช้ได้
+
+```bash
+docker version
+docker info
+```
+
+ลองรัน container
+
+```bash
+docker run -d -p 4000:80 --name nginx nginx
+```
+
+เปิด `http://raspberrypi:4000` **จากเบราว์เซอร์บนคอมพิวเตอร์** ไม่ใช่บน Pi — ถ้าเห็นหน้าต้อนรับของ nginx แปลว่าทุกอย่างครบแล้ว
+
+<Callout type="info">
+สังเกตว่าเรียกด้วยชื่อ `raspberrypi` ได้เลยเพราะ multicast DNS ทำงานอยู่ ไม่ต้องรู้ IP ของ Pi
+</Callout>
+
+## ปัญหาที่โผล่มาทันทีที่มีสองเครื่อง
+
+ระบบมอนิเตอร์สามตัวจากคาบที่แล้ว **อยู่บนเครื่องเดียวแล้วทำงานได้ปกติ** เพราะทั้งสามอยู่บนเครือข่าย `mynet` เดียวกัน เรียกกันด้วยชื่อได้
+
+ทีนี้ลองย้าย `node-exporter` ไปอยู่บน Raspberry Pi
+
+<Figure number={9} caption="สองเครื่องต่างสร้าง mynet ของตัวเอง ชื่อเหมือนกันแต่คนละเครือข่าย">
+  <MultiHostProblem />
+</Figure>
+
+**มันไม่ทำงาน** เพราะ user-defined network เป็นของเฉพาะเครื่องนั้น เครือข่ายชื่อ `mynet` บนคอมพิวเตอร์ กับเครือข่ายชื่อ `mynet` บน Pi เป็นคนละเครือข่ายกันสนิท ไม่รู้จักกัน
+
+`prometheus` จึงหาชื่อ `node-exporter` ไม่เจอ
+
+### ทางออกเฉพาะหน้าของแล็บ
+
+สไลด์ให้ทำสามอย่าง
+
+1. เขียน `compose.yml` ตัวหนึ่งสำหรับคอมพิวเตอร์ ให้รัน Prometheus กับ Grafana
+2. เขียน `compose.yml` อีกตัวสำหรับ Raspberry Pi ให้รัน node-exporter
+3. แก้ `prometheus.yml` ให้ชี้ <Term en="target" th="เป้าที่ Prometheus ไปดึงตัวเลข" /> ไปที่ **หมายเลข IP ของ Raspberry Pi**
+
+<Example added title="prometheus.yml ที่ชี้ข้ามเครื่อง">
+```yaml
+scrape_configs:
+  - job_name: 'node'
+    static_configs:
+      - targets: ['192.168.43.51:9100']
+```
+
+แทนที่จะเป็น `['node-exporter:9100']` แบบตอนอยู่เครื่องเดียวกัน
+
+และฝั่ง Pi ต้องเปลี่ยนจาก `expose: - 9100` เป็น `ports: - 9100:9100` ด้วย ไม่งั้นพอร์ตไม่โผล่ออกมาให้เครื่องอื่นเรียก
+</Example>
+
+<Pitfall>
+วิธีนี้ใช้ได้ แต่เปราะมาก และนี่คือเหตุผลทั้งหมดที่ orchestrator มีอยู่
+
+- **IP เปลี่ยนได้** hotspot แจก IP ใหม่ทุกครั้งที่ต่อใหม่ ต้องไปแก้ `prometheus.yml` ทุกรอบ
+- **ไม่ขยายตัว** มีสิบเครื่องก็ต้องเขียนสิบบรรทัดและตามแก้ทั้งสิบ
+- **ไม่มีใครกู้ให้** ถ้า Pi ดับ ไม่มีอะไรย้าย node-exporter ไปเครื่องอื่นให้
+- **พอร์ตเปิดโล่ง** การเอา 9100 ออกมาที่เครื่อง host แปลว่าใครในวงเดียวกันก็ยิงเข้ามาได้
+
+Kubernetes แก้ทั้งสี่ข้อนี้ด้วยเครือข่ายระดับคลัสเตอร์ที่ทำให้ container ทุกตัวบนทุกเครื่องเรียกกันด้วยชื่อได้เหมือนอยู่เครื่องเดียวกัน
+</Pitfall>
+
+---
+
+<Recap>
+**Dockerfile**
+
+- Dockerfile คือไฟล์ข้อความที่บอกวิธีสร้าง image — ทำซ้ำได้ อ่านรู้เรื่อง เก็บใน Git ได้ ต่างจาก `docker commit` ที่ทำได้แค่ครั้งเดียว
+- `FROM` เลือกฐาน · `WORKDIR` ตั้งโฟลเดอร์ · `COPY` ก๊อปไฟล์เข้า image · `RUN` รันตอน build · `USER` เปลี่ยนผู้ใช้
+- `RUN` มีสองรูปแบบ — exec form ไม่ผ่าน shell จึงใช้ `&&` และ `$VAR` ไม่ได้ ส่วน shell form ใช้ได้
+- `ENTRYPOINT` ให้ผู้ใช้เติมอาร์กิวเมนต์ต่อท้าย ส่วน `CMD` ให้ผู้ใช้แทนที่ทั้งคำสั่ง มีทั้งคู่ = `CMD` เป็นอาร์กิวเมนต์ตั้งต้นของ `ENTRYPOINT`
+- `EXPOSE` เป็นแค่การประกาศ **ไม่ได้เปิดพอร์ต** ต้อง `-p` ตอน `docker run` เท่านั้น
+- แต่ละบรรทัดกลายเป็นหนึ่ง layer · `docker image history` เปิดดูได้ · ขนาด `0B` แปลว่าชั้นนั้นเพิ่มแค่ข้อมูลกำกับ
+- รวม `RUN` หลายบรรทัดเป็นบรรทัดเดียวแล้วล้างแคชในบรรทัดเดียวกัน ถ้าล้างคนละบรรทัด ขนาด image ไม่ลด
+- multi-stage build — build ในขั้นที่มีเครื่องมือครบ แล้ว `COPY --from=` เอาเฉพาะผลลัพธ์มาขั้นสุดท้าย
+- ความปลอดภัยสองข้อ — อย่ารันเป็น root (ใช้ `USER`) และอย่าฝังความลับลง layer (ใช้ `--env-file` หรือ `--secret` และใส่ `.env` ใน `.dockerignore`)
+
+**Docker Compose**
+
+- Compose นิยามและรันแอปหลาย container จากไฟล์ YAML ไฟล์เดียว
+- project คือกล่องที่ครอบ service, network, volume ไว้ ชื่อโดยปริยายมาจากชื่อโฟลเดอร์
+- ชื่อทุกอย่างขึ้นต้นด้วยชื่อ project — container ใช้ `-` คั่น network และ volume ใช้ `_` คั่น
+- ระดับบนสุดมีห้าอย่าง — `name`, `services`, `networks`, `volumes`, `configs`/`secrets`
+- YAML เขียนได้สองแบบ (รายการกับคู่คีย์-ค่า) แต่ห้ามผสมกันในหัวข้อเดียว
+- คำสั่งหลัก — `up -d` ขึ้น · `down` ลบทั้งชุด · `stop` หยุดแต่ไม่ลบ · `ls` `ps` `top` ดูสถานะ · `logs` `exec` เข้าไปดูข้างใน
+- `expose` ให้เพื่อนบนเครือข่ายเดียวกันเรียกได้ · `ports` เปิดออกไปที่เครื่อง host จริง ๆ
+- `external: true` แปลว่า volume มีอยู่แล้ว Compose ไม่สร้างและไม่ลบให้
+- `up` เป็น idempotent — สั่งซ้ำแล้วเทียบกับของที่รันอยู่ เปลี่ยนเฉพาะส่วนที่ไม่ตรง
+- `--scale web=3` สร้างสามสำเนา ต้องเขียน `ports: - "5000"` ไม่ผูกพอร์ต host ไม่งั้นสำเนาที่สองชนพอร์ต
+- `depends_on` รับประกันแค่ว่าสตาร์ตแล้ว ไม่ใช่พร้อมใช้ ถ้าต้องการของจริงใช้ `healthcheck` คู่กับ `condition: service_healthy`
+- `deploy.replicas` ตั้งจำนวนในไฟล์ · `limits` เป็นเพดาน · `reservations` เป็นพื้น · `cpus: '0.5'` = ครึ่งแกน ไม่ใช่ครึ่งเครื่อง
+- แยกเครือข่ายตามระดับความเชื่อใจ และ `internal: true` ตัดทางออกภายนอกให้ทั้งเครือข่าย
+
+**เมื่อเครื่องเดียวไม่พอ**
+
+- Compose มีขอบเขตที่เครื่องเดียว container orchestration แก้เรื่องหลาย container บนหลายเครื่อง
+- Compose กับ Kubernetes ไม่ได้แข่งกัน — Compose เหมาะกับงานพัฒนาและระบบเล็ก Kubernetes เหมาะกับระบบจริงขนาดใหญ่ที่ต้องซ่อมตัวเองได้
+- แล็บ Raspberry Pi พิสูจน์ข้อจำกัด — user-defined network เป็นของเฉพาะเครื่อง เครือข่ายชื่อ `mynet` บนสองเครื่องคือคนละเครือข่าย เรียกกันด้วยชื่อไม่ได้ ต้องกลับไปใช้ IP ซึ่งเปราะและไม่ขยายตัว
+</Recap>
