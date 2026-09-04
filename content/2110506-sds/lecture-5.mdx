@@ -1,0 +1,1591 @@
+---
+title: "Lecture 5 — Container Orchestration Systems: Kubernetes"
+description: "เมื่อ container ล้นเครื่องเดียว Kubernetes เข้ามารับหน้าที่แทน — บอกแค่ว่าอยากได้อะไร แล้วมันดูแลให้เป็นแบบนั้นตลอดเวลา"
+lecture: 5
+source: "data/2110506-SDS/Lecture-5.pdf"
+credit: "เรียบเรียงจากสไลด์ Lecture 5 ของ ผศ.ดร.ณัฐวุฒิ หนูไพโรจน์"
+readingMinutes: 55
+---
+
+import { DeploymentEvolution } from '@/components/figures/2110506-sds/deployment-evolution';
+import { ControlLoop } from '@/components/figures/2110506-sds/control-loop';
+import { ClusterArchitecture } from '@/components/figures/2110506-sds/cluster-architecture';
+import { PodAnatomy } from '@/components/figures/2110506-sds/pod-anatomy';
+import { SelfHealing } from '@/components/figures/2110506-sds/self-healing';
+import { ServiceSelector } from '@/components/figures/2110506-sds/service-selector';
+import { RollingUpdate } from '@/components/figures/2110506-sds/rolling-update';
+import { PodCommunication } from '@/components/figures/2110506-sds/pod-communication';
+import { IngressRouting } from '@/components/figures/2110506-sds/ingress-routing';
+import { WorkloadObjects } from '@/components/figures/2110506-sds/workload-objects';
+
+<KeyIdea>
+Kubernetes เปลี่ยนวิธีสั่งงานจาก "ทำ ก ทำ ข ทำ ค" เป็น "ฉันอยากได้ 3 สำเนา" แล้วมันรับหน้าที่ทำให้เป็นจริงและ **คอยรักษาให้เป็นแบบนั้นตลอดเวลา** — เครื่องพัง pod ตาย มันสร้างใหม่ให้เองโดยไม่ต้องมีคนสั่ง
+</KeyIdea>
+
+<Callout type="info" title="ข้อมูลในหน้านี้มาจากไหน">
+เนื้อหามาจากสไลด์ Lecture 5 ทั้ง 71 หน้า คำสั่ง manifest และผลลัพธ์บนหน้าจอทุกอันยกมาจากสไลด์จริง ส่วนคำอธิบาย รูป และตัวอย่างที่ติดป้าย "เสริม" เขียนขึ้นใหม่
+
+คาบนี้เป็นของ **ผศ.ดร.ณัฐวุฒิ หนูไพโรจน์** ต่อจากคาบที่แล้ว
+</Callout>
+
+## คาบนี้จะพาไปไหน
+
+สี่คาบที่ผ่านมาไล่มาถึงจุดที่ **ระบบหนึ่งระบบมี container หลายสิบตัว กระจายอยู่บนหลายเครื่อง** ซึ่งเป็นจุดที่ Docker Compose ไปต่อไม่ได้
+
+คาบนี้ตอบสามคำถาม
+
+| คำถาม | คำตอบ |
+| --- | --- |
+| ทำไมต้องมี orchestration | ส่วนที่ 1 — งานที่คนทำมือไม่ไหวเมื่อมีหลายเครื่อง |
+| Kubernetes ประกอบด้วยอะไร และคิดยังไง | ส่วนที่ 2 — control loop กับ declarative config |
+| ใช้งานจริงยังไง | ส่วนที่ 3–5 — Pod, Deployment, Service, Ingress |
+
+<Callout type="warn" title="คาบนี้ยาวและมีศัพท์เยอะ">
+Kubernetes มีคำใหม่ประมาณสิบห้าคำที่ต้องจำ ถ้าอ่านแล้วงงกลางทาง ให้ยึดสามคำนี้ไว้ก่อน
+
+- **Pod** = หน่วยที่เล็กที่สุดที่รันได้
+- **Deployment** = คนดูแลว่าต้องมี pod กี่ตัว
+- **Service** = ที่อยู่คงที่ที่คนอื่นใช้เรียก pod
+
+ที่เหลือแตกมาจากสามคำนี้ทั้งหมด
+</Callout>
+
+---
+
+# ส่วนที่ 1 — ทำไมต้อง orchestration
+
+## จุดที่เราค้างไว้
+
+สรุปทางที่เดินมาสี่คาบ
+
+- **คาบ 2** — container แพ็กแอปให้ย้ายไปรันที่ไหนก็ได้
+- **คาบ 3** — Compose สั่งหลาย container พร้อมกันได้ แต่บนเครื่องเดียว
+- **คาบ 4** — microservices ทำให้ชิ้นส่วนเยอะขึ้นอีก
+
+พอเอาสามอย่างมารวมกัน ผลคือ **container จำนวนมาก กระจายอยู่บนหลายเครื่อง** ซึ่งมีปัญหาที่การพิมพ์คำสั่งเองแก้ไม่ได้
+
+<Why>
+สไลด์หน้า 4 ระบุห้าข้อ ลองอ่านทีละข้อแล้วนึกว่าถ้าเป็นเราต้องทำเองจะทำยังไง
+
+1. **ต้องเลือกว่า container ตัวไหนไปรันเครื่องไหน** — สิบ container กับห้าเครื่อง จะวางยังไงให้ RAM พอทุกเครื่อง
+2. **ตัวที่ตายต้องถูกตรวจเจอและสร้างใหม่** — ตอนตีสามใครนั่งเฝ้า
+3. **ทราฟฟิกต้องหาตัวที่ยังดีอยู่ให้เจอ** ทั้งที่ตำแหน่งเปลี่ยนตลอด
+4. **การอัปเดต ย้อนกลับ ขยาย ตั้งค่า และให้สิทธิ์เข้าถึง ต้องคุมได้แบบเดียวกันหมด**
+5. ทั้งหมดนี้ต้องทำซ้ำได้ ไม่ใช่พึ่งความจำของใครคนหนึ่ง
+
+Kubernetes เปลี่ยนงานทั้งห้าอย่างนี้ให้เป็น **control loop ที่ทำงานผ่าน API**
+</Why>
+
+## แล้วเลือกอะไร
+
+สไลด์หน้า 3 ยกมาสามตัว
+
+| ระบบ | สถานะ |
+| --- | --- |
+| **Kubernetes** | มาตรฐานที่ใช้กันจริงในตลาด — คาบนี้เรียนตัวนี้ |
+| **Docker Swarm** | ของ Docker เอง ตั้งค่าง่ายกว่ามาก แต่คนใช้น้อยลงมาก |
+| **Apache Mesos** | เก่ากว่า ออกแบบมาเพื่องานที่กว้างกว่า container |
+
+## Kubernetes คืออะไร
+
+<Term en="Kubernetes" th="คิวเบอร์เนเทส มาจากภาษากรีก แปลว่านายท้ายเรือ" /> — ย่อว่า **K8s** (K, ตัวอักษร 8 ตัว, s)
+
+- เป็น container orchestrator ระดับใช้งานจริง เริ่มจาก **Google** ตอนนี้เป็นโครงการของ **CNCF** (องค์กรเดียวกับที่ทำ Trail Map ในคาบแรก)
+- **ซ่อนความต่างของโครงสร้างพื้นฐาน** ไฟล์ตั้งค่าชุดเดียวรันได้ทั้งบนโน้ตบุ๊กและบนคลาวด์
+
+<Detail label="ที่จะเจอชื่อ Kubernetes รุ่นต่าง ๆ">
+Kubernetes มีหลาย **distribution** เหมือน Linux — แกนเดียวกัน ต่างกันที่การประกอบและเครื่องมือรอบ ๆ
+
+**ลงบนเครื่องตัวเอง**
+
+| ชื่อ | จุดเด่น |
+| --- | --- |
+| Docker Desktop | ติ๊กช่องเดียวได้เลย ง่ายที่สุดสำหรับเริ่ม |
+| minikube | นิยมมานาน เอกสารเยอะ |
+| k3d / kind | เบา สร้างและลบคลัสเตอร์ได้เร็ว |
+| k3s | เบามาก เหมาะกับ Raspberry Pi |
+| microk8s | ของ Canonical ติดตั้งง่ายบน Ubuntu |
+| openshift | ของ Red Hat มีของเสริมเยอะ |
+| rancher | เน้นดูแลหลายคลัสเตอร์พร้อมกัน |
+
+**บนคลาวด์ (มีคนดูแล control plane ให้)**
+
+| ชื่อ | เจ้าของ |
+| --- | --- |
+| GKE | Google |
+| AKS | Azure |
+| EKS | AWS |
+
+สไลด์หน้า 17 แนะนำว่าถ้าจะลองเล่น ให้ใช้ **k3d** หรือ **Kubernetes ที่มากับ Docker Desktop**
+</Detail>
+
+### ความสามารถหลัก
+
+สไลด์หน้า 6 สรุปห้าข้อ
+
+- ทำ deploy, scale และดูแล container ให้อัตโนมัติ
+- ตั้งค่าแบบ **declarative** ด้วยไฟล์ YAML หรือ JSON ที่เรียกว่า <Term en="manifest" th="ไฟล์ที่ประกาศว่าอยากได้อะไร" />
+- <Term en="Idempotency" th="สั่งซ้ำกี่ครั้งผลก็เหมือนเดิม" />, <Term en="self-healing" th="ซ่อมตัวเองได้" /> และพร้อมทำ <Term en="GitOps" th="ใช้ git เป็นแหล่งความจริงเดียวของการตั้งค่าระบบ" />
+- เปิดทุกอย่างผ่าน API ชุดเดียวกัน
+- รันได้ทั้งบนเครื่องตัวเอง บนเครื่องขององค์กร และแบบให้คลาวด์ดูแลให้
+
+## สามแนวคิดที่ต้องเข้าใจก่อนแตะคำสั่ง
+
+<Why>
+ถ้ากระโดดเข้าไปท่องคำสั่ง `kubectl` เลย จะจำได้แต่ไม่เข้าใจว่าทำไมมันทำงานแบบนั้น สามหัวข้อถัดไปคือสิ่งที่ทำให้ Kubernetes ต่างจากการเขียนสคริปต์
+</Why>
+
+### แนวคิดที่ 1 — Declarative ไม่ใช่ Imperative
+
+สไลด์หน้า 11 เทียบสองอย่างนี้ตรง ๆ
+
+| แบบ | หน้าตา | ความหมาย |
+| --- | --- | --- |
+| **Imperative** | "รัน ก แล้วรัน ข แล้วรัน ค" | บอกขั้นตอน |
+| **Declarative** | `replicas: 3` | บอกปลายทาง |
+
+<Example added title="ความต่างที่เห็นได้ชัดที่สุด">
+สมมติอยากได้ web server 3 ตัว
+
+**เขียนเป็นสคริปต์ (imperative)**
+
+```bash
+docker run -d --name web1 nginx
+docker run -d --name web2 nginx
+docker run -d --name web3 nginx
+```
+
+รันแล้วได้ 3 ตัวจริง แต่ถ้า `web2` ตายตอนตีสาม มันจะเหลือ 2 ตัวจนกว่าจะมีคนมาเห็น
+
+และถ้ารันสคริปต์นี้ซ้ำ จะได้ error ว่าชื่อซ้ำ ไม่ได้ 3 ตัวเหมือนเดิม
+
+**เขียนเป็น manifest (declarative)**
+
+```yaml
+spec:
+  replicas: 3
+```
+
+`web2` ตาย Kubernetes สร้างตัวใหม่ให้ทันทีโดยไม่มีใครสั่ง
+
+และสั่งซ้ำกี่ครั้งก็ยังได้ 3 ตัว ไม่ error — นี่คือความหมายของ **idempotent** ที่เจอมาตั้งแต่คาบ 3
+</Example>
+
+<KeyIdea>
+สคริปต์บอก **ทาง** ส่วน manifest บอก **ปลายทาง**
+
+ความต่างที่สำคัญคือ ทางเดินใช้ได้ครั้งเดียว แต่ปลายทางใช้ได้ตลอดไป — Kubernetes จึงพากลับไปที่ปลายทางเดิมได้เสมอ ไม่ว่าจะหลงไปไกลแค่ไหน
+</KeyIdea>
+
+สไลด์ยังเพิ่มว่า การเก็บ declarative config ไว้ใน source control เรียกว่า <Term en="Infrastructure as Code" th="ดูแลโครงสร้างพื้นฐานเหมือนดูแลโค้ด" /> — เป็นคำเดียวกับที่คาบ 4 พูดถึงตอนพูดเรื่องย้อน compose file กลับ version เก่า
+
+### แนวคิดที่ 2 — Control Loop
+
+<Figure number={1} caption="วงจรที่ทำงานอยู่ตลอดเวลา ไม่ใช่คำสั่งที่ทำครั้งเดียวจบ">
+  <ControlLoop />
+</Figure>
+
+Kubernetes ทำสามอย่างนี้วนไปเรื่อย ๆ
+
+1. อ่าน **สถานะที่ต้องการ** จาก manifest
+2. ดู **สถานะจริง** ในคลัสเตอร์
+3. ถ้าไม่ตรงกัน **ลงมือแก้**
+
+<Analogy>
+เหมือนเทอร์โมสตัทในห้องแอร์ เราตั้งไว้ 25 องศา แล้วมันวัดอุณหภูมิจริงตลอด ร้อนเกินก็เปิดคอมเพรสเซอร์ พอถึงก็หยุด
+
+เราไม่ได้สั่งว่า "เปิดคอมเพรสเซอร์ 12 นาที" เพราะเวลาที่ต้องใช้ขึ้นกับว่าตอนนี้กี่องศา มีคนอยู่ในห้องกี่คน
+
+เราบอกแค่ปลายทาง แล้วมันหาทางเอง — และถ้ามีคนเปิดประตูให้ความร้อนเข้ามา มันก็แก้ให้อีกโดยไม่ต้องสั่งใหม่
+</Analogy>
+
+### แนวคิดที่ 3 — Immutable Infrastructure
+
+สไลด์หน้า 10 บอกว่าของใน Kubernetes ทำงานเหมือน Docker image — **สร้างแล้วไม่แก้ทับ**
+
+- จะเปลี่ยนอะไร ให้สร้างของใหม่ทั้งชุด ไม่ใช่เข้าไปแก้ของเดิม
+- ผลคือทุกการเปลี่ยนกลายเป็น **version หนึ่ง** ที่ย้อนกลับได้
+
+<Pitfall>
+ห้าม `kubectl exec` เข้าไปแก้ไฟล์ใน container ที่รันอยู่จริง
+
+มันได้ผลชั่วคราวจริง แต่พอ pod ตายและถูกสร้างใหม่ — ซึ่งเกิดขึ้นได้ตลอดเวลาโดยไม่มีใครสั่ง — ของที่แก้ไว้จะหายหมด และไม่มีใครรู้ว่าเคยแก้อะไร
+
+ถ้าจะเปลี่ยน ให้แก้ที่ manifest แล้ว `apply` ใหม่เสมอ
+</Pitfall>
+
+## ได้อะไรจากสามแนวคิดนี้
+
+สไลด์หน้า 8 สรุปห้าข้อ ทุกข้อเป็นผลโดยตรงจาก control loop
+
+- **service discovery ง่ายและเปิดใช้งานง่าย**
+- **ทุกบริการมี load balancing ในตัว** ไม่ต้องติดตั้งเพิ่ม
+- **ขยายและลดขนาดได้ทันที**
+- **อัปเกรดและย้อนกลับได้เนียน**
+- **ซ่อมตัวเองได้**
+
+### self-healing หน้าตาเป็นยังไง
+
+สไลด์หน้า 9 เขียนเป็นบทสนทนา
+
+> **เรา:** "ฉันอยากได้ redis ที่รันดีอยู่ 3 ตัว"
+> **K8s:** "ได้ ฉันจะทำให้มี redis รันอยู่ 3 ตัวเสมอ"
+> *(ผ่านไปพักหนึ่ง)*
+> **K8s:** "อ้าว redis ตายไปตัวหนึ่ง กำลังสร้างตัวใหม่"
+
+<Figure number={2} caption="ไม่มีใครสั่งให้สร้างใหม่ — ตัวเลขไม่ตรง มันก็แก้เอง">
+  <SelfHealing />
+</Figure>
+
+<Pitfall title="self-healing ไม่ได้แปลว่าซ่อมได้ทุกอย่าง">
+Kubernetes ซ่อม **จำนวน** ได้ แต่ซ่อม **สาเหตุ** ไม่ได้
+
+ถ้าแอปมีบั๊กที่ทำให้ crash ทันทีที่สตาร์ต Kubernetes จะสร้างใหม่ ตาย สร้างใหม่ ตาย วนไปเรื่อย ๆ จนเห็นสถานะ `CrashLoopBackOff`
+
+มันไม่ได้แก้บั๊กให้ — มันแค่ไม่ยอมแพ้
+</Pitfall>
+
+## Kubernetes อยู่ตรงไหนของเส้นทางทั้งหมด
+
+<Figure number={3} caption="สามยุคของการวางแอปลงเครื่อง — Kubernetes ทำงานอยู่บนคอลัมน์ขวาสุด">
+  <DeploymentEvolution />
+</Figure>
+
+รูปนี้คือสไลด์หน้า 7 ซึ่งย้ำเรื่องที่คาบ 2 อธิบายไว้แล้ว
+
+| ยุค | ปัญหาที่แก้ | ปัญหาที่เหลือ |
+| --- | --- | --- |
+| **Traditional** | — | แอปแย่งทรัพยากรกัน ตัวหนึ่งพังลามทั้งเครื่อง |
+| **Virtualized** | แยกแอปออกจากกันได้ | ทุก VM แบก OS ของตัวเอง หนักและบูตช้า |
+| **Container** | แยกได้โดยใช้ OS เดียวร่วมกัน | **มีเยอะแล้วจัดการไม่ไหว** ← Kubernetes มาแก้ตรงนี้ |
+
+---
+
+# ส่วนที่ 2 — คลัสเตอร์ประกอบด้วยอะไร
+
+<Figure number={4} caption="ครึ่งซ้ายคือสมองที่ตัดสินใจ ครึ่งขวาคือแรงงานที่รันของจริง">
+  <ClusterArchitecture />
+</Figure>
+
+<Term en="Cluster" th="กลุ่มเครื่องที่ทำงานร่วมกันเหมือนเป็นเครื่องเดียว" /> ของ Kubernetes แบ่งเป็นสองฝั่ง
+
+## ฝั่งซ้าย — Control Plane
+
+เรียกอีกชื่อว่า **master node** ทำหน้าที่ตัดสินใจทุกอย่าง (สไลด์หน้า 15)
+
+- จัดตารางว่าแอปไหนไปรันที่ไหน
+- รักษาสถานะให้ตรงกับที่ประกาศไว้
+- ขยายและลดขนาด
+- ปล่อยของรุ่นใหม่
+
+ข้างในมีสี่ชิ้นหลัก
+
+| ชิ้นส่วน | หน้าที่ |
+| --- | --- |
+| **kube-apiserver** | ประตูเดียวของทุกคำสั่ง ตรวจสิทธิ์และตรวจความถูกต้องก่อนให้ผ่าน |
+| **etcd** | ฐานข้อมูลที่เก็บสถานะทั้งหมดของคลัสเตอร์ |
+| **kube-scheduler** | ตัดสินว่า pod ใหม่ควรไปอยู่ node ไหน |
+| **kube-controller-manager** | รัน control loop ทั้งหลายที่คอยดูให้สถานะตรง |
+
+มีอีกชิ้นที่เป็นทางเลือกคือ **cloud-controller-manager** ซึ่งมีเฉพาะตอนรันบนคลาวด์ ทำหน้าที่คุยกับ API ของผู้ให้บริการ เช่น ตอนขอ load balancer จริง
+
+<KeyIdea>
+**ทุกชิ้นคุยผ่าน kube-apiserver เท่านั้น** ไม่มีใครคุยกันเองข้ามชิ้น
+
+นี่คือเหตุผลที่ Kubernetes ขยายความสามารถได้ง่าย — เขียนโปรแกรมที่คุยกับ API ตัวเดียวกันได้ ก็เพิ่มพฤติกรรมใหม่ให้คลัสเตอร์ได้เลย
+</KeyIdea>
+
+## ฝั่งขวา — Node
+
+<Term en="Node" th="เครื่องหนึ่งเครื่องในคลัสเตอร์" /> จะเป็นเครื่องจริงหรือ VM ก็ได้ (สไลด์หน้า 14) เรียกอีกชื่อว่า **worker node** เพราะเป็นที่ที่แอปรันจริง
+
+ทุก node ต้องมีอย่างน้อยสองอย่าง
+
+| ชิ้นส่วน | หน้าที่ |
+| --- | --- |
+| **kubelet** | ตัวแทนของ control plane บนเครื่องนี้ รับคำสั่งว่าต้องรัน pod อะไรบ้าง แล้วรายงานกลับ |
+| **container runtime** | ตัวรัน container จริง ๆ เช่น containerd หรือ Docker |
+
+ในรูปยังมีอีกชิ้นคือ **kube-proxy** ซึ่งดูแลกฎเครือข่ายบน node ให้ทราฟฟิกที่ยิงมาที่ Service ไปถึง pod ตัวที่ถูกต้อง — เป็นตัวที่ทำให้ Service ในส่วนถัดไปทำงานได้จริง
+
+<Analogy>
+control plane คือสำนักงานใหญ่ที่ตัดสินใจ node คือสาขา และ kubelet คือผู้จัดการสาขาที่รับนโยบายมาทำ แล้วรายงานยอดกลับไป
+
+สำนักงานใหญ่ไม่เคยลงมือทำเอง และสาขาไม่เคยตัดสินใจเอง
+</Analogy>
+
+<Callout type="info" title="บนเครื่องเดียว สองฝั่งนี้อยู่ด้วยกัน">
+ตอนรัน Kubernetes บน Docker Desktop จะเห็น node เดียวชื่อ `docker-desktop` ที่มีบทบาท `control-plane` — คือทั้งสมองและแรงงานอยู่บนเครื่องเดียวกัน
+
+เหมาะกับการเรียนและทดสอบ แต่ไม่มีใครทำแบบนี้ตอนใช้จริง เพราะเครื่องนี้ตายก็จบทั้งคลัสเตอร์
+</Callout>
+
+## Pod — หน่วยที่เล็กที่สุด
+
+<Why>
+คำถามแรกที่ทุกคนถามคือ "ทำไมไม่จัดการ container ตรง ๆ ทำไมต้องมี pod มาคั่น"
+
+เพราะบางครั้ง container สองตัว **ต้องอยู่ด้วยกันเสมอ** เช่นแอปหลักกับตัวส่ง log ที่อ่านไฟล์เดียวกัน ถ้า Kubernetes จัดการทีละ container มันอาจวางสองตัวนี้คนละเครื่อง แล้วก็พังทันที
+
+pod คือคำตอบว่า "ของกลุ่มนี้ต้องอยู่ด้วยกัน"
+</Why>
+
+<Figure number={5} caption="Pod หนึ่งตัว — container ข้างในใช้ IP เดียวกันและอยู่เครื่องเดียวกันเสมอ">
+  <PodAnatomy />
+</Figure>
+
+สไลด์หน้า 13 นิยามไว้สามข้อ
+
+- **หน่วยงานที่เล็กที่สุด** ของ Kubernetes
+- **หนึ่งหรือหลาย container** ที่รับประกันว่าจะอยู่บนเครื่องเดียวกัน และแชร์ทรัพยากรกันได้
+- **หน่วยพื้นฐานของการจัดตาราง** — scheduler จัดตาราง pod ไม่ใช่ container
+
+<Pitfall>
+pod ส่วนใหญ่ในโลกจริงมี container **ตัวเดียว** อย่าใส่หลาย container ในหนึ่ง pod เพียงเพราะมันเกี่ยวข้องกัน
+
+เกณฑ์คือ **ต้องเกิดและตายพร้อมกัน และต้องอยู่เครื่องเดียวกันจริง ๆ ไหม** ถ้าคำตอบคือไม่ ให้แยก pod แล้วคุยกันผ่าน Service
+</Pitfall>
+
+---
+
+# ส่วนที่ 3 — ลงมือใช้ kubectl
+
+## แอปที่จะใช้ทดลอง
+
+สไลด์ใช้แอปชื่อ **kuard** จากหนังสือ *Kubernetes: Up and Running, 2nd Edition* มันเป็นเว็บที่เปิดมาแล้วโชว์ทุกอย่างเกี่ยวกับตัวเอง — request ที่ได้รับ, ตัวแปรสภาพแวดล้อม, หน่วยความจำ, สถานะ probe, และ IP ที่มันมองเห็น
+
+ลองรันด้วย Docker ธรรมดาก่อน เพื่อยืนยันว่ามันทำงาน
+
+```bash
+docker run -d --name kuard -p 8080:8080 \
+  gcr.io/kuar-demo/kuard-amd64:blue
+```
+
+แล้วเปิด `http://localhost:8080` หรือ `curl http://localhost:8080`
+
+<Callout type="info" title="ทำไมแอปทดสอบถึงเหมาะกับการเรียน Kubernetes">
+kuard แสดง IP ที่ตัวเองมองเห็นไว้บนหน้าเว็บ (`Serving on 10.1.0.7`)
+
+พอเราขยายเป็นหลาย pod แล้วรีเฟรชหน้าเว็บซ้ำ ๆ จะเห็นเลขนี้เปลี่ยนไปมา — เห็นด้วยตาว่า load balancing ทำงานจริง ไม่ต้องเชื่อคำอธิบาย
+</Callout>
+
+## kubectl คุยกับอะไร
+
+<Term en="kubectl" th="เครื่องมือบรรทัดคำสั่งสำหรับสั่ง Kubernetes" /> คือหน้าตาที่เราใช้ทั้งคาบ
+
+รูปแบบคำสั่งคือ
+
+```bash
+kubectl <command> <args>
+```
+
+แต่ก่อนจะสั่งได้ ต้องมีไฟล์ตั้งค่าบอกว่าคลัสเตอร์อยู่ไหน ซึ่งหาได้สามทาง (สไลด์หน้า 21)
+
+| ลำดับ | ที่มา |
+| --- | --- |
+| 1 | `$HOME/.kube/config` — ที่ปริยาย |
+| 2 | ชื่อไฟล์จากตัวแปร `KUBECONFIG` |
+| 3 | ชื่อไฟล์จาก flag `--kubeconfig` |
+
+สิ่งที่ `kubectl` ทำจริง ๆ (สไลด์หน้า 22)
+
+1. อ่านข้อมูล cluster, user และ context จาก kubeconfig
+2. แปลงคำสั่งเป็นการเรียก API — สร้าง, ค้นหา, แก้ไข, เฝ้าดู หรือลบ
+3. **kube-apiserver** ตรวจตัวตน ตรวจสิทธิ์ และตรวจความถูกต้อง
+4. ผลลัพธ์กลับมาแสดงบนจอ
+
+<KeyIdea>
+`kubectl` ไม่ได้มีความสามารถพิเศษอะไร มันเป็นแค่ **client ที่ยิง HTTP ไปหา API** ทุกอย่างที่มันทำได้ เราเขียนโปรแกรมทำเองได้หมด
+
+นี่คือความหมายของคำว่า *software-defined* ที่วิชานี้พูดถึงมาตั้งแต่คาบแรก — ระบบเปิดให้โปรแกรมสั่งได้ ไม่ใช่แค่ให้คนกด
+</KeyIdea>
+
+### ค้นหาว่ามีอะไรให้ใช้บ้าง
+
+สองคำสั่งนี้ทำให้ไม่ต้องเปิดเอกสารบ่อย
+
+```bash
+kubectl api-resources
+kubectl explain pod.spec.containers
+```
+
+`api-resources` แสดงชนิดของ object ทั้งหมดที่คลัสเตอร์นี้รู้จัก ส่วน `explain` อธิบายว่าฟิลด์แต่ละอันใน manifest ใส่อะไรได้บ้าง
+
+## ลำดับการทำงานที่ใช้จริง
+
+สไลด์หน้า 23 จัดคำสั่งเป็นสี่กลุ่มตาม **สิ่งที่เรากำลังพยายามทำ** ไม่ใช่ตามตัวอักษร
+
+| กลุ่ม | คำสั่ง | ใช้ตอน |
+| --- | --- | --- |
+| **สำรวจ** | `get`, `api-resources`, `explain` | อยากรู้ว่ามีอะไรอยู่ |
+| **ทำความเข้าใจ** | `describe`, `events`, `logs` | อยากรู้ว่าทำไมมันเป็นแบบนั้น |
+| **เปลี่ยน** | `apply`, `delete`, `scale`, `rollout` | อยากให้มันเป็นอีกแบบ |
+| **แก้ปัญหา** | `exec`, `port-forward`, `auth can-i` | อยากเข้าไปดูข้างใน |
+
+<Callout type="info" title="ใช้ --watch แทนการกด get ซ้ำ ๆ">
+สไลด์เขียนไว้ตรง ๆ ว่าให้ดูการเปลี่ยนสถานะด้วย `--watch` แทนที่จะกดคำสั่งเดิมซ้ำหลายรอบ
+
+```bash
+kubectl get pod kuard --watch
+```
+
+มันจะค้างอยู่แล้วพิมพ์บรรทัดใหม่ทุกครั้งที่สถานะเปลี่ยน ทำให้เห็นลำดับ `Pending` → `ContainerCreating` → `Running` ครบ ซึ่งการกด `get` ซ้ำมักพลาดช่วงกลาง
+</Callout>
+
+## ตรวจคลัสเตอร์ก่อนลงมือ
+
+สไลด์หน้า 24 ให้ห้าคำสั่งที่ควรรันก่อนจะ deploy อะไรก็ตาม
+
+```bash
+kubectl version --client
+kubectl cluster-info
+kubectl get nodes -o wide
+kubectl get namespaces
+kubectl get events --sort-by=.lastTimestamp
+```
+
+<Detail label="ดูผลลัพธ์จริงของ version, cluster-info และ get nodes">
+
+`kubectl version`
+
+```text
+Client Version: version.Info{Major:"1", Minor:"27", GitVersion:"v1.27.2", GitCommit:"7f6f68fdabc4df88cfea2dcf9a19b2b830f1e647", GitTreeState:"clean", BuildDate:"2023-05-17T14:20:07Z", GoVersion:"go1.20.4", Compiler:"gc", Platform:"darwin/arm64"}
+Kustomize Version: v5.0.1
+Server Version: version.Info{Major:"1", Minor:"27", GitVersion:"v1.27.2", GitCommit:"7f6f68fdabc4df88cfea2dcf9a19b2b830f1e647", GitTreeState:"clean", BuildDate:"2023-05-17T14:13:28Z", GoVersion:"go1.20.4", Compiler:"gc", Platform:"linux/arm64"}
+```
+
+จุดที่ต้องดูคือ **Client Version กับ Server Version ควรใกล้กัน** ถ้าห่างกันหลายรุ่น บางคำสั่งอาจใช้ไม่ได้
+
+`kubectl cluster-info`
+
+```text
+Kubernetes control plane is running at https://127.0.0.1:6443
+CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+```
+
+`kubectl get nodes`
+
+```text
+NAME             STATUS   ROLES           AGE    VERSION
+docker-desktop   Ready    control-plane   4h9m   v1.27.2
+```
+
+`kubectl describe nodes docker-desktop` (ตัดมาบางส่วน)
+
+```text
+Name:               docker-desktop
+Roles:              control-plane
+Labels:             beta.kubernetes.io/arch=arm64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=arm64
+                    kubernetes.io/hostname=docker-desktop
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/control-plane=
+                    node.kubernetes.io/exclude-from-external-load-balancers=
+Annotations:        kubeadm.alpha.kubernetes.io/cri-socket: unix:///var/run/cri-dockerd.sock
+                    node.alpha.kubernetes.io/ttl: 0
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Sun, 08 Oct 2023 11:25:52 +0700
+Taints:             <none>
+Unschedulable:      false
+```
+
+`Labels` ของ node ก็เป็นป้ายเหมือน pod และใช้บังคับได้ว่า pod ตัวไหนควรไปลง node แบบไหน เช่น node ที่มี GPU
+</Detail>
+
+## รัน container ตัวแรก
+
+สไลด์หน้า 28 บอกว่ามี **สองวิธีสร้าง** และ **สองวิธีเข้าถึงจากภายนอก**
+
+| | ตัวเลือกที่ 1 | ตัวเลือกที่ 2 |
+| --- | --- | --- |
+| **สร้าง** | `kubectl run` — พิมพ์สั้น | `kubectl apply -f` — ใช้ manifest |
+| **เข้าถึงจากนอก** | `port-forward` หรือ `proxy` | ingress routing |
+
+### วิธีที่ 1 — สั่งจากบรรทัดคำสั่ง
+
+```bash
+kubectl run kuard --image=gcr.io/kuar-demo/kuard-amd64:blue
+kubectl get pods
+kubectl port-forward kuard 8080:8080
+```
+
+<Detail label="ดูว่า describe pods บอกอะไรบ้าง">
+
+```text
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             docker-desktop/192.168.65.3
+Start Time:       Sun, 08 Oct 2023 15:43:46 +0700
+Labels:           run=kuard
+Annotations:      <none>
+Status:           Running
+IP:               10.1.0.7
+IPs:
+  IP:  10.1.0.7
+Containers:
+  kuard:
+    Container ID:   docker://2daa8cce407d62130e842d5d63f30dd1715cbc9a28296c7459ce5813238a9add
+    Image:          gcr.io/kuar-demo/kuard-amd64:blue
+    Image ID:       docker-pullable://gcr.io/kuar-demo/kuard-amd64@sha256:1ecc9fb2c871302fdb57a25e0c076311b7b352b0a9246d442940ca8fb4efe229
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Sun, 08 Oct 2023 15:43:46 +0700
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+```
+
+สามบรรทัดที่มีความหมายจริง ๆ
+
+- **`IP: 10.1.0.7`** — pod ได้ IP ของตัวเองในคลัสเตอร์ ซึ่งจะเปลี่ยนทุกครั้งที่สร้างใหม่
+- **`Node: docker-desktop`** — scheduler เลือกเครื่องนี้ให้
+- **`Restart Count: 0`** — ยังไม่เคยตายและถูกสร้างใหม่ ถ้าเลขนี้ขึ้นเรื่อย ๆ แปลว่าแอปมีปัญหา
+</Detail>
+
+<Pitfall title="port-forward ไม่ใช่วิธีเปิดบริการให้คนใช้">
+`kubectl port-forward` สร้างอุโมงค์จากเครื่องเราไปหา pod ตัวเดียว ผ่าน `kubectl` ที่เปิดค้างอยู่
+
+- ปิดเทอร์มินัลปุ๊บ ทางเข้าหายทันที
+- ไปที่ pod **ตัวเดียว** ไม่มีการกระจายโหลด
+- ใช้ได้เฉพาะคนที่มีสิทธิ์ในคลัสเตอร์
+
+มันเป็นเครื่องมือ **debug** เท่านั้น จะเปิดให้คนอื่นใช้ต้องใช้ Service หรือ Ingress
+</Pitfall>
+
+### วิธีที่ 2 — เขียน manifest
+
+ไฟล์ `kuard-pod.yml`
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kuard
+spec:
+  containers:
+    - image: gcr.io/kuar-demo/kuard-amd64:blue
+      name: kuard
+      ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+```
+
+อ่านทีละส่วน — **โครงสี่ส่วนนี้ใช้ได้กับทุก manifest ใน Kubernetes**
+
+| ส่วน | ความหมาย |
+| --- | --- |
+| `apiVersion: v1` | ใช้ API รุ่นไหนอ่านไฟล์นี้ |
+| `kind: Pod` | จะสร้างของชนิดอะไร |
+| `metadata:` | ชื่อ ป้าย และข้อมูลระบุตัวตน |
+| `spec:` | สถานะที่ต้องการ — เนื้อหาจริงอยู่ตรงนี้ |
+
+<StepThrough>
+<Step title="apply">
+
+```bash
+kubectl apply -f kuard-pod.yaml
+```
+
+`apply` แปลว่า "ทำให้เป็นแบบในไฟล์นี้" ไม่ใช่ "สร้างใหม่" — ถ้ามีอยู่แล้วและตรงกันอยู่แล้ว มันจะไม่ทำอะไรเลย
+</Step>
+
+<Step title="เฝ้าดู">
+
+```bash
+kubectl get pod kuard --watch
+```
+
+จะเห็นสถานะไล่จาก `Pending` (รอ scheduler เลือก node) ไป `ContainerCreating` (กำลังดึง image) แล้วจบที่ `Running`
+</Step>
+
+<Step title="ตรวจและอ่าน log">
+
+```bash
+kubectl describe pod kuard
+kubectl logs kuard
+```
+
+`describe` บอกสถานะและเหตุการณ์ที่เกิดกับ pod ส่วน `logs` เอา output ของแอปข้างในออกมา
+
+เวลา pod ไม่ยอมขึ้น ให้ดู **ท้ายสุดของ `describe`** ก่อนเสมอ เพราะส่วน Events จะบอกสาเหตุตรง ๆ เช่น ดึง image ไม่ได้ หรือ node ไม่มีทรัพยากรพอ
+</Step>
+
+<Step title="ลบทิ้ง">
+
+```bash
+kubectl delete -f kuard-pod.yaml
+```
+
+ลบด้วยไฟล์เดิมที่ใช้สร้าง ทำให้ไม่ต้องจำว่าไฟล์นั้นสร้างอะไรไว้บ้าง
+
+<Detail label="ดูผลลัพธ์ของการลบแล้วสร้างใหม่">
+
+```text
+k8s-tutorial % kubectl delete pods kuard
+pod "kuard" deleted
+k8s-tutorial % kubectl get pod
+No resources found in default namespace.
+k8s-tutorial % kubectl apply -f kuard-pod.yml
+pod/kuard created
+k8s-tutorial % kubectl get pod
+NAME    READY   STATUS    RESTARTS   AGE
+kuard   1/1     Running   0          3s
+```
+
+คอลัมน์ `READY` เขียนว่า `1/1` แปลว่า **container ที่พร้อมทำงาน 1 ตัว จากทั้งหมด 1 ตัวใน pod นี้** ถ้า pod มีสอง container แล้วขึ้นแค่ตัวเดียว จะเห็น `1/2`
+</Detail>
+</Step>
+</StepThrough>
+
+<Compare>
+<Wrong title="kubectl run">
+พิมพ์เร็ว เหมาะกับลองเล่น
+
+แต่ไม่มีไฟล์เหลือไว้ ทำให้ทำซ้ำไม่ได้ เก็บเข้า git ไม่ได้ และไม่มีใครรู้ว่าของที่รันอยู่ถูกสร้างด้วยอะไร
+</Wrong>
+<Right title="kubectl apply -f">
+มีไฟล์เป็นหลักฐาน ทำซ้ำได้ ย้อน version ได้ และรีวิวก่อนขึ้นได้
+
+ช้ากว่านิดเดียว แต่นี่คือวิธีเดียวที่ใช้ได้จริงในงานจริง — และเป็นเงื่อนไขของ Infrastructure as Code
+</Right>
+</Compare>
+
+<Detail label="ตารางสรุปคำสั่ง kubectl ที่ใช้บ่อย">
+
+| คำสั่ง | ทำอะไร |
+| --- | --- |
+| `kubectl config` | แก้และดูแลไฟล์ตั้งค่า |
+| `kubectl get` | แสดงรายการ resource |
+| `kubectl apply` | สร้างหรือแก้ resource จาก manifest |
+| `kubectl create` | สร้าง resource จากบรรทัดคำสั่ง |
+| `kubectl describe` | แสดงรายละเอียดของ resource ตัวหนึ่ง |
+| `kubectl run` | รัน image บนคลัสเตอร์ |
+| `kubectl expose` | เปิด controller หรือ pod ออกเป็น Service ใหม่ |
+| `kubectl rollout` | จัดการการปล่อยของรุ่นใหม่ |
+| `kubectl scale` | เปลี่ยนจำนวนสำเนาของ deployment |
+| `kubectl delete` | ลบ resource |
+
+คำสั่งอื่นที่สไลด์หน้า 42 ให้ไว้
+
+```bash
+kubectl logs kuard
+kubectl exec kuard date
+kubectl exec -it kuard -- ash
+kubectl cp $HOME/config.txt <pod-name>:/config.txt
+```
+
+`kubectl exec -it <pod> -- <คำสั่ง>` เทียบได้กับ `docker exec -it` ในคาบที่ 2 — เครื่องหมาย `--` คั่นระหว่าง flag ของ `kubectl` กับคำสั่งที่จะรันข้างใน ถ้าลืมใส่ `kubectl` จะพยายามอ่าน flag ของคำสั่งนั้นเป็นของตัวเอง
+</Detail>
+
+## บอก Pod ว่าใช้ทรัพยากรได้เท่าไหร่
+
+สไลด์หน้า 35 บอกว่าเราตั้งได้สองอย่าง — CPU/หน่วยความจำ และพื้นที่ดิสก์ (แบบใน node เองหรือ mount จากที่อื่น)
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kuard
+spec:
+  volumes:
+    - name: "kuard-data"
+      nfs:
+        server: my.nfs.server.local
+        path: "/exports"
+  containers:
+    - image: gcr.io/kuar-demo/kuard-amd64:blue
+      name: kuard
+      ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "128Mi"
+        limits:
+          cpu: "1000m"
+          memory: "256Mi"
+      volumeMounts:
+        - mountPath: "/data"
+          name: "kuard-data"
+```
+
+<KeyIdea>
+`requests` กับ `limits` ทำคนละหน้าที่ และนี่คือจุดที่คนสับสนที่สุด
+
+- **`requests` = ขั้นต่ำที่ต้องได้** ใช้ตอน **scheduler เลือก node** — node ที่เหลือน้อยกว่านี้จะไม่ถูกเลือก
+- **`limits` = เพดานสูงสุด** ใช้ตอน **container รันอยู่** — เกินแล้วจะโดนคุม
+</KeyIdea>
+
+<Example added title="requests กับ limits ต่างกันตอนไหน">
+`cpu: "500m"` หมายถึง 500 millicore หรือ **ครึ่งหนึ่งของหนึ่งคอร์** และ `1000m` คือหนึ่งคอร์เต็ม
+
+สมมติมี node ว่างเหลือ 800m
+
+- pod นี้ขอ `requests: 500m` — **ลงได้** เพราะ 800 มากกว่า 500
+- ตอนรัน ถ้าแอปอยากใช้ถึง `1000m` — **จะโดนเบรกไว้ที่เพดาน** แอปไม่ตาย แค่ช้าลง
+
+ส่วนหน่วยความจำต่างออกไป: เกิน `limits` ของ memory จะโดน **ฆ่าทิ้ง** (`OOMKilled`) แล้วสร้างใหม่ เพราะหน่วยความจำเบรกไม่ได้เหมือน CPU
+
+ถ้าไม่ใส่ `requests` เลย scheduler จะเดาว่า pod นี้แทบไม่ใช้อะไร แล้วยัดลง node ที่เต็มอยู่แล้ว จนทุกอย่างบนเครื่องนั้นช้าไปพร้อมกัน
+</Example>
+
+สไลด์ยังย้ำว่า **volume แยกจากทรัพยากรคำนวณ** — พื้นที่เก็บข้อมูลประกาศคนละที่กับ CPU และหน่วยความจำ เพราะมันมีอายุคนละแบบ pod ตายได้แต่ข้อมูลต้องอยู่ต่อ
+
+## Probe — ให้ Kubernetes รู้ว่าแอปเป็นยังไง
+
+<Why>
+Kubernetes เห็นแค่ว่าโปรเซสยังอยู่หรือไม่ แต่โปรเซสที่ยังอยู่ไม่ได้แปลว่าใช้งานได้ — แอปอาจค้างรอฐานข้อมูลอยู่ หรือกำลังโหลดข้อมูลตั้งต้นที่ใช้เวลาสองนาที
+
+probe คือวิธีที่แอปบอกสถานะจริงของตัวเองกลับไป
+</Why>
+
+สไลด์หน้า 36 ให้สามชนิด
+
+| Probe | ถามว่า | ตอบว่าไม่ แล้วเกิดอะไร |
+| --- | --- | --- |
+| **startupProbe** | แอปที่สตาร์ตช้า เริ่มเสร็จหรือยัง | ยังไม่เริ่มตรวจสองตัวล่าง |
+| **readinessProbe** | ตอนนี้ควรส่งงานให้ pod นี้ไหม | **ถอดออกจาก Service** แต่ไม่รีสตาร์ต |
+| **livenessProbe** | container ค้างจนต้องรีสตาร์ตหรือยัง | **ฆ่าแล้วสร้างใหม่** |
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthy
+    port: 8080
+  initialDelaySeconds: 5
+  timeoutSeconds: 1
+  periodSeconds: 10
+  failureThreshold: 3
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+  initialDelaySeconds: 30
+  timeoutSeconds: 1
+  periodSeconds: 10
+  failureThreshold: 3
+```
+
+อ่านค่าทั้งสี่
+
+| ค่า | ความหมาย |
+| --- | --- |
+| `initialDelaySeconds` | รอกี่วินาทีหลัง container ขึ้นก่อนเริ่มถามครั้งแรก |
+| `timeoutSeconds` | ถามแล้วรอคำตอบนานสุดกี่วินาที |
+| `periodSeconds` | ถามซ้ำทุกกี่วินาที |
+| `failureThreshold` | ตอบไม่ผ่านติดกันกี่ครั้งถึงจะถือว่าล้มเหลว |
+
+<Pitfall title="livenessProbe ที่ตั้งผิดทำให้ปัญหาเล็กกลายเป็นระบบล่ม">
+สไลด์เขียนเตือนไว้ตรง ๆ ว่า *misconfigured liveness probes can amplify an outage*
+
+สมมติฐานข้อมูลช้าลงชั่วคราว แล้ว `livenessProbe` ของทุก pod ตั้งไว้ว่าตอบช้าเกิน 1 วินาทีคือล้มเหลว
+
+ผลคือ **ทุก pod โดนฆ่าพร้อมกัน** ตอนสร้างใหม่ทุกตัวก็ยิงเข้าฐานข้อมูลที่ช้าอยู่แล้วพร้อมกันอีกรอบ — ฐานข้อมูลยิ่งช้า probe ยิ่งล้มเหลว วนไม่จบ
+
+จากปัญหาที่จะหายเองในสิบวินาที กลายเป็นระบบล่มยาว
+
+**กฎง่าย ๆ:** `livenessProbe` ควรตรวจแค่ว่า *โปรเซสของฉันเองยังตอบสนองไหม* ห้ามไปตรวจว่าฐานข้อมูลหรือบริการอื่นยังดีอยู่ไหม — เรื่องนั้นเป็นหน้าที่ของ `readinessProbe` ซึ่งแค่ถอด pod ออกจากคิวชั่วคราว ไม่ฆ่าทิ้ง
+</Pitfall>
+
+## Context — รู้ตัวว่ากำลังสั่งคลัสเตอร์ไหนอยู่
+
+<Why>
+เครื่องหนึ่งเครื่องคุยกับหลายคลัสเตอร์ได้ — เครื่องตัวเอง, เครื่องทดสอบ, และเครื่องจริง
+
+คำสั่ง `kubectl delete` ตัวเดียวกัน ยิงผิดคลัสเตอร์คือหายนะ
+</Why>
+
+สไลด์หน้า 39 นิยามไว้ว่า **context = cluster + user + namespace ปริยาย**
+
+```bash
+kubectl config view
+kubectl config get-contexts
+kubectl config use-context <name>
+```
+
+<Detail label="ดูหน้าตาของ kubeconfig ที่มีสองคลัสเตอร์">
+
+```text
+(base) natawut@mini ~ % kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: DATA+OMITTED
+    server: https://ares:6443
+  name: default
+- cluster:
+    certificate-authority-data: DATA+OMITTED
+    server: https://0.0.0.0:53503
+  name: k3d-mycluster
+contexts:
+- context:
+    cluster: default
+    user: default
+  name: default
+- context:
+    cluster: k3d-mycluster
+    user: admin@k3d-mycluster
+  name: k3d-mycluster
+current-context: k3d-mycluster
+kind: Config
+preferences: {}
+users:
+- name: admin@k3d-mycluster
+  user:
+    client-certificate-data: REDACTED
+    client-key-data: REDACTED
+- name: default
+  user:
+    client-certificate-data: REDACTED
+    client-key-data: REDACTED
+```
+
+สามจุดที่ต้องอ่าน
+
+- **`clusters:`** มีสองคลัสเตอร์ — `default` ที่เครื่อง `ares` และ `k3d-mycluster` ที่เครื่องตัวเอง
+- **`contexts:`** มีสอง context จับคู่คลัสเตอร์กับผู้ใช้
+- **`current-context: k3d-mycluster`** — คำสั่งถัดไปทุกคำสั่งจะไปที่นี่
+
+สังเกตว่าใบรับรองแสดงเป็น `REDACTED` และ `DATA+OMITTED` เพราะ `kubectl config view` ตัดของลับออกให้เอง แต่ **ไฟล์จริงบนดิสก์มีค่าเหล่านั้นเต็ม ๆ** — ห้ามเอา `~/.kube/config` ขึ้น git เด็ดขาด
+</Detail>
+
+<Pitfall>
+สไลด์เขียนไว้ว่า **always verify the current context before a destructive command**
+
+ก่อน `delete` ทุกครั้งให้พิมพ์
+
+```bash
+kubectl config current-context
+```
+
+คนที่ทำงานกับหลายคลัสเตอร์ประจำมักติดตั้งเครื่องมือที่โชว์ชื่อ context ไว้บน prompt ตลอดเวลา เพราะการพึ่งความจำล้วนพลาดได้จริง
+</Pitfall>
+
+## Label และ Annotation
+
+สไลด์หน้า 43 อธิบายสองอย่างที่หน้าตาเหมือนกันแต่ใช้คนละงาน
+
+| | Label | Annotation |
+| --- | --- | --- |
+| หน้าตา | key/value | key/value |
+| ใช้ทำ | **เลือกกลุ่มของ object** | เก็บโน้ตให้เครื่องมือหรือคนอื่นอ่าน |
+| Kubernetes เอาไปใช้ | ใช่ — Service และ Deployment ใช้จับคู่ | ไม่ |
+| ตัวอย่าง | `env=prod`, `app=kuard` | ชื่อคนดูแล, ลิงก์เอกสาร |
+
+ป้ายที่มีประโยชน์ตามสไลด์คือ เลข version, สภาพแวดล้อมที่รัน และโดเมนของแอป
+
+```bash
+kubectl run <name> --image <location> --labels '<key>=<value>,...'
+kubectl get pods --selector '<key>=<value>,...'
+```
+
+<Detail label="ดูผลจริงของการติดป้ายแล้วเลือกด้วย selector">
+
+```text
+k8s-tutorial % kubectl run kuard --image=gcr.io/kuar-demo/kuard-amd64:blue
+pod/kuard created
+k8s-tutorial % kubectl run kuard-test --image=gcr.io/kuar-demo/kuard-amd64:blue --labels 'env=test,app=kuard'
+pod/kuard-test created
+k8s-tutorial % kubectl run kuard-prod --image=gcr.io/kuar-demo/kuard-amd64:blue --labels 'env=prod,app=kuard'
+pod/kuard-prod created
+k8s-tutorial % kubectl get pods --show-labels
+NAME         READY   STATUS    RESTARTS   AGE   LABELS
+kuard        1/1     Running   0          43s   run=kuard
+kuard-prod   1/1     Running   0          18s   app=kuard,env=prod
+kuard-test   1/1     Running   0          39s   app=kuard,env=test
+k8s-tutorial % kubectl get pods --show-labels --selector 'env=test'
+NAME         READY   STATUS    RESTARTS   AGE   LABELS
+kuard-test   1/1     Running   0          70s   app=kuard,env=test
+k8s-tutorial % kubectl delete pods --selector 'app=kuard'
+pod "kuard-prod" deleted
+pod "kuard-test" deleted
+k8s-tutorial % kubectl get pods --show-labels
+NAME    READY   STATUS    RESTARTS   AGE   LABELS
+kuard   1/1     Running   0          2m    run=kuard
+```
+
+จุดที่ต้องสังเกต — **`kuard` ตัวแรกรอดจากการลบ**
+
+เพราะมันสร้างด้วย `kubectl run` เฉย ๆ จึงได้ป้ายปริยาย `run=kuard` ไม่ใช่ `app=kuard` คำสั่ง `delete --selector 'app=kuard'` เลยไม่แตะมัน
+
+**นี่คือทั้งพลังและอันตรายของ selector** — มันทำงานกับทุกตัวที่ป้ายตรง ไม่มากไม่น้อยกว่านั้น ป้ายผิดตัวเดียวคือลบผิดหรือลบไม่ครบ
+</Detail>
+
+<Pitfall>
+`kubectl delete pods --selector 'env=prod'` ลบทุก pod ที่ติดป้ายนั้น **ทั้งคลัสเตอร์** ไม่ใช่แค่ที่เราสร้าง
+
+ก่อนลบด้วย selector ให้เปลี่ยน `delete` เป็น `get` ก่อนเสมอ เพื่อดูว่าจะโดนกี่ตัว
+</Pitfall>
+
+<Quiz question="ทำไม `kubectl run` ถึงติดป้ายให้ว่า `run=kuard` แทนที่จะเป็น `app=kuard`">
+เพราะ `run=` คือป้ายปริยายที่ `kubectl run` ใส่ให้เอง โดยเอาชื่อ pod มาเป็นค่า
+
+ประเด็นสำคัญคือ **ป้ายไม่มีความหมายในตัวเอง** `app`, `env`, `run` เป็นแค่ข้อความที่เราตั้งเอง Kubernetes ไม่รู้จักคำเหล่านี้เป็นพิเศษ
+
+สิ่งเดียวที่มันทำคือ **จับคู่ข้อความให้ตรงกัน** ระหว่าง selector กับ label ดังนั้นทีมต้องตกลงกันเองว่าจะใช้คำไหน แล้วใช้ให้เหมือนกันทั้งทีม
+</Quiz>
+
+---
+
+# ส่วนที่ 4 — Deployment กับ Service
+
+## ทำไม Pod เปล่า ๆ ไม่พอ
+
+<Why>
+ที่ผ่านมาเราสร้าง pod ตรง ๆ ซึ่งใช้เรียนได้ แต่ใช้จริงไม่ได้ เพราะ
+
+- **pod ตายแล้วตายเลย** ไม่มีใครสร้างใหม่ให้
+- **มีตัวเดียว** จะขยายต้องเขียนไฟล์เพิ่มเอง
+- **อัปเดตไม่ได้** ต้องลบแล้วสร้างใหม่ ซึ่งระหว่างนั้นระบบล่ม
+
+สไลด์หน้า 45 เรียกสิ่งนี้ว่า *very simple, but have limited functionality*
+</Why>
+
+<Term en="Deployment" th="object ที่ดูแลว่าต้องมี pod กี่ตัวและหน้าตาแบบไหน" /> ทำให้ได้สามอย่างที่ pod เปล่าไม่มี
+
+- เปิดบริการออกไปให้คนอื่นเรียกได้
+- ขยายจำนวนสำเนา
+- ปล่อยของรุ่นใหม่แบบไม่ล่ม
+
+## เขียน Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: kuard}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: kuard}}
+  template:
+    metadata: {labels: {app: kuard}}
+    spec:
+      containers:
+        - name: kuard
+          image: gcr.io/kuar-demo/kuard-amd64:blue
+          ports:
+            - containerPort: 8080
+```
+
+ไฟล์นี้ต่างจาก Pod manifest สามจุด
+
+| จุด | ความหมาย |
+| --- | --- |
+| `apiVersion: apps/v1` | Deployment อยู่คนละกลุ่ม API กับ Pod ซึ่งอยู่ใน `v1` |
+| `replicas: 1` | อยากได้กี่สำเนา — แก้เลขนี้แล้ว apply คือขยาย |
+| `selector` + `template` | selector บอกว่าจะดูแล pod ที่ป้ายตรงกับอะไร ส่วน template คือแบบพิมพ์เขียวของ pod ที่จะสร้าง |
+
+<Pitfall title="selector กับ labels ใน template ต้องตรงกัน">
+สไลด์เขียนเตือนไว้ว่า *the selector must match labels in the Pod template*
+
+ถ้า `selector` เขียน `app: kuard` แต่ `template.metadata.labels` เขียน `app: kuard-web` — Deployment จะสร้าง pod ออกมา แล้ว **มองไม่เห็น pod ที่ตัวเองสร้าง**
+
+ผลคือมันคิดว่ายังไม่มี pod เลย จึงสร้างเพิ่มอีก แล้วก็มองไม่เห็นอีก วนไปไม่หยุด
+
+Kubernetes รุ่นใหม่ปฏิเสธไฟล์แบบนี้ตั้งแต่ตอน apply แล้ว แต่ก็ต้องรู้ว่าทำไม
+</Pitfall>
+
+<Detail label="ดูว่า apply Deployment แล้วได้อะไรมา">
+
+```text
+k8s-tutorial % kubectl apply -f kuard-deployment.yml
+deployment.apps/kuard created
+k8s-tutorial % kubectl get pods
+NAME                     READY   STATUS    RESTARTS   AGE
+kuard-5c8455ff59-hkn69   1/1     Running   0          8s
+k8s-tutorial % kubectl get deployment
+NAME    READY   UP-TO-DATE   AVAILABLE   AGE
+kuard   1/1     1            1           22s
+k8s-tutorial % kubectl describe deployment kuard
+Name:                   kuard
+Namespace:              default
+CreationTimestamp:      Sun, 08 Oct 2023 16:23:55 +0700
+Labels:                 app=kuard
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               app=kuard
+Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=kuard
+  Containers:
+   kuard:
+    Image:        gcr.io/kuar-demo/kuard-amd64:blue
+```
+
+**ชื่อ pod คือ `kuard-5c8455ff59-hkn69`** ไม่ใช่ `kuard` เฉย ๆ — ประกอบด้วยสามส่วน
+
+- `kuard` — ชื่อ Deployment
+- `5c8455ff59` — hash ของ pod template ถ้าแก้ template ค่านี้จะเปลี่ยน
+- `hkn69` — ตัวอักษรสุ่ม กันชื่อชนกัน
+
+นี่คือเหตุผลว่าทำไมห้ามเขียนชื่อ pod ลงไฟล์ตั้งค่าที่ไหนเลย — มันเปลี่ยนทุกครั้ง
+
+**`RollingUpdateStrategy: 25% max unavailable, 25% max surge`** คือค่าปริยายที่จะอธิบายในหัวข้อ rollout
+</Detail>
+
+## ขยายจำนวน
+
+สไลด์หน้า 48 บอกเหตุผลตรงไปตรงมา — Deployment สร้าง pod มาตัวเดียว พอคนใช้เยอะขึ้นก็ต้องเพิ่ม
+
+```bash
+kubectl scale --replicas=3 deployment/kuard
+```
+
+<Detail label="ดูผลของการขยายเป็น 3 แล้วลดกลับเป็น 1">
+
+```text
+k8s-tutorial % kubectl get deployments
+NAME    READY   UP-TO-DATE   AVAILABLE   AGE
+kuard   1/1     1            1           3m53s
+k8s-tutorial % kubectl get pods --show-labels
+NAME                     READY   STATUS    RESTARTS   AGE    LABELS
+kuard-5c8455ff59-hkn69   1/1     Running   0          4m9s   app=kuard,pod-template-hash=5c8455ff59
+k8s-tutorial % kubectl scale --replicas=3 deployment/kuard
+deployment.apps/kuard scaled
+k8s-tutorial % kubectl get deployments
+NAME    READY   UP-TO-DATE   AVAILABLE   AGE
+kuard   3/3     3            3           4m49s
+k8s-tutorial % kubectl get pods --show-labels
+NAME                     READY   STATUS    RESTARTS   AGE     LABELS
+kuard-5c8455ff59-hkn69   1/1     Running   0          4m54s   app=kuard,pod-template-hash=5c8455ff59
+kuard-5c8455ff59-kl6ws   1/1     Running   0          14s     app=kuard,pod-template-hash=5c8455ff59
+kuard-5c8455ff59-llzxh   1/1     Running   0          14s     app=kuard,pod-template-hash=5c8455ff59
+k8s-tutorial % kubectl scale --replicas=1 deployment/kuard
+deployment.apps/kuard scaled
+k8s-tutorial % kubectl get pods --show-labels
+NAME                     READY   STATUS    RESTARTS   AGE     LABELS
+kuard-5c8455ff59-hkn69   1/1     Running   0          5m18s   app=kuard,pod-template-hash=5c8455ff59
+k8s-tutorial % kubectl delete deployments kuard
+deployment.apps "kuard" deleted
+```
+
+สองอย่างที่ควรสังเกต
+
+- pod ใหม่สองตัวขึ้นใน **14 วินาที** — เทียบกับ VM ที่ใช้เวลาเป็นนาที
+- ลดกลับเป็น 1 แล้ว **ตัวที่รอดคือตัวที่เก่าที่สุด** (`hkn69` อายุ 5 นาที) Kubernetes เลือกฆ่าตัวที่ใหม่กว่าก่อน
+</Detail>
+
+<Callout type="warn" title="scale จากบรรทัดคำสั่งทำให้ไฟล์ไม่ตรงกับของจริง">
+`kubectl scale --replicas=3` เปลี่ยนของจริงเป็น 3 แต่ไฟล์ `kuard-deployment.yml` ยังเขียน `replicas: 1` อยู่
+
+ครั้งหน้าที่ใครสั่ง `kubectl apply -f kuard-deployment.yml` มันจะกลับไปเป็น 1 ทันที และคนสั่งอาจไม่ตั้งใจ
+
+**ถ้าทำงานแบบ Infrastructure as Code จริง ให้แก้เลขในไฟล์แล้ว apply** ใช้ `kubectl scale` เฉพาะตอนฉุกเฉินหรือตอนลองเล่นเท่านั้น
+</Callout>
+
+## Service — ที่อยู่ที่ไม่ขยับ
+
+<Why>
+ตอนนี้มี 3 pod แต่ละตัวมี IP ของตัวเอง และ IP เหล่านั้นเปลี่ยนทุกครั้งที่ pod ถูกสร้างใหม่ — ซึ่งเกิดตลอดเวลาจาก self-healing และการอัปเดต
+
+แล้วคนอื่นจะเรียกยังไง จะเอา IP ไหนไปเขียนไว้
+</Why>
+
+<Term en="Service" th="ที่อยู่คงที่ที่ชี้ไปยังกลุ่มของ pod" /> คือคำตอบ สไลด์หน้า 50 อธิบายว่ามันให้
+
+- **Cluster-IP ที่ไม่เปลี่ยน**
+- **ชื่อ DNS** ที่เรียกได้จากใน namespace เดียวกัน
+- **กระจายโหลด** ไปยัง pod ที่อยู่ในกลุ่มโดยอัตโนมัติ
+
+และเลือกว่า pod ตัวไหนอยู่ในกลุ่ม ด้วย **LabelSelector**
+
+<Figure number={6} caption="Service เลือก pod ด้วยป้าย ไม่ใช่ด้วยรายชื่อ — pod จะเกิดหรือตายก็ไม่ต้องแก้อะไร">
+  <ServiceSelector />
+</Figure>
+
+รูปนี้มาจากสไลด์หน้า 51 มีสามจุดที่เขียนกำกับไว้
+
+1. **Service binds to Cluster-IP** — Service ยึดกับ `1.1.1.1` ซึ่งไม่เปลี่ยน
+2. **Pod IP is internal only** — `10.10.10.x` ใช้ได้แค่ในคลัสเตอร์ ข้างนอกเรียกไม่ถึง
+3. **Same label, different deployment** — pod ที่มีป้าย `app: A` เหมือนกัน จะถูกจับเข้ากลุ่มเดียวกัน **ต่อให้มาจากคนละ Deployment**
+
+<Analogy>
+Service คือเบอร์กลางของบริษัท พนักงานเข้าออกเปลี่ยนโต๊ะทุกเดือน แต่ลูกค้าโทรเบอร์เดิมเสมอ แล้วสายจะถูกโอนไปหาคนที่ว่างอยู่
+
+ลูกค้าไม่เคยต้องรู้ว่าตอนนี้ใครนั่งอยู่ที่ไหน
+</Analogy>
+
+### สร้าง Service ที่ง่ายที่สุด
+
+```bash
+kubectl expose deployment/kuard
+```
+
+<Detail label="ดูผลของ expose และการเปลี่ยนแปลงเมื่อขยายเป็น 3 pod">
+
+หลัง expose ตอนที่ยังมี pod เดียว
+
+```text
+k8s-tutorial % kubectl expose deployment/kuard
+service/kuard exposed
+k8s-tutorial % kubectl get services -o wide
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+kuard        ClusterIP   10.100.87.196   <none>        8080/TCP  14s   app=kuard
+kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP   5h8m  <none>
+k8s-tutorial % kubectl describe services kuard
+Name:              kuard
+Namespace:         default
+Labels:            app=kuard
+Annotations:       <none>
+Selector:          app=kuard
+Type:              ClusterIP
+IP Family Policy:  SingleStack
+IP Families:       IPv4
+IP:                10.100.87.196
+IPs:               10.100.87.196
+Port:              <unset>  8080/TCP
+TargetPort:        8080/TCP
+Endpoints:         10.1.0.20:8080
+Session Affinity:  None
+Events:            <none>
+```
+
+จากนั้นขยายเป็น 3
+
+```text
+k8s-tutorial % kubectl scale --replicas=3 deployment/kuard
+deployment.apps/kuard scaled
+k8s-tutorial % kubectl describe services kuard
+Name:              kuard
+...
+IP:                10.100.87.196
+Port:              <unset>  8080/TCP
+TargetPort:        8080/TCP
+Endpoints:         10.1.0.20:8080,10.1.0.21:8080,10.1.0.22:8080
+Session Affinity:  None
+```
+
+**บรรทัดที่ต้องดูคือ `Endpoints`** — จาก 1 กลายเป็น 3 โดยที่ `IP: 10.100.87.196` ของ Service **ไม่เปลี่ยนเลย**
+
+นี่คือทั้งหมดที่ Service ทำ: เก็บรายชื่อ pod ที่ป้ายตรงกับ selector ให้เป็นปัจจุบันเสมอ แล้วซ่อนรายชื่อนั้นไว้หลังที่อยู่เดียว
+</Detail>
+
+<Callout type="info" title="ข้อจำกัดของ kubectl expose">
+สไลด์หน้า 52 ระบุว่า `expose` จาก deployment จะได้ **Service เดียวที่ใช้พอร์ตเดียวกันกับทุก container ในนั้น**
+
+ถ้าอยากได้ Service ที่ครอบ pod จากหลายที่ หรือใช้พอร์ตต่างจากที่ container เปิด ต้องเขียน Service manifest เองแล้ว apply
+
+`kubectl expose` เป็นทางลัดสำหรับกรณีพื้นฐานเท่านั้น
+</Callout>
+
+## Rollout — เปลี่ยนรุ่นโดยไม่ล่ม
+
+<Figure number={7} caption="ทยอยเปลี่ยนทีละตัว โดยยังมี pod พร้อมรับงานตลอดเวลา">
+  <RollingUpdate />
+</Figure>
+
+สไลด์หน้า 54–55 วาดลำดับนี้ไว้ ประเด็นคือ **ไม่มีจังหวะไหนเลยที่ Service ไม่มี pod ให้ส่งงาน**
+
+ทำไมถึงเป็นไปได้ ย้อนกลับไปดูค่าจาก `describe` ที่เจอไปแล้ว
+
+```text
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+```
+
+| ค่า | ความหมาย |
+| --- | --- |
+| `max unavailable: 25%` | ระหว่างอัปเดต ยอมให้ pod หายไปได้มากสุด 25% ของที่ต้องการ |
+| `max surge: 25%` | ยอมให้สร้างเกินที่ต้องการชั่วคราวได้ 25% |
+
+<Example added title="ค่าสองตัวนี้แปลเป็นตัวเลขจริง">
+สมมติ `replicas: 4` แล้วสั่งอัปเดต
+
+- `max unavailable 25%` ของ 4 = **1 ตัว** — ระหว่างอัปเดตต้องมีอย่างน้อย 3 ตัวพร้อมใช้เสมอ
+- `max surge 25%` ของ 4 = **1 ตัว** — ระหว่างทางมีได้มากสุด 5 ตัว
+
+ลำดับจึงเป็นแบบนี้: สร้างตัวใหม่ 1 ตัว (รวมเป็น 5) → รอจนพร้อม → ฆ่าตัวเก่า 1 ตัว (เหลือ 4) → ทำซ้ำจนครบ
+
+ถ้าตั้ง `max surge: 0` มันจะฆ่าก่อนแล้วค่อยสร้าง — ใช้เมื่อทรัพยากรไม่พอให้เกิน แต่จะมีช่วงที่กำลังรับงานลดลงจริง
+</Example>
+
+สังเกตจากรูปว่า **pod ใหม่ได้ IP ใหม่ทุกตัว** แต่ Service ตามไปเองอัตโนมัติ เพราะจับด้วยป้ายไม่ใช่ IP
+
+```bash
+kubectl rollout status deployment/kuard
+kubectl rollout history deployment/kuard
+kubectl rollout undo deployment/kuard
+```
+
+`rollout undo` คือของที่ immutable infrastructure ทำให้เป็นไปได้ — ของเก่ายังอยู่เป็น version หนึ่ง จึงย้อนกลับได้
+
+<Quiz question="ระหว่าง rolling update ที่กำลังทยอยเปลี่ยนจากรุ่น blue เป็น green ถ้ามีคนเปิดเว็บตอนนั้นพอดี จะได้รุ่นไหน">
+**ได้ทั้งสองรุ่น ปนกัน** ขึ้นกับว่า Service สุ่มส่งไป pod ตัวไหน
+
+รีเฟรชสามครั้งอาจได้ green, blue, green
+
+นี่ไม่ใช่บั๊ก แต่เป็นสิ่งที่ตามมาจากการไม่ล่มระหว่างอัปเดต และมันมีผลจริงกับการออกแบบแอป
+
+- **รุ่นเก่ากับรุ่นใหม่ต้องอยู่ร่วมกันได้ชั่วขณะ** ห้ามเปลี่ยนโครงฐานข้อมูลแบบที่รุ่นเก่าอ่านไม่ออก
+- ถ้าเปลี่ยนหน้าตา API ต้องทำสองรอบ — รอบแรกเพิ่มของใหม่โดยยังรับของเก่าได้ รอบสองค่อยตัดของเก่าทิ้ง
+
+ถ้ายอมให้ล่มไม่ได้ *และ* สองรุ่นอยู่ร่วมกันไม่ได้ ต้องใช้วิธีอื่นเช่น blue-green deployment ซึ่งสลับทั้งชุดพร้อมกัน
+</Quiz>
+
+---
+
+# ส่วนที่ 5 — เครือข่ายและการเข้าถึงจากภายนอก
+
+## กฎเครือข่ายของ Kubernetes
+
+สไลด์หน้า 56 ให้ห้าข้อ
+
+| กฎ | ความหมาย |
+| --- | --- |
+| ทุก pod ได้ IP ที่ใช้ได้ทั้งคลัสเตอร์ | ไม่ต้อง map พอร์ตเหมือน Docker บนเครื่องเดียว |
+| container ใน pod เดียวกันใช้ `localhost` | เพราะแชร์ network namespace กัน |
+| pod คุยข้าม node ได้ตรง ๆ | เว้นแต่จะมี policy ห้ามไว้ |
+| Service ให้ที่อยู่ที่ไม่เปลี่ยน | ทั้งที่ปลายทางเปลี่ยนตลอด |
+| **NetworkPolicy** จำกัดว่าใครคุยกับใครได้ | เหมือน internal network ในคาบ 3 แต่ละเอียดกว่ามาก |
+
+<Pitfall>
+ข้อที่สามอ่านให้ดี — **โดยปริยาย pod ทุกตัวคุยกับ pod ทุกตัวได้** ข้ามทั้ง node และข้าม namespace
+
+แปลว่าถ้ามี pod หนึ่งถูกเจาะ มันยิงเข้าฐานข้อมูลได้ทันทีโดยไม่ต้องผ่านอะไรเลย
+
+`NetworkPolicy` คือสิ่งที่ต้องเขียนเพิ่มเองเพื่อปิดช่องนี้ และคนมักลืมทำ
+</Pitfall>
+
+## container คุยกันยังไง
+
+<Figure number={8} caption="ใน pod เดียวกันใช้ localhost ได้ ข้าม pod ต้องผ่านชื่อ Service">
+  <PodCommunication />
+</Figure>
+
+สไลด์หน้า 58 กับ 59 ให้ตัวเลือกชัดเจน
+
+**ใน Pod เดียวกัน — มีสองทาง**
+
+- `localhost:9000` และ `localhost:8000`
+- หรือ `svc_a:9000` และ `svc_a:8000`
+
+**คนละ Pod — มีทางเดียว**
+
+- `svc_b:9000` และ `svc_a:8000` เท่านั้น
+
+สไลด์หน้า 57 แนะนำว่า **ให้ใช้ Service** เป็นหลัก
+
+<Why>
+ทำไมถึงควรใช้ชื่อ Service แม้แต่ตอนที่ `localhost` ก็ใช้ได้
+
+เพราะวันหนึ่งที่แยกสอง container ออกเป็นคนละ pod — ซึ่งเป็นเรื่องปกติเมื่อระบบโต — โค้ดที่เขียน `localhost` จะพังทันที ส่วนโค้ดที่เขียนชื่อ Service ไว้ไม่ต้องแก้อะไรเลย
+
+จ่ายแพงกว่านิดเดียวตอนนี้ แลกกับไม่ต้องแก้ทีหลัง
+</Why>
+
+## เข้าถึงจากภายนอกคลัสเตอร์
+
+สไลด์หน้า 60 เรียงสี่วิธีจากง่ายไปหาใช้จริง
+
+| วิธี | ใช้เมื่อ | ข้อจำกัด |
+| --- | --- | --- |
+| `kubectl port-forward` | debug pod ตัวเดียว | ปิดเทอร์มินัลแล้วหาย ไม่กระจายโหลด |
+| `kubectl proxy` | เรียก API แบบมีการยืนยันตัวตน | ต้องมีสิทธิ์ในคลัสเตอร์ |
+| **NodePort / LoadBalancer** | เปิดพอร์ตให้ใช้จริง | LoadBalancer ต้องอยู่บนคลาวด์ที่รองรับ |
+| **Ingress / Gateway API** | เว็บที่ต้องแยกตาม path หรือชื่อโฮสต์ | ต้องติดตั้ง ingress controller ก่อน |
+
+และปิดท้ายด้วยประโยคที่สำคัญ: **การเปิดให้เข้าถึงในระบบจริงต้องตั้งใจทำเรื่อง authentication, TLS และ policy** ไม่ใช่แค่เปิดพอร์ตแล้วจบ
+
+### kubectl proxy
+
+```bash
+# Start a local authenticated proxy
+kubectl proxy --port=8001
+
+# Explore the Kubernetes API
+curl http://localhost:8001/api/
+
+# Proxy to Service kuard, port 8080
+curl http://localhost:8001/api/v1/namespaces/default/services/kuard:8080/proxy/
+```
+
+จุดที่ต่างจาก `port-forward` คือทราฟฟิกวิ่งผ่าน **kube-apiserver** ซึ่งตรวจตัวตนและสิทธิ์ให้ก่อนส่งต่อ — เหมาะกับการดู dashboard ภายในที่ไม่อยากเปิดออกสู่ภายนอก
+
+## Ingress
+
+<Why>
+`port-forward` ใช้ได้ทีละ pod และ `NodePort` เปิดพอร์ตแปลก ๆ ให้จำ ทั้งสองอย่างไม่เหมาะกับเว็บที่มีผู้ใช้จริง
+
+และถ้ามีสิบบริการที่ต้องเปิดออกภายนอก จะขอ IP สาธารณะสิบอันหรือ
+</Why>
+
+<Term en="Ingress" th="ตัวรับ HTTP จากภายนอกแล้วส่งต่อเข้า Service ในคลัสเตอร์" /> แก้ปัญหานี้ด้วยการเป็น **ทางเข้าเดียว** ที่แยกทางตามเนื้อหาของคำขอ
+
+สไลด์หน้า 62 ระบุว่ามันให้ทั้ง load balancing และการกำหนดเส้นทางที่ยืดหยุ่น แต่ทำได้เฉพาะ HTTP กับ HTTPS — ถ้าเป็น TCP หรือ UDP ดิบต้องใช้ `port-forward` หรือตั้งค่าเพิ่มเป็นกรณีพิเศษ
+
+<Callout type="info" title="Ingress ทำสิ่งเดียวกับ nginx ในคาบที่ 4">
+คาบ 4 เราตั้ง nginx เองด้วย `api.conf` ที่มี `location /todo/` กับ `location /notification/`
+
+Ingress คือแนวคิดเดียวกันทุกประการ ต่างกันที่แทนที่จะเขียนไฟล์ nginx เอง เราเขียน manifest แล้วให้ Kubernetes ไปตั้งค่า nginx ให้ — และตั้งใหม่อัตโนมัติทุกครั้งที่ Service เปลี่ยน
+</Callout>
+
+### ต้องติดตั้ง controller ก่อน
+
+Kubernetes เข้าใจ Ingress manifest แต่ **ไม่มีตัวทำงานจริงมาให้** ต้องติดตั้งเอง สไลด์เลือกใช้ nginx ingress controller และติดตั้งผ่าน <Term en="Helm" th="ตัวจัดการแพ็กเกจของ Kubernetes" />
+
+Helm เทียบได้กับ `pip` ของ Python หรือ `maven` ของ Java — ใช้ติดตั้งของที่ประกอบด้วย manifest หลายไฟล์ โดยข้อมูลแพ็กเกจอยู่ในสิ่งที่เรียกว่า **chart** หาได้ที่ `artifacthub.io`
+
+```bash
+helm repo add nginx-stable https://helm.nginx.com/stable
+helm repo update
+
+helm install nginx-ingress nginx-stable/nginx-ingress --set rbac.create=true
+
+kubectl get pods --all-namespaces -l app.kubernetes.io/instance=nginx-ingress
+kubectl get services -l app.kubernetes.io/instance=nginx-ingress
+```
+
+สองคำสั่งท้ายคือการยืนยันว่ามันขึ้นจริง สังเกตว่าใช้ `-l` ซึ่งคือ `--selector` แบบย่อ — เป็นการใช้ label ที่เรียนไปแล้วมาหาของที่ Helm สร้างให้
+
+### เขียน Ingress
+
+ไฟล์ `kuard-ingress.yml`
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kuard-ingress
+  annotations:
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: localhost
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: kuard
+                port:
+                  number: 8080
+```
+
+```bash
+kubectl apply -f kuard-ingress.yml
+```
+
+หลังจากนี้เปิด `http://localhost` ได้เลย ไม่ต้องใส่พอร์ต
+
+<Callout type="warn" title="host: localhost ใช้ได้แค่บนเครื่องตัวเอง">
+สไลด์เขียนกำกับไว้ว่า *This is your host name. If you want to allow accessing from Internet, it should be your valid hostname or your real IP.*
+
+`localhost` ทำให้ทดสอบบนเครื่องตัวเองได้ แต่ถ้าจะเปิดให้คนอื่นเข้าถึง ต้องเปลี่ยนเป็นชื่อโดเมนจริงที่ชี้มาที่ IP ของคลัสเตอร์
+</Callout>
+
+### สองแบบของการแยกทาง
+
+<Figure number={9} caption="แยกตาม path กับแยกตามชื่อโฮสต์ — ทั้งคู่ใช้ที่อยู่สาธารณะเดียวกัน">
+  <IngressRouting />
+</Figure>
+
+| แบบ | แยกด้วย | ใช้เมื่อ |
+| --- | --- | --- |
+| **Simple Fanout** | path เช่น `/foo` และ `/bar` | หลายบริการอยู่ใต้โดเมนเดียว |
+| **Name Based Virtual Hosting** | ชื่อโฮสต์ เช่น `foo.bar.com` และ `bar.foo.com` | หลายเว็บที่ควรดูเหมือนคนละระบบ |
+
+<Example added title="เลือกแบบไหนดี">
+**Simple Fanout** — เว็บบริษัทเดียวที่มีหลายส่วน
+
+```text
+shop.example.com/api      → api-service
+shop.example.com/admin    → admin-service
+shop.example.com/         → web-service
+```
+
+**Name Based** — หลายลูกค้าที่ใช้ระบบเดียวกันแต่ควรแยกกันชัดเจน
+
+```text
+lukcha.example.com   → tenant-service
+lukchb.example.com   → tenant-service
+```
+
+ทั้งสองแบบใช้ IP สาธารณะเดียวกัน ไม่ต้องซื้อเพิ่มต่อหนึ่งบริการ
+</Example>
+
+---
+
+# ส่วนที่ 6 — ของที่เหลือที่ต้องรู้จัก
+
+## ConfigMap และ Secret
+
+<Why>
+ที่ผ่านมาการตั้งค่าถูกเขียนตายอยู่ใน manifest แต่ค่าเดียวกันมักต่างกันในแต่ละสภาพแวดล้อม — ที่อยู่ฐานข้อมูลของ dev ไม่เหมือน production
+
+ถ้าเขียนตายไว้ ต้องมี manifest คนละชุดต่อสภาพแวดล้อม ซึ่งจะไม่ตรงกันในที่สุด
+</Why>
+
+สไลด์หน้า 68 แยกสองอย่าง
+
+| | ConfigMap | Secret |
+| --- | --- | --- |
+| ใส่อะไร | ข้อมูลตั้งค่าทั่วไป | ข้อมูลลับ — รหัสผ่าน, token, key |
+| ขนาดสูงสุด | 1MB | 1MB |
+
+ทั้งคู่เอาไปใช้ได้สามทาง — เป็น **environment variable**, เป็น **argument ของคำสั่ง** หรือ **mount เป็นไฟล์** เข้าไปใน container
+
+ตัวอย่างเนื้อหาที่สไลด์ใช้
+
+```ini
+enemies=aliens
+lives=3
+enemies.cheat=true
+enemies.cheat.level=noGoodRotten
+secret.code.allowed=true
+secret.code.lives=30
+```
+
+<Pitfall title="Secret ไม่ได้เข้ารหัสโดยปริยาย">
+ชื่อทำให้เข้าใจผิดได้ง่าย — โดยค่าปริยาย Secret ถูกเก็บใน etcd แบบ **base64** ซึ่งไม่ใช่การเข้ารหัส แค่การเข้ารหัสตัวอักษรที่ใครก็ถอดกลับได้ในหนึ่งคำสั่ง
+
+สิ่งที่ Secret ให้จริง ๆ คือ
+
+- ไม่โผล่ใน `kubectl describe` แบบเห็นค่าตรง ๆ
+- ตั้งสิทธิ์ RBAC แยกจาก ConfigMap ได้
+
+ถ้าต้องการความลับจริง ต้องเปิด encryption at rest ของ etcd หรือใช้ระบบเก็บความลับภายนอกอย่าง Vault
+</Pitfall>
+
+## Object อื่นที่ควรรู้จักชื่อ
+
+<Figure number={10} caption="ห้าชนิดของ workload — ทั้งหมดสร้าง pod เหมือนกัน ต่างกันที่กติกา">
+  <WorkloadObjects />
+</Figure>
+
+สไลด์หน้า 69 กับ 70 แนะนำสี่ชนิดเพิ่มจาก Deployment
+
+### StatefulSet
+
+Deployment เหมาะกับแอปที่ **ไม่มีสถานะ** — pod ทุกตัวเหมือนกันหมด ตายแล้วสร้างใหม่ก็ได้ตัวเดิม
+
+แต่ฐานข้อมูลไม่ใช่แบบนั้น StatefulSet จึงให้เพิ่ม
+
+- **ชื่อและตัวตนบนเครือข่ายที่คงที่** — pod ชื่อ `db-0`, `db-1` เสมอ ไม่ใช่ตัวอักษรสุ่ม
+- **ลำดับการสร้างและลบ** — `db-0` ขึ้นก่อน `db-1` เสมอ
+- **พื้นที่เก็บข้อมูลถาวรของแต่ละตัว** — `db-0` ได้ดิสก์เดิมกลับมาเสมอแม้ถูกสร้างใหม่
+
+### DaemonSet
+
+รับประกันว่า pod ที่กำหนดจะรัน **หนึ่งชุดบนทุก node** (หรือเฉพาะ node ที่เลือก)
+
+ใช้กับงานระดับเครื่อง เช่นตัวเก็บ log หรือ agent เฝ้าดูทรัพยากร
+
+<Analogy>
+Deployment คือ "ขอพนักงาน 3 คน อยู่สาขาไหนก็ได้"
+
+DaemonSet คือ "ทุกสาขาต้องมี รปภ. หนึ่งคน" — เปิดสาขาใหม่ก็ได้ รปภ. เพิ่มเองอัตโนมัติ
+</Analogy>
+
+### Job และ CronJob
+
+| | Deployment | Job | CronJob |
+| --- | --- | --- | --- |
+| งานแบบ | รันยาวไม่มีจบ | ทำครั้งเดียวแล้วจบ | ทำซ้ำตามเวลา |
+| pod จบแล้ว | สร้างใหม่ | ปล่อยให้จบ | รอรอบถัดไป |
+| ตัวอย่าง | เว็บ, API | ย้ายข้อมูล | สำรองข้อมูลทุกคืน |
+
+**Job** สร้าง pod แล้วดูให้ว่าทำงานสำเร็จครบตามจำนวนที่กำหนด ส่วน **CronJob** ตั้งเวลาให้ทำซ้ำ เหมือน cron ของ Linux
+
+<Pitfall>
+อย่าใช้ Deployment รันงานที่มีวันจบ
+
+Deployment มีหน้าที่ทำให้ pod อยู่เสมอ ดังนั้นพองานทำเสร็จแล้ว pod จบตัวเอง Deployment จะคิดว่ามันตาย แล้วสร้างใหม่ ซึ่งก็จะทำงานเดิมซ้ำอีกรอบ วนไม่จบ
+
+งานที่มีวันจบต้องใช้ Job
+</Pitfall>
+
+<Quiz question="อยากรัน Redis 3 ตัวแบบ cluster ที่แต่ละตัวมีข้อมูลของตัวเอง ควรใช้ Deployment หรือ StatefulSet">
+**StatefulSet** ด้วยสองเหตุผล
+
+**หนึ่ง — ชื่อต้องคงที่** สมาชิกใน Redis cluster ต้องรู้จักกันด้วยชื่อ ถ้าใช้ Deployment pod จะได้ชื่อสุ่มใหม่ทุกครั้งที่สร้าง สมาชิกอื่นจะหาไม่เจอ
+
+**สอง — ดิสก์ต้องเป็นของใครของมัน** ถ้า `redis-1` ตายแล้วสร้างใหม่ มันต้องได้ดิสก์เดิมที่มีข้อมูลของตัวเองกลับมา ไม่ใช่ดิสก์เปล่าหรือดิสก์ของ `redis-0`
+
+Deployment ไม่รับประกันทั้งสองข้อ เพราะมันถูกออกแบบมาบนสมมติฐานว่า pod ทุกตัวเหมือนกันและแทนกันได้
+</Quiz>
+
+## Compose กับ Kubernetes — ทวนอีกครั้ง
+
+คาบที่ 3 เทียบสองอย่างนี้ไว้แล้ว ตอนนี้เรารู้จัก Kubernetes จริงแล้ว จึงอ่านตารางนี้ได้ลึกขึ้น
+
+| เรื่อง | Docker Compose | Kubernetes |
+| --- | --- | --- |
+| ขอบเขต | เครื่องเดียว | หลายเครื่อง |
+| หน่วยที่รัน | container | Pod |
+| ตอน container ตาย | อยู่เฉย ๆ (เว้นแต่ตั้ง `restart:`) | สร้างใหม่ให้เอง |
+| ขยายจำนวน | `--scale` ชั่วคราว | `replicas` ในไฟล์ |
+| อัปเดตรุ่นใหม่ | ลงแล้วขึ้นใหม่ — มีช่วงล่ม | rolling update — ไม่ล่ม |
+| ที่อยู่ของบริการ | DNS ของ Docker | Service ที่มี Cluster-IP คงที่ |
+| ความยาก | อ่านจบใน 10 นาที | ใช้เวลาเป็นสัปดาห์ |
+
+<KeyIdea>
+Kubernetes ไม่ใช่ Compose ที่เก่งกว่า มันเป็นคนละเครื่องมือที่แก้คนละปัญหา
+
+**Compose ถามว่า** "จะรันของหลายชิ้นบนเครื่องนี้ยังไง"
+**Kubernetes ถามว่า** "จะทำให้ระบบอยู่ในสภาพที่ต้องการตลอดเวลา บนเครื่องกี่เครื่องก็ได้ ยังไง"
+
+ถ้าโจทย์คือข้อแรก การใช้ Kubernetes คือการจ่ายราคาที่ไม่จำเป็น
+</KeyIdea>
+
+<Detail label="แหล่งอ่านต่อที่สไลด์แนะนำ">
+
+- เอกสารทางการ: `https://kubernetes.io/docs/tutorials/kubernetes-basics/`
+- บทความ: `https://dzone.com/articles/microservices-with-kubernetes-and-docker`
+- หนังสือ: Burns, Brendan, Joe Beda, and Kelsey Hightower. *Kubernetes: Up and Running: Dive into the Future of Infrastructure.* O'Reilly Media, 2019 — เล่มเดียวกับที่ kuard มาจาก
+- สไลด์: `https://www.slideshare.net/rishabhindoria52/introduction-to-kubernetes-139878615`
+</Detail>
+
+---
+
+<Recap>
+**ทำไมต้อง orchestration**
+
+- container เยอะบนหลายเครื่อง ทำมือไม่ไหว — ต้องจัดตาราง ตรวจตัวตาย หาตัวที่ยังดี และคุมการอัปเดตให้เหมือนกันหมด
+- ตัวเลือกในตลาด: Kubernetes (มาตรฐาน), Docker Swarm, Apache Mesos
+
+**สามแนวคิดที่เป็นแกน**
+
+- **Declarative** — บอกปลายทาง (`replicas: 3`) ไม่ใช่บอกขั้นตอน สั่งซ้ำได้ไม่พัง
+- **Control loop** — อ่านสถานะที่ต้องการ เทียบกับของจริง แล้วแก้ วนตลอดเวลา
+- **Immutable** — ไม่แก้ของเดิมทับ สร้างใหม่เสมอ ทำให้ย้อนกลับได้
+
+**โครงสร้างคลัสเตอร์**
+
+- **Control Plane** = kube-apiserver (ประตูเดียว), etcd (เก็บสถานะ), scheduler (เลือก node), controller-manager (รัน loop)
+- **Node** = kubelet (ตัวแทนบนเครื่อง) + container runtime
+- ทุกอย่างคุยผ่าน kube-apiserver เท่านั้น
+
+**Object ที่ต้องจำ**
+
+- **Pod** — หน่วยเล็กที่สุด มี IP เดียว container ข้างในใช้ `localhost` คุยกันได้ อยู่เครื่องเดียวกันเสมอ
+- **Deployment** — ดูแลจำนวนสำเนา ทำ rolling update และย้อนกลับได้ `selector` ต้องตรงกับ label ใน `template`
+- **Service** — ที่อยู่คงที่ที่จับ pod ด้วย **ป้าย** ไม่ใช่ IP ทำให้ pod เกิดตายได้โดยผู้เรียกไม่รู้สึก
+- **Ingress** — ทางเข้า HTTP เดียว แยกทางตาม path หรือชื่อโฮสต์ ต้องติดตั้ง controller ก่อน (ผ่าน Helm)
+- **ConfigMap / Secret** — แยกการตั้งค่าออกจาก image, จำกัด 1MB, Secret เป็นแค่ base64 ไม่ใช่การเข้ารหัส
+- **StatefulSet** (มีสถานะ), **DaemonSet** (หนึ่งชุดต่อ node), **Job** (จบแล้วเลิก), **CronJob** (ตามเวลา)
+
+**คำสั่งที่ใช้จริง**
+
+- สำรวจ `get` / `api-resources` / `explain` · เข้าใจ `describe` / `logs` / `events` · เปลี่ยน `apply` / `scale` / `rollout` · แก้ปัญหา `exec` / `port-forward`
+- ใช้ `--watch` แทนการกด `get` ซ้ำ
+- `apply -f` ดีกว่า `run` เพราะมีไฟล์เป็นหลักฐานและทำซ้ำได้
+
+**กับดักที่เจอบ่อย**
+
+- `requests` ใช้ตอนเลือก node ส่วน `limits` ใช้ตอนรัน — เกิน limit ของ memory คือโดนฆ่า
+- `livenessProbe` ที่ตรวจของนอกตัวเองทำให้ปัญหาเล็กลามเป็นระบบล่ม
+- `kubectl scale` ทำให้ไฟล์ไม่ตรงกับของจริง
+- ตรวจ `current-context` ก่อนสั่งลบทุกครั้ง
+- `delete --selector` ลบทุกตัวที่ป้ายตรง ทั้งคลัสเตอร์ — เปลี่ยนเป็น `get` ดูก่อน
+- pod ทุกตัวคุยกันได้หมดโดยปริยาย ต้องเขียน NetworkPolicy เอง
+- ระหว่าง rolling update ผู้ใช้เจอทั้งรุ่นเก่าและใหม่ปนกัน — สองรุ่นต้องอยู่ร่วมกันได้
+</Recap>

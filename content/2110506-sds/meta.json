@@ -2,5 +2,5 @@
   "title": "2110506 SDS",
   "description": "Software-Defined Systems I",
   "root": true,
-  "pages": ["index", "lecture-1", "lecture-2", "lecture-3", "lecture-4"]
+  "pages": ["index", "lecture-1", "lecture-2", "lecture-3", "lecture-4", "lecture-5"]
 }
