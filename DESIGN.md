@@ -302,6 +302,25 @@ apart at a glance while sitting side by side.
 - **Note:** both panels carry `min-width: 0` so a wide code block scrolls inside its own
   column instead of stretching the grid past the viewport.
 
+### Reading tools
+
+The row under the meta line carries four controls on one hairline-ruled strip: `Copy Markdown`
+and `Open` from the framework, then `ข้ามไปสรุป` and `เปิดกล่องที่พับไว้ทั้งหมด`. The last two
+exist because the primary reader arrives to scan, not to read: one jumps to `#recap`, the other
+opens every fold at once so find-in-page can reach folded text. The toggle hides itself on a
+page with no folds, and never opens a `<Quiz>` — those are marked apart by `data-fold`.
+
+Controls are 8px radius, hairline border, `bg-fd-secondary/50`, and focus as a 2px ink outline
+at 2px offset.
+
+### Legend
+
+A single wrapping row of six icon-and-label pairs, directly under the tools strip, at 12px
+muted with each icon in its own semantic colour. It is the key to the marks the page uses, and
+it is the precondition for the Legend Rule: a reader cannot learn the five marks from a page
+that never names them. It stays visible rather than folded, because a legend nobody opens
+teaches nobody.
+
 ### Disclosure (Detail, Quiz)
 
 A native `<details>` with no JavaScript. The summary is muted 14px with the default marker;
@@ -339,6 +358,9 @@ ink on a grey fill when active. Labels come from a page's `sidebarTitle`, not it
 **The Same Card Rule.** Every block is the same card. If two blocks need to look different,
 change the icon and its colour, not the frame.
 
+**The Named Mark Rule.** A mark the reader has not been taught is decoration. Every lecture
+page carries the legend, and no block ships a colour that the legend does not name.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -351,6 +373,8 @@ change the icon and its colour, not the frame.
 - **Do** check every new colour at 4.5:1 for text and 3:1 for an icon, in both themes, against
   the surface (`#f1f1f1` / `#191919`) rather than the page.
 - **Do** start MDX headings at `##` and stop at `####`.
+- **Do** end every page with `<Recap>`; the table of contents pins a `สรุปท้ายคาบ` entry that
+  points at its `#recap` anchor whether or not the block is there.
 
 ### Don't:
 

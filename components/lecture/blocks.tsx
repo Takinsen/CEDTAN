@@ -58,7 +58,7 @@ export function Example({ title, added, children }: BlockProps & { added?: boole
 // bullet summary at the end of a lecture
 export function Recap({ children }: { children: ReactNode }) {
   return (
-    <LectureBox icon={ListChecks} label="สรุปท้ายคาบ" accent="text-fd-primary">
+    <LectureBox icon={ListChecks} label="สรุปท้ายคาบ" accent="text-fd-primary" id="recap">
       {children}
     </LectureBox>
   );

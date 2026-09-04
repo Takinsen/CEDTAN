@@ -53,7 +53,9 @@ Every one of these is a blocker, not a preference.
   the lecture that covers it.
 - **Thai prose, English terms.** Explain in Thai. Keep standard technical terms in English.
   Wrap the first use of each term in `<Term en="..." th="..." />`.
-- **End with `<Recap>`.** Bullets a student can read the night before an exam.
+- **End with `<Recap>`.** Bullets a student can read the night before an exam. The table of
+  contents pins a `สรุปท้ายคาบ` entry pointing at `#recap` on every page, so a page without a
+  `<Recap>` leaves a dead link.
 
 ## Frontmatter
 
@@ -134,4 +136,7 @@ Never extract an image from the slides. It cannot be re-themed and it is the lec
 - The page title is already an `h1`. Start MDX headings at `##` — a `#` gives the page a
   second `h1` and breaks the document outline. Use `##` for a part divider, `###` for a
   section, `####` for a subsection.
+- A `<Detail>` placed inside a `<StepThrough>` step is only in the DOM while that step is
+  selected, so `เปิดกล่องที่พับไว้ทั้งหมด` and find-in-page cannot reach it. Keep folds outside
+  the step-through unless the content only makes sense inside that step.
 - Comments in code: one line, saying what the block does.

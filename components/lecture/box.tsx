@@ -9,6 +9,7 @@ export function LectureBox({
   title,
   badge,
   accent,
+  id,
   children,
 }: {
   icon: LucideIcon;
@@ -16,10 +17,11 @@ export function LectureBox({
   title?: string;
   badge?: string;
   accent: string;
+  id?: string;
   children: ReactNode;
 }) {
   return (
-    <div className="my-6 overflow-hidden rounded-xl border border-fd-border bg-fd-card">
+    <div id={id} className="my-6 scroll-mt-20 overflow-hidden rounded-xl border border-fd-border bg-fd-card">
       <div className="flex flex-wrap items-center gap-2 px-4 pt-3 text-sm font-semibold text-fd-muted-foreground">
         <Icon className={cn('size-4 shrink-0', accent)} />
         <span>{title ?? label}</span>

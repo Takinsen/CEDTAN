@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 // extra reference material folded away: full command output, long lookup tables
 export function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <details className="my-4 [&[open]>summary]:mb-1">
+    <details data-fold className="my-4 [&[open]>summary]:mb-1">
       <summary className="cursor-pointer py-1 text-sm text-fd-muted-foreground marker:text-fd-muted-foreground hover:text-fd-foreground">
         {label}
       </summary>

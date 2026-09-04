@@ -8,10 +8,13 @@ import {
   ViewOptionsPopover,
 } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
+import { readFile } from 'node:fs/promises';
 import { getMDXComponents } from '@/components/mdx';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { gitConfig } from '@/lib/shared';
+import { Legend } from '@/components/lecture/legend';
+import { ReadingTools } from '@/components/lecture/reading-tools';
 
 export default async function Page(props: PageProps<'/[...slug]'>) {
   const params = await props.params;
@@ -28,18 +31,27 @@ export default async function Page(props: PageProps<'/[...slug]'>) {
     page.data.credit,
   ].filter(Boolean);
 
+  // <Recap> is a component, so it never reaches the heading-built toc — pin it there by hand
+  const toc = [...page.data.toc, { title: 'สรุปท้ายคาบ', url: '#recap', depth: 2 }];
+
+  // whether this page has any <Detail> fold, so the bulk toggle can hide itself when it has none
+  const raw = page.absolutePath ? await readFile(page.absolutePath, 'utf8') : '';
+  const hasFolds = /<Detail\b/.test(raw);
+
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
+    <DocsPage toc={toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
       {meta.length > 0 && <p className="text-sm text-fd-muted-foreground">{meta.join(' · ')}</p>}
-      <div className="flex flex-row gap-2 items-center border-b pb-6">
+      <div className="flex flex-row flex-wrap gap-2 items-center border-b pb-6">
         <MarkdownCopyButton markdownUrl={markdownUrl} />
         <ViewOptionsPopover
           markdownUrl={markdownUrl}
           githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/${page.path}`}
         />
+        <ReadingTools hasFolds={hasFolds} />
       </div>
+      <Legend />
       <DocsBody>
         <MDX
           components={getMDXComponents({
