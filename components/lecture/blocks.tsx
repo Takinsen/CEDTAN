@@ -45,8 +45,9 @@ export function Example({ title, added, children }: BlockProps & { added?: boole
   return (
     <LectureBox
       icon={FlaskConical}
-      label={added ? 'ตัวอย่างเสริม' : 'ตัวอย่าง'}
+      label="ตัวอย่าง"
       title={title}
+      badge={added ? 'เสริม — ไม่ได้อยู่ในสไลด์' : undefined}
       accent={added ? 'border-l-amber-400' : 'border-l-emerald-500'}
     >
       {children}

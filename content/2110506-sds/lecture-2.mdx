@@ -330,7 +330,7 @@ image ของ container ถูกเก็บแบบนี้ ชั้น�
 
 ความสามารถสำคัญที่ทำให้ทั้งหมดนี้เป็นไปได้เรียกว่า <Term en="Copy-on-Write" th="ก๊อปตอนจะเขียนเท่านั้น" />
 
-<Example title="สอง container แก้ไฟล์ชื่อเดียวกันจาก image เดียวกัน">
+<Example added title="สอง container แก้ไฟล์ชื่อเดียวกันจาก image เดียวกัน">
 container A และ B สร้างจาก image เดียวกัน ซึ่งมีไฟล์ `app.py` อยู่ในชั้นอ่านอย่างเดียว
 
 1. ทั้งคู่อ่าน `app.py` — ต่างอ่านจากไฟล์ก้อนเดียวกัน ไม่มีการก๊อป ไม่กินพื้นที่เพิ่ม
@@ -493,6 +493,16 @@ REPOSITORY   TAG   IMAGE ID   CREATED   SIZE
 
 $ docker run hello-world
 Unable to find image 'hello-world:latest' locally
+Status: Downloaded newer image for hello-world:latest
+
+Hello from Docker!
+```
+
+คลัง image ว่างเปล่า Docker จึงดึงมาให้เองก่อนรัน หลังจากนั้น `docker image ls` จะเห็น `hello-world:latest` ขนาด 1.84kB
+
+<Detail label="ดูผลลัพธ์เต็มของ docker run hello-world">
+```
+Unable to find image 'hello-world:latest' locally
 latest: Pulling from library/hello-world
 1b930d010525: Pull complete
 Digest: sha256:b8ba256769a0ac28dd126d584e0a2011cd2877f3f76e093a7ae560f2a5301c00
@@ -500,9 +510,17 @@ Status: Downloaded newer image for hello-world:latest
 
 Hello from Docker!
 This message shows that your installation appears to be working correctly.
-```
 
-คลัง image ว่างเปล่า Docker จึงดึงมาให้เองก่อนรัน หลังจากนั้น `docker image ls` จะเห็น `hello-world:latest` ขนาด 1.84kB
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+```
+</Detail>
 </Example>
 
 ---
@@ -812,16 +830,26 @@ $ docker volume ls
 DRIVER    VOLUME NAME
 local     myvol
 $ docker volume inspect myvol
+        "Mountpoint": "/var/lib/docker/volumes/myvol/_data",
+```
+
+<Detail label="ดูผลลัพธ์เต็มของ docker volume inspect">
+```json
 [
     {
         "CreatedAt": "2019-09-16T00:01:18+07:00",
         "Driver": "local",
+        "Labels": {},
         "Mountpoint": "/var/lib/docker/volumes/myvol/_data",
         "Name": "myvol",
+        "Options": {},
         "Scope": "local"
     }
 ]
+```
+</Detail>
 
+```bash
 $ docker run --name ubuntu -it -v myvol:/home ubuntu
 root@c376a358e77a:/# cat > /home/test
 test
@@ -893,15 +921,12 @@ CONTAINER ID   IMAGE   COMMAND                  PORTS
 ```bash
 # 1. จากเครื่อง host ผ่านพอร์ต 4000
 $ curl localhost:4000
-<!DOCTYPE html>
-<html>
-<head>
 <title>Welcome to nginx!</title>
 
 # 2. จากข้างใน container เดียวกัน ผ่านพอร์ต 80
 $ docker exec -it nginx bash
 root@0f5e4c2df1fb:/# curl localhost:80
-<!DOCTYPE html>
+<title>Welcome to nginx!</title>
 ```
 
 เลข 4000 มีอยู่แค่ฝั่งนอก ส่วนข้างใน container ยังเป็น 80 เสมอ
@@ -940,9 +965,6 @@ CMD ["bash"]
 
 ```bash
 root@863d667ab61d:/# curl 172.17.0.2:80
-<!DOCTYPE html>
-<html>
-<head>
 <title>Welcome to nginx!</title>
 
 root@863d667ab61d:/# ping 172.17.0.2
@@ -972,6 +994,14 @@ ping: 9dc8ed7ab142: Name or service not known
 ```bash
 root@863d667ab61d:/# cat /etc/hosts
 127.0.0.1       localhost
+172.17.0.3      863d667ab61d
+```
+
+มีแต่ชื่อของตัวเอง ไม่มีบรรทัดของ nginx เลย
+
+<Detail label="ดูไฟล์ /etc/hosts ทั้งไฟล์">
+```
+127.0.0.1       localhost
 ::1     localhost ip6-localhost ip6-loopback
 fe00::0 ip6-localnet
 ff00::0 ip6-mcastprefix
@@ -979,8 +1009,7 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 172.17.0.3      863d667ab61d
 ```
-
-มีแต่ชื่อของตัวเอง ไม่มีบรรทัดของ nginx เลย
+</Detail>
 
 <Pitfall>
 ปัญหานี้ร้ายกว่าที่คิด เพราะ IP ของ container ไม่คงที่ พอลบแล้วสร้างใหม่ เลขเปลี่ยน โค้ดที่ hardcode `172.17.0.2` ไว้จะพังเงียบ ๆ ในวันที่คุณ restart อะไรสักอย่าง
@@ -1061,9 +1090,6 @@ eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 <Step title="ทดสอบว่าเรียกด้วยชื่อได้แล้ว">
 ```bash
 root@f6deac8fc947:/# curl nginx
-<!DOCTYPE html>
-<html>
-<head>
 <title>Welcome to nginx!</title>
 ```
 ไม่ต้องรู้ IP อีกแล้ว
