@@ -7,7 +7,7 @@ type BlockProps = { title?: string; children: ReactNode };
 // the one sentence a reader must remember
 export function KeyIdea({ title, children }: BlockProps) {
   return (
-    <LectureBox icon={Lightbulb} label="แนวคิดหลัก" title={title} accent="border-l-amber-500">
+    <LectureBox icon={Lightbulb} label="แนวคิดหลัก" title={title} accent="text-amber-700 dark:text-amber-400">
       {children}
     </LectureBox>
   );
@@ -16,7 +16,7 @@ export function KeyIdea({ title, children }: BlockProps) {
 // the problem this concept exists to solve
 export function Why({ title, children }: BlockProps) {
   return (
-    <LectureBox icon={HelpCircle} label="ทำไมต้องมีสิ่งนี้" title={title} accent="border-l-sky-500">
+    <LectureBox icon={HelpCircle} label="ทำไมต้องมีสิ่งนี้" title={title} accent="text-sky-700 dark:text-sky-400">
       {children}
     </LectureBox>
   );
@@ -25,7 +25,7 @@ export function Why({ title, children }: BlockProps) {
 // everyday comparison for a reader with no background
 export function Analogy({ title, children }: BlockProps) {
   return (
-    <LectureBox icon={Repeat} label="เทียบให้เห็นภาพ" title={title} accent="border-l-violet-500">
+    <LectureBox icon={Repeat} label="เทียบให้เห็นภาพ" title={title} accent="text-violet-700 dark:text-violet-400">
       {children}
     </LectureBox>
   );
@@ -34,7 +34,7 @@ export function Analogy({ title, children }: BlockProps) {
 // a mistake people make here
 export function Pitfall({ title, children }: BlockProps) {
   return (
-    <LectureBox icon={AlertTriangle} label="จุดที่คนพลาดบ่อย" title={title} accent="border-l-rose-500">
+    <LectureBox icon={AlertTriangle} label="จุดที่คนพลาดบ่อย" title={title} accent="text-rose-700 dark:text-rose-400">
       {children}
     </LectureBox>
   );
@@ -48,7 +48,7 @@ export function Example({ title, added, children }: BlockProps & { added?: boole
       label="ตัวอย่าง"
       title={title}
       badge={added ? 'เสริม — ไม่ได้อยู่ในสไลด์' : undefined}
-      accent={added ? 'border-l-amber-400' : 'border-l-emerald-500'}
+      accent={added ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}
     >
       {children}
     </LectureBox>
@@ -58,7 +58,7 @@ export function Example({ title, added, children }: BlockProps & { added?: boole
 // bullet summary at the end of a lecture
 export function Recap({ children }: { children: ReactNode }) {
   return (
-    <LectureBox icon={ListChecks} label="สรุปท้ายคาบ" accent="border-l-fd-primary">
+    <LectureBox icon={ListChecks} label="สรุปท้ายคาบ" accent="text-fd-primary">
       {children}
     </LectureBox>
   );

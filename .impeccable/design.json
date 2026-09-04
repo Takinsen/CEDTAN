@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-04T00:00:00.000Z",
+  "title": "Design System: CEDTAN",
+  "extensions": {
+    "colorMeta": {
+      "page": {
+        "role": "neutral",
+        "displayName": "Page",
+        "canonical": "#f5f5f5",
+        "dark": "#121212",
+        "tonalRamp": ["#0a0a0a", "#121212", "#191919", "#212121", "#404040", "#a3a3a3", "#ededed", "#f5f5f5"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "#f1f1f1",
+        "dark": "#191919",
+        "tonalRamp": ["#0a0a0a", "#121212", "#191919", "#212121", "#404040", "#a3a3a3", "#e5e5e5", "#f1f1f1"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#0a0a0a",
+        "dark": "#ebebeb",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#404040", "#666666", "#a3a3a3", "#d4d4d4", "#fafafa"]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "#666666",
+        "dark": "rgba(179, 179, 179, 0.8)",
+        "tonalRamp": ["#171717", "#262626", "#404040", "#525252", "#666666", "#8c8c8c", "#b3b3b3", "#d4d4d4"]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(203, 203, 203, 0.5)",
+        "dark": "rgba(100, 100, 100, 0.2)",
+        "tonalRamp": ["#404040", "#525252", "#737373", "#a3a3a3", "#cbcbcb", "#e5e5e5", "#ededed", "#f5f5f5"]
+      },
+      "key-idea": {
+        "role": "secondary",
+        "displayName": "Key-Idea Amber",
+        "canonical": "#bb4d00",
+        "dark": "#ffb900",
+        "means": "The one sentence to remember.",
+        "tonalRamp": ["#7b3306", "#973c00", "#bb4d00", "#e17100", "#fe9a00", "#ffb900", "#ffd230", "#fffbeb"]
+      },
+      "reason": {
+        "role": "secondary",
+        "displayName": "Reason Sky",
+        "canonical": "#0069a8",
+        "dark": "#00bcff",
+        "means": "The problem the concept exists to solve.",
+        "tonalRamp": ["#024a70", "#00598a", "#0069a8", "#0084d1", "#00a6f4", "#00bcff", "#74d4ff", "#f0f9ff"]
+      },
+      "analogy": {
+        "role": "secondary",
+        "displayName": "Analogy Violet",
+        "canonical": "#7008e7",
+        "dark": "#a684ff",
+        "means": "The everyday comparison.",
+        "tonalRamp": ["#4d179a", "#5d0ec0", "#7008e7", "#7f22fe", "#8e51ff", "#a684ff", "#c4b4ff", "#f5f3ff"]
+      },
+      "pitfall": {
+        "role": "secondary",
+        "displayName": "Pitfall Rose",
+        "canonical": "#c70036",
+        "dark": "#ff637e",
+        "means": "The mistake people make here; also the wrong side of a comparison.",
+        "tonalRamp": ["#8b0836", "#a50036", "#c70036", "#ec003f", "#ff2056", "#ff637e", "#ffa1ad", "#fff1f2"]
+      },
+      "example": {
+        "role": "secondary",
+        "displayName": "Example Emerald",
+        "canonical": "#007a55",
+        "dark": "#00d492",
+        "means": "A concrete case with real input and output; also the right side of a comparison.",
+        "tonalRamp": ["#004f3b", "#006045", "#007a55", "#00a63e", "#00bc7d", "#00d492", "#5ee9b5", "#ecfdf5"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The lecture title. Rendered by the layout, never written in MDX." },
+      "headline": { "displayName": "Headline", "purpose": "A part divider inside a lecture, preceded by a horizontal rule." },
+      "title": { "displayName": "Title", "purpose": "A section inside a part." },
+      "body": { "displayName": "Body", "purpose": "Prose. Capped at a 900px column, near 70 Thai characters." },
+      "label": { "displayName": "Label", "purpose": "Block labels, meta line, table cells, sidebar entries." },
+      "code": { "displayName": "Code", "purpose": "Fenced blocks and inline spans alike." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "state", "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Colour and background changes on hover, focus, and selection." },
+      { "name": "step", "value": "180ms ease", "purpose": "Step-through cross-fade with an 8px rise; suppressed under prefers-reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px", "note": "Sidebar becomes a column; comparison panels go side by side." },
+      { "name": "xl", "value": "1280px", "note": "Table of contents appears." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Block",
+      "kind": "card",
+      "refersTo": "block",
+      "description": "The signature component. A neutral card named by one small coloured glyph.",
+      "html": "<div class=\"ds-block\"><div class=\"ds-block-head\"><svg class=\"ds-block-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5\"/><path d=\"M9 18h6\"/><path d=\"M10 22h4\"/></svg><span class=\"ds-block-label\">แนวคิดหลัก</span></div><p class=\"ds-block-body\">The one sentence a reader must remember.</p></div>",
+      "css": ".ds-block { background: var(--color-fd-card, #f1f1f1); border: 1px solid var(--color-fd-border, rgba(203,203,203,0.5)); border-radius: 12px; overflow: hidden; font-family: 'Bai Jamjuree', ui-sans-serif, system-ui, sans-serif; } .ds-block-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px 0; font-size: 14px; font-weight: 600; color: var(--color-fd-muted-foreground, #666); } .ds-block-icon { width: 16px; height: 16px; flex-shrink: 0; color: #bb4d00; } .ds-block-body { margin: 8px 0 12px; padding: 0 16px; font-size: 16px; line-height: 1.75; color: var(--color-fd-foreground, #0a0a0a); }"
+    },
+    {
+      "name": "Comparison Panel — Wrong",
+      "kind": "card",
+      "refersTo": "compare-wrong",
+      "description": "The left half of a wrong-way / right-way pair. The one block allowed a tinted background.",
+      "html": "<div class=\"ds-compare-wrong\"><div class=\"ds-compare-wrong-head\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg><span>kubectl run</span></div><p>Fast to type, nothing left behind.</p></div>",
+      "css": ".ds-compare-wrong { min-width: 0; border: 1px solid rgba(255,32,87,0.4); background: rgba(255,39,78,0.05); border-radius: 12px; padding: 16px; font-family: 'Bai Jamjuree', ui-sans-serif, system-ui, sans-serif; } .ds-compare-wrong-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #c70036; } .ds-compare-wrong-head svg { width: 16px; height: 16px; flex-shrink: 0; } .ds-compare-wrong p { margin: 0; font-size: 16px; line-height: 1.75; color: var(--color-fd-foreground, #0a0a0a); }"
+    },
+    {
+      "name": "Comparison Panel — Right",
+      "kind": "card",
+      "refersTo": "compare-right",
+      "description": "The right half of the pair.",
+      "html": "<div class=\"ds-compare-right\"><div class=\"ds-compare-right-head\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg><span>kubectl apply -f</span></div><p>A file you can review, repeat, and roll back.</p></div>",
+      "css": ".ds-compare-right { min-width: 0; border: 1px solid rgba(0,188,125,0.4); background: rgba(0,177,118,0.05); border-radius: 12px; padding: 16px; font-family: 'Bai Jamjuree', ui-sans-serif, system-ui, sans-serif; } .ds-compare-right-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #007a55; } .ds-compare-right-head svg { width: 16px; height: 16px; flex-shrink: 0; } .ds-compare-right p { margin: 0; font-size: 16px; line-height: 1.75; color: var(--color-fd-foreground, #0a0a0a); }"
+    },
+    {
+      "name": "Disclosure",
+      "kind": "custom",
+      "refersTo": "block-label",
+      "description": "Native details/summary used to fold long transcripts and reference tables.",
+      "html": "<details class=\"ds-disclosure\"><summary>ดูผลลัพธ์เต็มของคำสั่ง</summary><div class=\"ds-disclosure-body\"><p>The full terminal output lives here.</p></div></details>",
+      "css": ".ds-disclosure { font-family: 'Bai Jamjuree', ui-sans-serif, system-ui, sans-serif; } .ds-disclosure summary { cursor: pointer; padding: 4px 0; font-size: 14px; color: var(--color-fd-muted-foreground, #666); transition: color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-disclosure summary:hover { color: var(--color-fd-foreground, #0a0a0a); } .ds-disclosure summary:focus-visible { outline: 2px solid var(--color-fd-ring, #a3a3a3); outline-offset: 2px; } .ds-disclosure-body { border-left: 2px solid var(--color-fd-border, rgba(203,203,203,0.5)); padding-left: 16px; margin-top: 8px; } .ds-disclosure-body p { margin: 0; font-size: 16px; line-height: 1.75; }"
+    },
+    {
+      "name": "Step Tab",
+      "kind": "button",
+      "refersTo": "step-tab",
+      "description": "One tab of a step-through. The active step is inverted.",
+      "html": "<div class=\"ds-steps\"><button class=\"ds-step-tab ds-step-tab-active\">1. apply</button><button class=\"ds-step-tab\">2. เฝ้าดู</button><button class=\"ds-step-tab\">3. ตรวจและอ่าน log</button></div>",
+      "css": ".ds-steps { display: flex; flex-wrap: wrap; gap: 8px; font-family: 'Bai Jamjuree', ui-sans-serif, system-ui, sans-serif; } .ds-step-tab { border: 0; border-radius: 9999px; padding: 4px 12px; font-size: 14px; cursor: pointer; background: var(--color-fd-muted, #ededed); color: var(--color-fd-muted-foreground, #666); transition: background-color 150ms cubic-bezier(0.4,0,0.2,1), color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-step-tab:hover { background: var(--color-fd-accent, rgba(209,209,209,0.5)); } .ds-step-tab:focus-visible { outline: 2px solid var(--color-fd-ring, #a3a3a3); outline-offset: 2px; } .ds-step-tab-active, .ds-step-tab-active:hover { background: var(--color-fd-primary, #171717); color: var(--color-fd-primary-foreground, #fafafa); }"
+    },
+    {
+      "name": "Sidebar Link",
+      "kind": "nav",
+      "refersTo": "sidebar-link",
+      "description": "One page per line, labelled by sidebarTitle rather than the full title.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link\" href=\"#\">ภาพรวมวิชา</a><a class=\"ds-nav-link\" href=\"#\">1 · Software-Defined Systems</a><a class=\"ds-nav-link ds-nav-link-active\" href=\"#\">5 · Kubernetes</a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 2px; width: 236px; font-family: 'Bai Jamjuree', ui-sans-serif, system-ui, sans-serif; } .ds-nav-link { border-radius: 8px; padding: 8px 12px; font-size: 14px; text-decoration: none; color: var(--color-fd-muted-foreground, #666); transition: background-color 150ms cubic-bezier(0.4,0,0.2,1), color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-nav-link:hover { background: var(--color-fd-accent, rgba(209,209,209,0.5)); color: var(--color-fd-foreground, #0a0a0a); } .ds-nav-link:focus-visible { outline: 2px solid var(--color-fd-ring, #a3a3a3); outline-offset: 2px; } .ds-nav-link-active { background: #e5e5e5; color: var(--color-fd-foreground, #0a0a0a); }"
+    },
+    {
+      "name": "Figure",
+      "kind": "card",
+      "refersTo": "figure",
+      "description": "A hand-drawn inline SVG in a card, captioned and numbered.",
+      "html": "<figure class=\"ds-figure\"><div class=\"ds-figure-scroll\"><svg viewBox=\"0 0 320 90\" role=\"img\" aria-label=\"ตัวอย่างไดอะแกรม\" fill=\"currentColor\"><rect x=\"10\" y=\"20\" width=\"120\" height=\"50\" rx=\"8\" fill-opacity=\"0.12\" stroke=\"currentColor\" stroke-opacity=\"0.45\"/><text x=\"70\" y=\"50\" text-anchor=\"middle\" font-size=\"12\">Desired</text><line x1=\"134\" y1=\"45\" x2=\"186\" y2=\"45\" stroke=\"currentColor\" stroke-opacity=\"0.55\" stroke-width=\"1.4\"/><rect x=\"190\" y=\"20\" width=\"120\" height=\"50\" rx=\"8\" fill-opacity=\"0.12\" stroke=\"currentColor\" stroke-opacity=\"0.45\"/><text x=\"250\" y=\"50\" text-anchor=\"middle\" font-size=\"12\">Actual</text></svg></div><figcaption class=\"ds-figure-caption\"><span>รูปที่ 1: </span>วงจรที่ทำงานอยู่ตลอดเวลา</figcaption></figure>",
+      "css": ".ds-figure { margin: 0; background: var(--color-fd-card, #f1f1f1); border: 1px solid var(--color-fd-border, rgba(203,203,203,0.5)); border-radius: 12px; padding: 16px; color: var(--color-fd-foreground, #0a0a0a); font-family: 'Bai Jamjuree', ui-sans-serif, system-ui, sans-serif; } .ds-figure-scroll { overflow-x: auto; } .ds-figure-caption { margin-top: 12px; text-align: center; font-size: 14px; color: var(--color-fd-muted-foreground, #666); } .ds-figure-caption span { font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Marked-Up Textbook",
+    "overview": "This is what a good textbook looks like after a careful student has worked through it. The page itself is quiet: near-neutral paper, one typeface, no ornament. Everything that carries meaning was added by someone who read the slides and decided what mattered. A coloured glyph in the margin says this is the idea to remember, this is the trap, this is the worked example. Learn the five marks once and you can skim any page in the site.\n\nThe system therefore invests almost nothing in surface and almost everything in structure. There are no shadows, no gradients, no illustrations that are not diagrams, and exactly two fonts. What it does spend is precision: a strict four-level heading outline, a fixed rhythm between blocks, and a colour that is never decorative. Density is generous rather than tight, because Thai stacks vowels and tone marks above and below the line and needs the room.\n\nThe reader is not browsing. They came for one lecture, often the night before an exam, and they want to finish it. Nothing on the page competes with that.",
+    "keyCharacteristics": [
+      "Neutral paper, ink, and one hairline; colour appears only as a semantic mark",
+      "Flat by construction — depth comes from a surface tint plus a hairline, never a shadow",
+      "One typeface (Bai Jamjuree) for Thai and Latin, one mono (Red Hat Mono) for code",
+      "Every block is the same 12px-radius card; only the icon and its colour differ",
+      "Both themes are first-class and every value is checked in both"
+    ],
+    "rules": [
+      { "name": "The Legend Rule", "body": "A hue means one thing across the whole site. Amber is always the key idea; rose is always the trap. Never reach for a colour because a block \"needs\" one, and never introduce a sixth hue without giving it a meaning first.", "section": "colors" },
+      { "name": "The Glyph-Only Rule", "body": "Semantic colour is carried by a 16px icon and nothing else. No tinted block backgrounds, no coloured borders on blocks, no coloured headings. The one exception is the comparison pair, where a 5% tint and a 40% border separate two options that sit side by side.", "section": "colors" },
+      { "name": "The Two-Surface Rule", "body": "There are exactly two greys behind content: page and surface. A block on a block does not get a third.", "section": "colors" },
+      { "name": "The One H1 Rule", "body": "The layout owns the h1. MDX starts at ##. A # in content produces a second top-level heading and breaks the outline; the four levels available are enough.", "section": "typography" },
+      { "name": "The Breathing Room Rule", "body": "Body line-height never drops below 1.75 and headings never below 1.4. Thai marks stack above and below the baseline; a tighter setting collides them.", "section": "typography" },
+      { "name": "The Wrapping Code Rule", "body": "Inline code wraps at any point (overflow-wrap: anywhere). A long URL or flag name in the middle of a sentence must not push the page sideways on a phone.", "section": "typography" },
+      { "name": "The Flush Sidebar Rule", "body": "The sidebar is exactly --fd-sidebar-width and sits against the content. Its surface must never spill into the outer gutter on a wide monitor — at 2560px that reads as a 765px slab, not a sidebar.", "section": "layout" },
+      { "name": "The Flat-Forever Rule", "body": "No box-shadow, no filter: drop-shadow, no backdrop-filter. If something needs to separate from its background, give it the surface tint and a hairline. If it needs to separate from another block, give it space.", "section": "elevation" },
+      { "name": "The One Radius Rule", "body": "Containers are 12px, controls are 8px, tabs are pills. A fourth value means a mistake.", "section": "shapes" },
+      { "name": "The currentColor Rule", "body": "A diagram uses currentColor with fillOpacity / strokeOpacity for every stroke and fill. A hard-coded colour disappears in one of the two themes.", "section": "shapes" },
+      { "name": "The Same Card Rule", "body": "Every block is the same card. If two blocks need to look different, change the icon and its colour, not the frame.", "section": "components" }
+    ],
+    "dos": [
+      "Do carry meaning with the icon colour and the label, and leave the card neutral.",
+      "Do cap the reading column at 900px and let the window grow around it.",
+      "Do use the surface tint plus a 1px hairline whenever something must separate from the page.",
+      "Do draw diagrams with currentColor and opacity, sized to a 620-unit viewBox.",
+      "Do fold long transcripts and reference tables into a <Detail> rather than cutting the topic.",
+      "Do check every new colour at 4.5:1 for text and 3:1 for an icon, in both themes, against the surface (#f1f1f1 / #191919) rather than the page.",
+      "Do start MDX headings at ## and stop at ####."
+    ],
+    "donts": [
+      "Don't add a shadow, a gradient, a glass blur, or a coloured side stripe to any block.",
+      "Don't introduce a third background grey, or nest a card inside a card.",
+      "Don't give a block a tinted background — the comparison pair is the single exception.",
+      "Don't use a hue that has no meaning in the legend, or reuse a legend hue for decoration.",
+      "Don't add a second display typeface. Size and weight carry the hierarchy.",
+      "Don't set body text below 1.75 line-height or a heading below 1.4; Thai marks collide.",
+      "Don't let the sidebar surface spread past --fd-sidebar-width."
+    ]
+  }
+}
