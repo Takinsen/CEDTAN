@@ -63,7 +63,7 @@ title: "Lecture 1 — Introduction to Software-Defined Systems"
 description: "หนึ่งประโยคว่าคาบนี้ตอบคำถามอะไร?"
 lecture: 1
 source: "data/2110506-SDS/Lecture-1.pdf"
-credit: "เรียบเรียงจากสไลด์ Lecture 1 ของ อ.วีระ เมืองสิน"
+credit: "เรียบเรียงจากสไลด์ Lecture 1 ของ รศ.ดร.วีระ เหมืองสิน"
 readingMinutes: 25
 ---
 ```
