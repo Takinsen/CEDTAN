@@ -13,6 +13,7 @@ const docs = defineDocs({
       source: z.string().optional(),
       credit: z.string().optional(),
       readingMinutes: z.number().int().positive().optional(),
+      sidebarTitle: z.string().optional(),
     }),
     postprocess: {
       includeProcessedMarkdown: true,
@@ -28,6 +29,20 @@ export const source = loader({
   baseUrl: docsRoute,
   source: docs.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
+  pageTree: {
+    transformers: [
+      {
+        // full titles are too long for the sidebar, so use `sidebarTitle` there when a page sets one
+        file(node, filePath) {
+          const file = filePath ? this.storage.read(filePath) : undefined;
+          if (file?.format !== 'page') return node;
+
+          const short = file.data.sidebarTitle;
+          return typeof short === 'string' && short.length > 0 ? { ...node, name: short } : node;
+        },
+      },
+    ],
+  },
 });
 
 export function getPageImageUrl(page: (typeof source)['$inferPage']) {

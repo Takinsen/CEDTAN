@@ -29,3 +29,32 @@ body {
 :not(pre) > code {
   overflow-wrap: anywhere;
 }
+
+/* neutral-500 muted text falls just under 4.5:1 on the card and sidebar surfaces */
+:root:not(.dark) {
+  --color-fd-muted-foreground: hsl(0, 0%, 40%);
+}
+
+/* github-dark paints comments the same grey as github-light, which fails on the dark code surface */
+.dark [style*='--shiki-dark:#6A737D'] {
+  --shiki-dark: #8b949e !important;
+}
+
+/* four github-light token colours sit under 4.5:1 on the code surface — Primer's darker values pass */
+:root:not(.dark) [style*='--shiki-light:#22863A'] {
+  --shiki-light: #116329 !important;
+}
+:root:not(.dark) [style*='--shiki-light:#D73A49'] {
+  --shiki-light: #a40e26 !important;
+}
+:root:not(.dark) [style*='--shiki-light:#6A737D'] {
+  --shiki-light: #57606a !important;
+}
+:root:not(.dark) [style*='--shiki-light:#E36209'] {
+  --shiki-light: #953800 !important;
+}
+
+/* each heading is also a copy-link target, and the smallest one sits just under 24px */
+:is(h1, h2, h3, h4, h5, h6) > a[data-card] {
+  min-height: 24px;
+}

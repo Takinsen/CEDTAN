@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="CEDTAN">
+  <rect width="32" height="32" rx="7" fill="#111111" />
+  <path d="M21.3 10.7 A7.5 7.5 0 1 0 21.3 21.3" fill="none" stroke="#ffffff" stroke-width="4.6" stroke-linecap="round" />
+  <rect x="14.2" y="13.8" width="11.5" height="4.4" rx="2.2" fill="#111111" />
+  <rect x="15.6" y="14.9" width="9" height="2.2" rx="1.1" fill="#ffffff" />
+</svg>

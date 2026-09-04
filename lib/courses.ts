@@ -8,6 +8,12 @@ export type Course = {
   description: string;
 };
 
+export type CourseLecture = {
+  url: string;
+  label: string;
+  lecture?: number;
+};
+
 export const courses: Course[] = [
   {
     slug: '2110506-sds',
@@ -19,7 +25,19 @@ export const courses: Course[] = [
   },
 ];
 
-// number of lecture pages in a course, not counting its index page
+// lecture pages of a course in lecture order, not counting its index page
+export function courseLectures(slug: string): CourseLecture[] {
+  return source
+    .getPages()
+    .filter((page) => page.slugs[0] === slug && page.slugs.length > 1)
+    .map((page) => ({
+      url: page.url,
+      label: page.data.sidebarTitle ?? page.data.title,
+      lecture: page.data.lecture,
+    }))
+    .sort((a, b) => (a.lecture ?? 0) - (b.lecture ?? 0));
+}
+
 export function countLectures(slug: string): number {
-  return source.getPages().filter((page) => page.slugs[0] === slug && page.slugs.length > 1).length;
+  return courseLectures(slug).length;
 }

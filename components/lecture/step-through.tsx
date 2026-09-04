@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { Children, isValidElement, useState, type ReactElement, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
@@ -38,18 +38,20 @@ export function StepThrough({ children }: { children: ReactNode }) {
           </button>
         ))}
       </div>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={index}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.18 }}
-          className="[&>:first-child]:mt-0 [&>:last-child]:mb-0"
-        >
-          {current}
-        </motion.div>
-      </AnimatePresence>
+      <MotionConfig reducedMotion="user">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="[&>:first-child]:mt-0 [&>:last-child]:mb-0"
+          >
+            {current}
+          </motion.div>
+        </AnimatePresence>
+      </MotionConfig>
     </div>
   );
 }

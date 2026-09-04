@@ -9,7 +9,7 @@ export function Compare({ children }: { children: ReactNode }) {
 export function Wrong({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <div className="min-w-0 rounded-xl border border-rose-500/40 bg-rose-500/5 p-4">
-      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-rose-600 dark:text-rose-400">
+      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-rose-700 dark:text-rose-400">
         <X className="size-4 shrink-0" />
         <span>{title ?? 'แบบที่มีปัญหา'}</span>
       </div>
@@ -21,7 +21,7 @@ export function Wrong({ title, children }: { title?: string; children: ReactNode
 export function Right({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <div className="min-w-0 rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-4">
-      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
         <Check className="size-4 shrink-0" />
         <span>{title ?? 'แบบที่ดีกว่า'}</span>
       </div>

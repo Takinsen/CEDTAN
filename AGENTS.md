@@ -61,6 +61,7 @@ Every one of these is a blocker, not a preference.
 ---
 title: "Lecture 1 — Introduction to Software-Defined Systems"
 description: "หนึ่งประโยคว่าคาบนี้ตอบคำถามอะไร?"
+sidebarTitle: "1 · Software-Defined Systems"
 lecture: 1
 source: "data/2110506-SDS/Lecture-1.pdf"
 credit: "เรียบเรียงจากสไลด์ Lecture 1 ของ รศ.ดร.วีระ เหมืองสิน"
@@ -69,6 +70,10 @@ readingMinutes: 25
 ```
 
 `title` and `description` are required. The rest are optional. A wrong type fails the build.
+
+`sidebarTitle` is the short label shown in the sidebar and on the landing page. Full titles
+wrap over three lines there and the list stops being scannable, so give every page one.
+Use `N · Short topic` for a lecture, and a plain Thai phrase for a course index page.
 
 `lecture`, `readingMinutes`, and `credit` render as one line under the description, joined by
 `·`. Write `credit` so a stranger can tell this is a student's summary, not the real slides.
@@ -126,4 +131,7 @@ Never extract an image from the slides. It cannot be re-themed and it is the lec
 - Never add a page to `meta.json` before its `.mdx` file exists — a missing file is dropped
   silently, so the typo is invisible.
 - `next lint` does not exist in Next.js 16. Lint with `eslint .`.
+- The page title is already an `h1`. Start MDX headings at `##` — a `#` gives the page a
+  second `h1` and breaks the document outline. Use `##` for a part divider, `###` for a
+  section, `####` for a subsection.
 - Comments in code: one line, saying what the block does.
