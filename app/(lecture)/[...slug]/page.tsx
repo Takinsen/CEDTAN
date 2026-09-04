@@ -21,10 +21,18 @@ export default async function Page(props: PageProps<'/[...slug]'>) {
   const MDX = page.data.body;
   const markdownUrl = getPageMarkdownUrl(page).url;
 
+  // where this page came from and how long it takes to read
+  const meta = [
+    page.data.lecture ? `เลกเชอร์ ${page.data.lecture}` : null,
+    page.data.readingMinutes ? `อ่าน ${page.data.readingMinutes} นาที` : null,
+    page.data.credit,
+  ].filter(Boolean);
+
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
+      {meta.length > 0 && <p className="text-sm text-fd-muted-foreground">{meta.join(' · ')}</p>}
       <div className="flex flex-row gap-2 items-center border-b pb-6">
         <MarkdownCopyButton markdownUrl={markdownUrl} />
         <ViewOptionsPopover

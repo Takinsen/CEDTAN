@@ -44,7 +44,11 @@ Every one of these is a blocker, not a preference.
 - **Reason before definition.** Open each concept with the problem it solves (`<Why>`), then
   say what it is. A definition with no motivation is the thing the slides already do badly.
 - **One concrete example per abstract idea.** At least one `<Example>` with real input and
-  real output. No example means the idea is not explained yet.
+  real output. No example means the idea is not explained yet. If the slides give you no
+  example, write one and mark it `<Example added>` so nobody mistakes it for the lecturer's.
+- **Quote the deciding lines, fold the rest.** Never paste a whole screen of command output.
+  Show the lines that prove the point, and put the full output in a `<Detail>`. Same for a
+  long lookup table. This is how a page stays short without dropping a topic.
 - **Assume no background.** If a term needs earlier knowledge, explain that first or link to
   the lecture that covers it.
 - **Thai prose, English terms.** Explain in Thai. Keep standard technical terms in English.
@@ -59,13 +63,18 @@ title: "Lecture 1 — Introduction to Software-Defined Systems"
 description: "หนึ่งประโยคว่าคาบนี้ตอบคำถามอะไร?"
 lecture: 1
 source: "data/2110506-SDS/Lecture-1.pdf"
+credit: "เรียบเรียงจากสไลด์ Lecture 1 ของ อ.วีระ เมืองสิน"
 readingMinutes: 25
 ---
 ```
 
 `title` and `description` are required. The rest are optional. A wrong type fails the build.
 
-`lecture`, `source`, and `readingMinutes` are metadata only — no page or component renders them yet.
+`lecture`, `readingMinutes`, and `credit` render as one line under the description, joined by
+`·`. Write `credit` so a stranger can tell this is a student's summary, not the real slides.
+
+`source` is the only field nothing renders. It stays a repo path, for the next agent to find
+the PDF.
 
 ## Components
 
@@ -77,6 +86,8 @@ The kit below is registered globally. Use it in MDX with no import line.
 | `<Why>` | The problem the concept solves. Comes before the definition. |
 | `<Analogy>` | Everyday comparison. |
 | `<Example title="...">` | Concrete case with input and output. |
+| `<Example added>` | Same, but for an example you wrote because the slides had none. |
+| `<Detail label="...">` | Folds away reference material: full command output, long tables. |
 | `<Pitfall>` | A mistake people make here. |
 | `<Term en="Coupling" th="..." />` | First use of an English term. |
 | `<Figure number={1} caption="...">` | Wraps a diagram. |

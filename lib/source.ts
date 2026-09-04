@@ -11,6 +11,7 @@ const docs = defineDocs({
     schema: pageSchema.extend({
       lecture: z.number().int().positive().optional(),
       source: z.string().optional(),
+      credit: z.string().optional(),
       readingMinutes: z.number().int().positive().optional(),
     }),
     postprocess: {

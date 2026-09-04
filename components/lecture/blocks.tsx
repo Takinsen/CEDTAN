@@ -40,10 +40,15 @@ export function Pitfall({ title, children }: BlockProps) {
   );
 }
 
-// concrete case with clear input and output
-export function Example({ title, children }: BlockProps) {
+// concrete case with clear input and output; `added` marks one not taken from the slides
+export function Example({ title, added, children }: BlockProps & { added?: boolean }) {
   return (
-    <LectureBox icon={FlaskConical} label="ตัวอย่าง" title={title} accent="border-l-emerald-500">
+    <LectureBox
+      icon={FlaskConical}
+      label={added ? 'ตัวอย่างเสริม' : 'ตัวอย่าง'}
+      title={title}
+      accent={added ? 'border-l-amber-400' : 'border-l-emerald-500'}
+    >
       {children}
     </LectureBox>
   );
