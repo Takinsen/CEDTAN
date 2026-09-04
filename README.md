@@ -59,6 +59,20 @@ Put slides at `data/<COURSE-CODE>/Lecture-N.pdf`.
 `data/` is git-ignored. The slides are large and belong to the lecturer, so they are never
 committed and never published.
 
+## Where the content comes from
+
+The summaries are written from lecture slides taught at the Department of Computer
+Engineering, Chulalongkorn University. Each lecture page names the lecturer it is based on.
+
+This is a student's study site. It is not an official course page, and the lecturers have
+not reviewed it. Read the real slides for anything that matters.
+
+## License
+
+- `LICENSE` — MIT, for the site code (`app/`, `lib/`, `components/lecture/`, config)
+- `LICENSE-CONTENT` — CC BY-NC 4.0, for the summaries (`content/`) and the diagrams
+  (`components/figures/`)
+
 ## Adding a lecture
 
 See [AGENTS.md](./AGENTS.md).
