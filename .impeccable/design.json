@@ -9,35 +9,80 @@
         "displayName": "Page",
         "canonical": "#f5f5f5",
         "dark": "#121212",
-        "tonalRamp": ["#0a0a0a", "#121212", "#191919", "#212121", "#404040", "#a3a3a3", "#ededed", "#f5f5f5"]
+        "tonalRamp": [
+          "#0a0a0a",
+          "#121212",
+          "#191919",
+          "#212121",
+          "#404040",
+          "#a3a3a3",
+          "#ededed",
+          "#f5f5f5"
+        ]
       },
       "surface": {
         "role": "neutral",
         "displayName": "Surface",
         "canonical": "#f1f1f1",
         "dark": "#191919",
-        "tonalRamp": ["#0a0a0a", "#121212", "#191919", "#212121", "#404040", "#a3a3a3", "#e5e5e5", "#f1f1f1"]
+        "tonalRamp": [
+          "#0a0a0a",
+          "#121212",
+          "#191919",
+          "#212121",
+          "#404040",
+          "#a3a3a3",
+          "#e5e5e5",
+          "#f1f1f1"
+        ]
       },
       "ink": {
         "role": "neutral",
         "displayName": "Ink",
         "canonical": "#0a0a0a",
         "dark": "#ebebeb",
-        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#404040", "#666666", "#a3a3a3", "#d4d4d4", "#fafafa"]
+        "tonalRamp": [
+          "#0a0a0a",
+          "#171717",
+          "#262626",
+          "#404040",
+          "#666666",
+          "#a3a3a3",
+          "#d4d4d4",
+          "#fafafa"
+        ]
       },
       "ink-muted": {
         "role": "neutral",
         "displayName": "Ink Muted",
         "canonical": "#666666",
         "dark": "rgba(179, 179, 179, 0.8)",
-        "tonalRamp": ["#171717", "#262626", "#404040", "#525252", "#666666", "#8c8c8c", "#b3b3b3", "#d4d4d4"]
+        "tonalRamp": [
+          "#171717",
+          "#262626",
+          "#404040",
+          "#525252",
+          "#666666",
+          "#8c8c8c",
+          "#b3b3b3",
+          "#d4d4d4"
+        ]
       },
       "hairline": {
         "role": "neutral",
         "displayName": "Hairline",
         "canonical": "rgba(203, 203, 203, 0.5)",
         "dark": "rgba(100, 100, 100, 0.2)",
-        "tonalRamp": ["#404040", "#525252", "#737373", "#a3a3a3", "#cbcbcb", "#e5e5e5", "#ededed", "#f5f5f5"]
+        "tonalRamp": [
+          "#404040",
+          "#525252",
+          "#737373",
+          "#a3a3a3",
+          "#cbcbcb",
+          "#e5e5e5",
+          "#ededed",
+          "#f5f5f5"
+        ]
       },
       "key-idea": {
         "role": "secondary",
@@ -45,7 +90,16 @@
         "canonical": "#bb4d00",
         "dark": "#ffb900",
         "means": "The one sentence to remember.",
-        "tonalRamp": ["#7b3306", "#973c00", "#bb4d00", "#e17100", "#fe9a00", "#ffb900", "#ffd230", "#fffbeb"]
+        "tonalRamp": [
+          "#7b3306",
+          "#973c00",
+          "#bb4d00",
+          "#e17100",
+          "#fe9a00",
+          "#ffb900",
+          "#ffd230",
+          "#fffbeb"
+        ]
       },
       "reason": {
         "role": "secondary",
@@ -53,7 +107,16 @@
         "canonical": "#0069a8",
         "dark": "#00bcff",
         "means": "The problem the concept exists to solve.",
-        "tonalRamp": ["#024a70", "#00598a", "#0069a8", "#0084d1", "#00a6f4", "#00bcff", "#74d4ff", "#f0f9ff"]
+        "tonalRamp": [
+          "#024a70",
+          "#00598a",
+          "#0069a8",
+          "#0084d1",
+          "#00a6f4",
+          "#00bcff",
+          "#74d4ff",
+          "#f0f9ff"
+        ]
       },
       "analogy": {
         "role": "secondary",
@@ -61,7 +124,16 @@
         "canonical": "#7008e7",
         "dark": "#a684ff",
         "means": "The everyday comparison.",
-        "tonalRamp": ["#4d179a", "#5d0ec0", "#7008e7", "#7f22fe", "#8e51ff", "#a684ff", "#c4b4ff", "#f5f3ff"]
+        "tonalRamp": [
+          "#4d179a",
+          "#5d0ec0",
+          "#7008e7",
+          "#7f22fe",
+          "#8e51ff",
+          "#a684ff",
+          "#c4b4ff",
+          "#f5f3ff"
+        ]
       },
       "pitfall": {
         "role": "secondary",
@@ -69,7 +141,16 @@
         "canonical": "#c70036",
         "dark": "#ff637e",
         "means": "The mistake people make here; also the wrong side of a comparison.",
-        "tonalRamp": ["#8b0836", "#a50036", "#c70036", "#ec003f", "#ff2056", "#ff637e", "#ffa1ad", "#fff1f2"]
+        "tonalRamp": [
+          "#8b0836",
+          "#a50036",
+          "#c70036",
+          "#ec003f",
+          "#ff2056",
+          "#ff637e",
+          "#ffa1ad",
+          "#fff1f2"
+        ]
       },
       "example": {
         "role": "secondary",
@@ -77,26 +158,72 @@
         "canonical": "#007a55",
         "dark": "#00d492",
         "means": "A concrete case with real input and output; also the right side of a comparison.",
-        "tonalRamp": ["#004f3b", "#006045", "#007a55", "#00a63e", "#00bc7d", "#00d492", "#5ee9b5", "#ecfdf5"]
+        "tonalRamp": [
+          "#004f3b",
+          "#006045",
+          "#007a55",
+          "#00a63e",
+          "#00bc7d",
+          "#00d492",
+          "#5ee9b5",
+          "#ecfdf5"
+        ]
       }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "The lecture title. Rendered by the layout, never written in MDX." },
-      "headline": { "displayName": "Headline", "purpose": "A part divider inside a lecture, preceded by a horizontal rule." },
-      "title": { "displayName": "Title", "purpose": "A section inside a part." },
-      "body": { "displayName": "Body", "purpose": "Prose. Capped at a 900px column, near 70 Thai characters." },
-      "label": { "displayName": "Label", "purpose": "Block labels, meta line, table cells, sidebar entries." },
-      "code": { "displayName": "Code", "purpose": "Fenced blocks and inline spans alike." }
+      "display": {
+        "displayName": "Display",
+        "purpose": "The lecture title. Rendered by the layout, never written in MDX."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "A part divider inside a lecture, preceded by a horizontal rule."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "A section inside a part."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Prose. Capped at a 900px column, near 70 Thai characters."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Block labels, meta line, table cells, sidebar entries."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Fenced blocks and inline spans alike."
+      }
     },
     "shadows": [],
     "motion": [
-      { "name": "state", "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Colour and background changes on hover, focus, and selection." },
-      { "name": "step", "value": "180ms ease", "purpose": "Step-through cross-fade with an 8px rise; suppressed under prefers-reduced-motion." }
+      {
+        "name": "state",
+        "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Colour and background changes on hover, focus, and selection."
+      },
+      {
+        "name": "step",
+        "value": "180ms ease",
+        "purpose": "Step-through cross-fade with an 8px rise; suppressed under prefers-reduced-motion."
+      }
     ],
     "breakpoints": [
-      { "name": "sm", "value": "640px" },
-      { "name": "md", "value": "768px", "note": "Sidebar becomes a column; comparison panels go side by side." },
-      { "name": "xl", "value": "1280px", "note": "Table of contents appears." }
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px",
+        "note": "Sidebar becomes a column; comparison panels go side by side."
+      },
+      {
+        "name": "xl",
+        "value": "1280px",
+        "note": "Table of contents appears."
+      }
     ]
   },
   "components": [
@@ -155,6 +282,14 @@
       "description": "A hand-drawn inline SVG in a card, captioned and numbered.",
       "html": "<figure class=\"ds-figure\"><div class=\"ds-figure-scroll\"><svg viewBox=\"0 0 320 90\" role=\"img\" aria-label=\"ตัวอย่างไดอะแกรม\" fill=\"currentColor\"><rect x=\"10\" y=\"20\" width=\"120\" height=\"50\" rx=\"8\" fill-opacity=\"0.12\" stroke=\"currentColor\" stroke-opacity=\"0.45\"/><text x=\"70\" y=\"50\" text-anchor=\"middle\" font-size=\"12\">Desired</text><line x1=\"134\" y1=\"45\" x2=\"186\" y2=\"45\" stroke=\"currentColor\" stroke-opacity=\"0.55\" stroke-width=\"1.4\"/><rect x=\"190\" y=\"20\" width=\"120\" height=\"50\" rx=\"8\" fill-opacity=\"0.12\" stroke=\"currentColor\" stroke-opacity=\"0.45\"/><text x=\"250\" y=\"50\" text-anchor=\"middle\" font-size=\"12\">Actual</text></svg></div><figcaption class=\"ds-figure-caption\"><span>รูปที่ 1: </span>วงจรที่ทำงานอยู่ตลอดเวลา</figcaption></figure>",
       "css": ".ds-figure { margin: 0; background: var(--color-fd-card, #f1f1f1); border: 1px solid var(--color-fd-border, rgba(203,203,203,0.5)); border-radius: 12px; padding: 16px; color: var(--color-fd-foreground, #0a0a0a); font-family: 'Bai Jamjuree', ui-sans-serif, system-ui, sans-serif; } .ds-figure-scroll { overflow-x: auto; } .ds-figure-caption { margin-top: 12px; text-align: center; font-size: 14px; color: var(--color-fd-muted-foreground, #666); } .ds-figure-caption span { font-weight: 600; }"
+    },
+    {
+      "name": "Callout",
+      "kind": "card",
+      "refersTo": "block",
+      "description": "A side note in the block frame: muted circle for context, rose triangle for a caution.",
+      "html": "<div class=\"ds-callout\"><div class=\"ds-callout-head\"><svg class=\"ds-callout-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 16v-4\"/><path d=\"M12 8h.01\"/></svg><span>ข้อมูลในหน้านี้มาจากไหน</span></div><p class=\"ds-callout-body\">Where the page came from, and what was added.</p></div>",
+      "css": ".ds-callout { background: var(--color-fd-card, #f1f1f1); border: 1px solid var(--color-fd-border, rgba(203,203,203,0.5)); border-radius: 12px; overflow: hidden; font-family: 'Bai Jamjuree', ui-sans-serif, system-ui, sans-serif; } .ds-callout-head { display: flex; align-items: center; gap: 8px; padding: 12px 16px 0; font-size: 14px; font-weight: 600; color: var(--color-fd-muted-foreground, #666); } .ds-callout-icon { width: 16px; height: 16px; flex-shrink: 0; color: var(--color-fd-muted-foreground, #666); } .ds-callout-body { margin: 8px 0 12px; padding: 0 16px; font-size: 16px; line-height: 1.75; color: var(--color-fd-foreground, #0a0a0a); }"
     }
   ],
   "narrative": {
@@ -168,17 +303,61 @@
       "Both themes are first-class and every value is checked in both"
     ],
     "rules": [
-      { "name": "The Legend Rule", "body": "A hue means one thing across the whole site. Amber is always the key idea; rose is always the trap. Never reach for a colour because a block \"needs\" one, and never introduce a sixth hue without giving it a meaning first.", "section": "colors" },
-      { "name": "The Glyph-Only Rule", "body": "Semantic colour is carried by a 16px icon and nothing else. No tinted block backgrounds, no coloured borders on blocks, no coloured headings. The one exception is the comparison pair, where a 5% tint and a 40% border separate two options that sit side by side.", "section": "colors" },
-      { "name": "The Two-Surface Rule", "body": "There are exactly two greys behind content: page and surface. A block on a block does not get a third.", "section": "colors" },
-      { "name": "The One H1 Rule", "body": "The layout owns the h1. MDX starts at ##. A # in content produces a second top-level heading and breaks the outline; the four levels available are enough.", "section": "typography" },
-      { "name": "The Breathing Room Rule", "body": "Body line-height never drops below 1.75 and headings never below 1.4. Thai marks stack above and below the baseline; a tighter setting collides them.", "section": "typography" },
-      { "name": "The Wrapping Code Rule", "body": "Inline code wraps at any point (overflow-wrap: anywhere). A long URL or flag name in the middle of a sentence must not push the page sideways on a phone.", "section": "typography" },
-      { "name": "The Flush Sidebar Rule", "body": "The sidebar is exactly --fd-sidebar-width and sits against the content. Its surface must never spill into the outer gutter on a wide monitor — at 2560px that reads as a 765px slab, not a sidebar.", "section": "layout" },
-      { "name": "The Flat-Forever Rule", "body": "No box-shadow, no filter: drop-shadow, no backdrop-filter. If something needs to separate from its background, give it the surface tint and a hairline. If it needs to separate from another block, give it space.", "section": "elevation" },
-      { "name": "The One Radius Rule", "body": "Containers are 12px, controls are 8px, tabs are pills. A fourth value means a mistake.", "section": "shapes" },
-      { "name": "The currentColor Rule", "body": "A diagram uses currentColor with fillOpacity / strokeOpacity for every stroke and fill. A hard-coded colour disappears in one of the two themes.", "section": "shapes" },
-      { "name": "The Same Card Rule", "body": "Every block is the same card. If two blocks need to look different, change the icon and its colour, not the frame.", "section": "components" }
+      {
+        "name": "The Legend Rule",
+        "body": "A hue means one thing across the whole site. Amber is always the key idea; rose is always the trap. Never reach for a colour because a block \"needs\" one, and never introduce a sixth hue without giving it a meaning first.",
+        "section": "colors"
+      },
+      {
+        "name": "The Glyph-Only Rule",
+        "body": "Semantic colour is carried by a 16px icon and nothing else. No tinted block backgrounds, no coloured borders on blocks, no coloured headings. The one exception is the comparison pair, where a 5% tint and a 40% border separate two options that sit side by side.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Surface Rule",
+        "body": "There are exactly two greys behind content: page and surface. A block on a block does not get a third.",
+        "section": "colors"
+      },
+      {
+        "name": "The One H1 Rule",
+        "body": "The layout owns the h1. MDX starts at ##. A # in content produces a second top-level heading and breaks the outline; the four levels available are enough.",
+        "section": "typography"
+      },
+      {
+        "name": "The Breathing Room Rule",
+        "body": "Body line-height never drops below 1.75 and headings never below 1.4. Thai marks stack above and below the baseline; a tighter setting collides them.",
+        "section": "typography"
+      },
+      {
+        "name": "The Wrapping Code Rule",
+        "body": "Inline code wraps at any point (overflow-wrap: anywhere). A long URL or flag name in the middle of a sentence must not push the page sideways on a phone.",
+        "section": "typography"
+      },
+      {
+        "name": "The Full-Bleed Shell Rule",
+        "body": "The three columns fill the window; there is no outer gutter. Left unchecked the docs grid reserves one past 97rem, and the sidebar's area spans it, so its surface paints 445px at 1920 and 765px at 2560. The sidebar is 268px at every width or it is broken.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat-Forever Rule",
+        "body": "No box-shadow, no filter: drop-shadow, no backdrop-filter. If something needs to separate from its background, give it the surface tint and a hairline. If it needs to separate from another block, give it space.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Radius Rule",
+        "body": "Containers are 12px, controls are 8px, tabs are pills. A fourth value means a mistake.",
+        "section": "shapes"
+      },
+      {
+        "name": "The currentColor Rule",
+        "body": "A diagram uses currentColor with fillOpacity / strokeOpacity for every stroke and fill. A hard-coded colour disappears in one of the two themes.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Same Card Rule",
+        "body": "Every block is the same card. If two blocks need to look different, change the icon and its colour, not the frame.",
+        "section": "components"
+      }
     ],
     "dos": [
       "Do carry meaning with the icon colour and the label, and leave the card neutral.",
@@ -196,7 +375,7 @@
       "Don't use a hue that has no meaning in the legend, or reuse a legend hue for decoration.",
       "Don't add a second display typeface. Size and weight carry the hierarchy.",
       "Don't set body text below 1.75 line-height or a heading below 1.4; Thai marks collide.",
-      "Don't let the sidebar surface spread past --fd-sidebar-width."
+      "Don't let the sidebar surface spread past --fd-sidebar-width, and don't reintroduce an outer gutter for the three columns to sit inside."
     ]
   }
 }

@@ -59,9 +59,8 @@ body {
   min-height: 24px;
 }
 
-/* the sidebar's grid area covers the outer gutter too, so past 97rem its surface bleeds left */
-#nd-sidebar:not([data-collapsed='true']) {
-  width: var(--fd-sidebar-width);
-  inset-inline-start: auto;
-  inset-inline-end: 0;
+/* past 97rem the docs grid grows an outer column on each side, and the sidebar's area spans
+   the left one, so its surface bleeds. Let the three columns fill the window instead. */
+#nd-docs-layout {
+  --fd-layout-width: 100%;
 }

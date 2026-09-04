@@ -154,6 +154,10 @@ against the surface.
 - **Example Emerald** (`#007a55` light, `#00d492` dark): a concrete case with real input and
   real output. Also the right side of a comparison.
 
+A side note (`<Callout>`) sits outside the legend: `type="info"` takes the muted grey, because
+it adds context rather than a category, and `type="warn"` reuses Pitfall Rose, because to a
+reader it means the same thing.
+
 ### Neutral
 
 - **Page** (`#f5f5f5` light, `#121212` dark): the reading ground.
@@ -211,10 +215,11 @@ URL or flag name in the middle of a sentence must not push the page sideways on 
 
 ## Layout
 
-Three columns on a wide screen: a 268px sidebar, the content, and a 268px table of contents.
-The content column is capped at 900px and centred; the reading measure stays constant while
-the window grows. The table of contents disappears below 1280px and the sidebar becomes a
-drawer below 768px.
+Three columns on a wide screen, and the group fills the window: a 268px sidebar against the
+left edge, the content, and a 268px table of contents against the right edge. The content
+column is capped at 900px and centred inside whatever is left, so the reading measure stays
+constant while the window grows. The table of contents disappears below 1280px and the sidebar
+becomes a drawer below 768px.
 
 The landing page is a single 768px column: heading, one-paragraph lead, one section per
 course, then the disclaimer. No sidebar, no table of contents.
@@ -225,9 +230,10 @@ page sit 56px apart.
 
 ### Named Rules
 
-**The Flush Sidebar Rule.** The sidebar is exactly `--fd-sidebar-width` and sits against the
-content. Its surface must never spill into the outer gutter on a wide monitor — at 2560px that
-reads as a 765px slab, not a sidebar.
+**The Full-Bleed Shell Rule.** The three columns fill the window; there is no outer gutter.
+Left unchecked the docs grid reserves one past 97rem, and the sidebar's area spans it, so its
+surface paints 445px at 1920 and 765px at 2560. The sidebar is 268px at every width or it is
+broken.
 
 ## Elevation & Depth
 
@@ -278,6 +284,12 @@ card that announces itself with one small coloured glyph.
   `เสริม — ไม่ได้อยู่ในสไลด์`.
 - **Body:** normal prose at full contrast. The card never tints its own text.
 - **Spacing:** 24px above and below, 16px inside.
+
+### Callout
+
+A side note in the same frame as a block: muted info circle for context, rose warning triangle
+for a caution. Replaces the framework's own callout, which marked itself with a 2px colour bar
+down its left edge and so disagreed with every other block on the page.
 
 ### Comparison (Compare / Wrong / Right)
 
@@ -348,4 +360,5 @@ change the icon and its colour, not the frame.
 - **Don't** use a hue that has no meaning in the legend, or reuse a legend hue for decoration.
 - **Don't** add a second display typeface. Size and weight carry the hierarchy.
 - **Don't** set body text below 1.75 line-height or a heading below 1.4; Thai marks collide.
-- **Don't** let the sidebar surface spread past `--fd-sidebar-width`.
+- **Don't** let the sidebar surface spread past `--fd-sidebar-width`, and don't reintroduce
+  an outer gutter for the three columns to sit inside.
