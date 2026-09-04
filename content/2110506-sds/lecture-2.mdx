@@ -1,0 +1,1214 @@
+---
+title: "Lecture 2 — Container & Docker"
+description: "container ไม่ใช่ของใหม่ มันคือ process ธรรมดาที่ถูกจับใส่กรอบด้วยความสามารถสามอย่างที่ Linux มีมานานแล้ว"
+lecture: 2
+source: "data/2110506-SDS/Lecture-2.pdf"
+readingMinutes: 55
+---
+
+import { DependencyProblem } from '@/components/figures/2110506-sds/dependency-problem';
+import { ContainerFoundation } from '@/components/figures/2110506-sds/container-foundation';
+import { ImageLayers } from '@/components/figures/2110506-sds/image-layers';
+import { ImageEvolves } from '@/components/figures/2110506-sds/image-evolves';
+import { VmVsContainer } from '@/components/figures/2110506-sds/vm-vs-container';
+import { DockerEngine } from '@/components/figures/2110506-sds/docker-engine';
+import { ContainerStates } from '@/components/figures/2110506-sds/container-states';
+import { PersistentData } from '@/components/figures/2110506-sds/persistent-data';
+import { NetworkTopology } from '@/components/figures/2110506-sds/network-topology';
+import { BridgeDns } from '@/components/figures/2110506-sds/bridge-dns';
+import { MonitoringStack } from '@/components/figures/2110506-sds/monitoring-stack';
+
+<KeyIdea>
+container คือ process ธรรมดาที่ถูกจับใส่กรอบสามชั้น: namespace ทำให้มันมองไม่เห็นของคนอื่น cgroup ทำให้มันแย่งทรัพยากรคนอื่นไม่ได้ และ union file system ทำให้ไฟล์ของมันซ้อนกันเป็นชั้นจนแชร์กันได้ Docker คือโปรแกรมที่เอาสามอย่างนี้มามัดรวมให้ใช้ง่าย
+</KeyIdea>
+
+<Callout type="info" title="ข้อมูลในหน้านี้มาจากไหน">
+เนื้อหามาจากสไลด์ Lecture 2 ทั้ง 98 หน้า ผลลัพธ์ของคำสั่งทุกอันในหน้านี้ยกมาจากสไลด์จริง ส่วนคำอธิบาย ตัวอย่างเทียบเคียง และรูปทั้งหมด เขียนขึ้นใหม่ หัวสไลด์ยังเขียนรหัสวิชา 2110415 ซึ่งเป็นรหัสเดิมของวิชานี้
+</Callout>
+
+## คาบนี้จะพาไปไหนบ้าง
+
+สไลด์บอกไว้ตรง ๆ ว่าคาบนี้ **ถือว่าคุณเคยเจอ container และ Docker มาแล้ว** จากวิชา Operating Systems และ Software Engineering II คาบนี้จึงไม่ได้สอนซ้ำแบบผิวเผิน แต่ลงไปดูว่ามันทำงานยังไงข้างใน
+
+หัวข้อที่สไลด์วางไว้มีสี่เรื่อง
+
+| เรื่อง | จะตอบคำถามว่า |
+| --- | --- |
+| Fundamentals | container ทำงานยังไงในระดับระบบ และ Docker เอาอะไรมาประกอบ |
+| Dockerfile | เขียนไฟล์ยังไงให้สร้าง image ได้อัตโนมัติ |
+| Networking | ให้ container คุยกันและคุยกับโลกภายนอกได้ยังไงอย่างปลอดภัย |
+| Persistent storage | ทำยังไงให้ข้อมูลไม่หายเมื่อ container ตาย |
+
+หน้านี้เดินตามลำดับสไลด์ คือ พื้นฐาน → Docker → คำสั่ง → ที่เก็บข้อมูล → เครือข่าย → ตัวอย่างรวมท้ายคาบ
+
+---
+
+## ปัญหาที่ container เกิดมาแก้
+
+<Why>
+คุณเขียนโปรแกรมเสร็จบนโน้ตบุ๊กตัวเอง มันรันได้ ส่งให้เพื่อนไปรันบนเครื่องเทสต์ พัง ส่งขึ้นเซิร์ฟเวอร์จริง พังอีกแบบ
+
+สาเหตุคือโปรแกรมหนึ่งตัวไม่ได้อยู่ลอย ๆ มันพึ่งพา **เวอร์ชันหนึ่ง ๆ** ของไลบรารี ของ runtime ของภาษา ของระบบปฏิบัติการ ของไฟล์ที่วางไว้ที่ตำแหน่งหนึ่ง และของพอร์ตเครือข่ายที่ว่างอยู่ พอย้ายเครื่อง ของพวกนี้เปลี่ยนหมด
+</Why>
+
+<Figure number={1} caption="โปรแกรมเดียวกันเจอไลบรารีและระบบปฏิบัติการคนละเวอร์ชันในทุกเครื่องที่มันไปลง">
+  <DependencyProblem />
+</Figure>
+
+คำถามของทั้งคาบนี้จึงมีประโยคเดียว
+
+> เขียนโปรแกรมครั้งเดียว แล้วทำยังไงให้มันรันได้เหมือนกันทุกที่?
+
+---
+
+## ของที่มีอยู่แล้วสองอย่าง: machine abstraction กับ process abstraction
+
+ก่อนจะประดิษฐ์ของใหม่ ต้องดูก่อนว่าวิทยาการคอมพิวเตอร์มีของอะไรใกล้เคียงอยู่แล้ว สไลด์แบ่ง <Term en="Abstraction" th="การซ่อนรายละเอียดข้างใต้ไว้ แล้วยื่นหน้าตาที่ง่ายกว่าให้ใช้" /> ในคอมพิวเตอร์ออกเป็นสองสาย
+
+| | Machine Abstraction | Running Program Abstraction |
+| --- | --- | --- |
+| **ตัวอย่าง** | Operating System, Virtual Machine | Process, Thread |
+| **มันคืออะไร** | เครื่องสมมติที่สร้างทับเครื่องจริง แล้วยื่นบริการมาตรฐานให้โปรแกรมใช้ | หนึ่งครั้งของการรันโปรแกรม ประกอบด้วยโค้ดกับสถานะของโปรแกรมนั้น |
+| **มีไว้ทำไม** | <Term en="Portability" th="ความสามารถย้ายไปรันที่อื่นได้" /> — โค้ดชุดเดิมรันบนฮาร์ดแวร์คนละแบบได้ | แบ่งทรัพยากรกันใช้ในเครื่องเดียวกันโดยไม่ชนกัน |
+
+สองสายนี้แก้คนละปัญหา สายซ้ายแก้เรื่องย้ายเครื่อง สายขวาแก้เรื่องอยู่ร่วมกัน
+
+### แล้วอันไหนแก้ปัญหาของเราได้
+
+<Compare>
+<Wrong>
+**Virtual Machine**
+
+ข้อดี — VM มีทุกอย่างที่โปรแกรมต้องใช้อยู่ในตัว ตั้งแต่ระบบปฏิบัติการขึ้นมา ย้ายไปไหนก็รันได้
+
+ข้อเสีย — VM มีของเยอะเกินไป image ของมันจึงใหญ่มาก สร้างช้า ส่งช้า เริ่มรันช้า และทุกครั้งที่ไลบรารีเปลี่ยน ต้องสร้าง image ใหม่ทั้งก้อนแล้วส่งใหม่ทั้งก้อน
+</Wrong>
+<Right>
+**Process**
+
+ข้อดี — process ใช้เท่าที่มันต้องใช้ เบา เริ่มเร็ว
+
+ข้อเสีย — process แชร์ทรัพยากรกับ process อื่นบนเครื่องเดียวกัน จึงไม่ได้แยกขาดจากกัน และย้ายเครื่องไม่ได้ เพราะมันพึ่งพาของที่ติดตั้งไว้บนเครื่องนั้น
+</Right>
+</Compare>
+
+สไลด์สรุปทางเลือกไว้ประโยคเดียว
+
+> แนวคิด process มีแวว แค่ต้องแก้สองเรื่องคือ **การแยกขาดจากกัน** และ **การย้ายเครื่อง**
+
+container คือคำตอบของประโยคนี้ ไม่ใช่เทคโนโลยีใหม่ทั้งดุ้น แต่คือ process ที่ถูกอุดสองรูนี้
+
+---
+
+## สามอย่างที่ Linux มีอยู่ก่อนแล้ว
+
+การอุดสองรูข้างบนไม่ต้องเขียนของใหม่เลย Linux มีเครื่องมือครบอยู่แล้วสามชิ้น
+
+| เครื่องมือ | อุดรูอะไร |
+| --- | --- |
+| <Term en="Namespace" th="ขอบเขตชื่อ" /> | การแยกขาดจากกัน — ทำให้แต่ละกลุ่มมองไม่เห็นของกลุ่มอื่น |
+| <Term en="Control Group (cgroup)" th="กลุ่มควบคุมทรัพยากร" /> | การควบคุมทรัพยากร — จำกัดว่าใครใช้ CPU และหน่วยความจำได้เท่าไหร่ |
+| <Term en="Union File System" th="ระบบไฟล์แบบซ้อนชั้น" /> | การย้ายเครื่อง — เก็บไฟล์ทั้งหมดเป็นชั้น ๆ ที่ห่อไปด้วยกันได้และแชร์กันได้ |
+
+<Figure number={2} caption="Docker วางตัวอยู่ตรงไหน: daemon กับ libcontainer อยู่ฝั่ง user space ส่วนของจริงที่ทำงานอยู่ใน kernel">
+  <ContainerFoundation />
+</Figure>
+
+ชั้น `Libcontainer` ในรูปคือไลบรารีที่ Docker ใช้เรียกความสามารถทั้งสามอย่างของ kernel แทนที่จะเรียกเองตรง ๆ ส่วน `Docker Daemon` คือตัวที่รับคำสั่งจากผู้ใช้
+
+จำภาพนี้ไว้ เพราะทุกอย่างที่เหลือในคาบนี้คือรายละเอียดของสามกล่องล่าง
+
+---
+
+## Isolation: แยกด้วย namespace
+
+<Why>
+ถ้าคุณรันเว็บเซิร์ฟเวอร์สองตัวบนเครื่องเดียวกัน ทั้งคู่อยากใช้พอร์ต 80 ตัวที่สองจะเปิดไม่ขึ้น หรือถ้าโปรแกรมสองตัวต้องใช้ไลบรารีชื่อเดียวกันคนละเวอร์ชัน ลงตัวหนึ่งอีกตัวก็พัง นี่คือหน้าตาของการ "ไม่แยกขาดจากกัน"
+</Why>
+
+<Term en="Isolation" th="การแยกส่วนประกอบของระบบออกจากกันและป้องกันไม่ให้กวนกัน" /> ในความหมายของสไลด์คือการทำให้ส่วนต่าง ๆ ของระบบแยกกันและกันไม่ให้เข้าถึงกัน
+
+VM ทำ isolation ระดับสูงสุด เพราะมันสร้างระบบปฏิบัติการครบชุดขึ้นมาทับฮาร์ดแวร์ของ host แต่มันแลกมาด้วยขนาดและความช้า
+
+ส่วน process ธรรมดา แยกอะไรไปแล้วบ้างและยังไม่ได้แยกอะไร
+
+| process แยกให้แล้ว | process ยังไม่ได้แยก |
+| --- | --- |
+| หน่วยความจำ (virtual address space) | อุปกรณ์ที่ใช้ร่วมกัน เช่น ระบบไฟล์ |
+| file descriptor | หมายเลขและพอร์ตเครือข่าย |
+| สิทธิ์ของผู้ใช้ | การสื่อสารระหว่าง process (IPC) |
+
+namespace คือของที่มาอุดคอลัมน์ขวา
+
+### namespace คืออะไร
+
+ทรัพยากรของระบบทั้งหมดถูกซอยเป็นส่วน ๆ เรียกว่า namespace แต่ละ namespace มี **ชุดตัวระบุ (identifier) ของตัวเอง** ตัวระบุตัวเดียวกันที่อยู่คนละ namespace จะหมายถึงคนละของ
+
+process แต่ละตัวผูกอยู่กับ namespace หนึ่ง และเห็นได้เฉพาะทรัพยากรใน namespace นั้น ผลคือ process ที่อยู่ namespace เดียวกันจะรู้สึกว่าตัวเองมีทรัพยากรเป็นของตัวเองทั้งชุด
+
+<Analogy>
+นิสิตทุกคนมีรหัสประจำตัวที่ไม่ซ้ำกันทั้งมหาวิทยาลัย แต่พอเข้าห้องเรียนแต่ละวิชา ทุกคนได้เลขที่ประจำวิชานั้นอีกอันหนึ่ง อาจารย์แต่ละคนดูแลเฉพาะนิสิตในห้องตัวเอง นิสิตทำกิจกรรมกับเพื่อนในห้องเดียวกันเท่านั้น
+
+**รายชื่อนิสิตในหนึ่งห้องเรียนก็คือ namespace หนึ่งอัน** — เลขที่ 1 ในวิชา A กับเลขที่ 1 ในวิชา B เป็นคนละคน
+</Analogy>
+
+### namespace มีกี่ชนิด
+
+| ชนิด | แยกอะไร | ลองดูด้วยคำสั่ง |
+| --- | --- | --- |
+| Process ID | แต่ละ namespace มีชุด process ของตัวเอง process คนละ namespace มี PID ซ้ำกันได้ | `ps` |
+| Mount | แต่ละ namespace เห็นจุด mount คนละแบบ เข้าถึงได้แต่ระบบไฟล์ของตัวเอง | `mount`, `chroot` |
+| Network | แต่ละ namespace มีอุปกรณ์เครือข่าย หมายเลข IP และตารางเส้นทางของตัวเอง | `ifconfig` |
+| User ID | แต่ละ namespace มีฐานข้อมูลผู้ใช้ของตัวเอง user id ซ้ำกันข้าม namespace ได้ | `cat /etc/passwd` |
+| UTS | แต่ละ namespace มีชื่อเครื่องและชื่อโดเมนของตัวเอง | `hostname`, `cat /etc/hosts` |
+| IPC | แต่ละ namespace มีทรัพยากรสื่อสารระหว่าง process ของตัวเอง เช่น shared memory | `ipcs` |
+
+<Example title="process ตัวเดียวกัน มีสอง PID พร้อมกัน">
+สไลด์ทำการทดลองสามขั้น
+
+**ขั้น 1** บน Ubuntu VM สั่ง `ps aux | grep top` ตอนนี้ยังไม่มี process ชื่อ `top`
+
+**ขั้น 2** เปิดเทอร์มินัลที่สอง สร้าง container แล้วรัน `top` ข้างใน
+
+```bash
+docker run -it ubuntu
+root@b9f6fed68de7:/# top
+```
+
+ผลที่ `top` แสดงข้างใน container
+
+```
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+    1 root      20   0   18504   3260   2840 S   0.0   0.2   0:00.04 bash
+   11 root      20   0   36640   3096   2620 R   0.0   0.2   0:00.02 top
+```
+
+ข้างใน container `top` มี **PID 11** และ `bash` มี **PID 1** — เลข 1 คือ process แรกของ namespace นั้น
+
+**ขั้น 3** กลับไปเทอร์มินัลแรก สั่ง `ps aux | grep top` อีกครั้ง
+
+```
+root     27474  0.0  0.1  36640  3096 pts/0    S+   08:48   0:00 top
+```
+
+process ตัวเดียวกันนี้ ในสายตาของ host มี **PID 27474**
+
+process หนึ่งตัวจึงอยู่ในหลาย PID namespace พร้อมกันได้ และมีเลขคนละเลขในแต่ละ namespace ถ้า `ps` ไม่แสดงผลแบบนี้ ให้ลอง `docker top` แทน
+</Example>
+
+<Pitfall>
+คนมักคิดว่า PID 1 ใน container คือ PID 1 ของเครื่อง ไม่ใช่ — มันแค่เป็น process แรกของ namespace นั้น เคอร์เนลยังเห็นมันเป็นเลขอื่นเสมอ ตรงนี้สำคัญเวลาจะ kill process หรือ debug: เลขที่คุณเห็นข้างในกับข้างนอกไม่ใช่เลขเดียวกัน
+</Pitfall>
+
+---
+
+## Resource control: จำกัดด้วย cgroups
+
+<Why>
+namespace ทำให้ container มองไม่เห็นกัน แต่ยังไม่ได้ห้ามมันแย่งของกัน container ตัวหนึ่งที่เขียนโค้ดวนลูปผิดพลาด ยังกิน CPU ได้ทั้งเครื่องและทำให้ container อื่นทั้งหมดช้าลง การแยกสายตาไม่พอ ต้องแยกโควตาด้วย
+</Why>
+
+กลไก <Term en="Control Group (cgroup)" th="กลุ่มควบคุมทรัพยากร" /> ให้เราคุม CPU หน่วยความจำ และ I/O ได้ละเอียด วิธีทำงานคือ **จับ process มารวมกลุ่ม แล้วบังคับนโยบายหรือเพดานการใช้ทรัพยากรกับทั้งกลุ่ม** ผลคือไม่มี process กลุ่มไหนใช้เกินที่จัดสรรไว้ ซึ่งจำเป็นมากกับสมรรถนะ ความเสถียร และสภาพแวดล้อมที่มีหลายผู้เช่าอยู่ร่วมกัน
+
+<Analogy>
+มหาวิทยาลัยจัดห้องเรียนให้แต่ละวิชาโดยดูจากจำนวนนิสิตว่าที่นั่งพอไหม และให้คาบเรียนต่อสัปดาห์ตามหน่วยกิต (1 หน่วยกิต = 1 ชั่วโมง/สัปดาห์) วิชาไหนจะสอนยาวกว่านั้นไม่ได้ ห้องจึงถูกใช้อย่างคุ้มค่าและไม่มีวิชาไหนยึดห้องไว้คนเดียว
+</Analogy>
+
+### เพดานเก็บไว้ที่ไหน
+
+เพดานทรัพยากรถูกเขียนเป็นไฟล์ในระบบไฟล์ของ cgroup
+
+- บน host: `/sys/fs/cgroup/docker/` โดยมีโฟลเดอร์ย่อยหนึ่งอันต่อหนึ่ง container ชื่อโฟลเดอร์คือ container ID เต็ม
+- ใน container แต่ละตัว: `/sys/fs/cgroup/`
+
+<Example title="ตั้งเพดาน CPU และหน่วยความจำ แล้วไปดูว่ามันไปโผล่ที่ไฟล์ไหน">
+สร้าง container สองตัวที่รันคำสั่งกิน CPU เต็มที่เหมือนกัน แต่ให้โควตาไม่เท่ากัน
+
+```bash
+docker run --rm -d --name big   --cpus=1   --memory=512m alpine sh -c 'yes >/dev/null'
+docker run --rm -d --name small --cpus=0.5 --memory=256m alpine sh -c 'yes >/dev/null'
+```
+
+ไปอ่านไฟล์ cgroup ข้างใน container ทั้งสอง
+
+```bash
+$ docker exec big   cat /sys/fs/cgroup/cpu.max
+100000 100000
+$ docker exec small cat /sys/fs/cgroup/cpu.max
+50000 100000
+
+$ docker exec big   cat /sys/fs/cgroup/memory.max
+536870912
+$ docker exec small cat /sys/fs/cgroup/memory.max
+268435456
+```
+
+อ่านค่าพวกนี้ยังไง — เลขตัวหลังของ `cpu.max` คือรอบเวลาหนึ่งงวด เลขตัวหน้าคือเวลาที่ใช้ได้ในงวดนั้น ดังนั้น `100000 100000` = 1 CPU เต็ม และ `50000 100000` = ครึ่ง CPU ส่วน `memory.max` เป็นไบต์ 536870912 คือ 512 MiB และ 268435456 คือ 256 MiB
+
+ผลจริงจาก `docker stats --no-stream`
+
+```
+CONTAINER ID   NAME    CPU %    MEM USAGE / LIMIT     MEM %
+d0f24fbd0b9c   small   49.65%   1.047MiB / 256MiB     0.41%
+93f4593622f7   big     98.66%   760KiB / 512MiB       0.14%
+```
+
+ทั้งคู่พยายามกิน CPU เต็มที่เท่ากัน แต่ถูกกดไว้ที่ราว 100% กับ 50% ตามที่สั่งไว้เป๊ะ
+</Example>
+
+### เพดาน กับ ส่วนแบ่ง ไม่ใช่เรื่องเดียวกัน
+
+cgroup มีค่าสองตัวที่คนสับสนกันบ่อย
+
+- `cpu.max` คือ **เพดาน** — ใช้ได้มากที่สุดเท่านี้ ต่อให้เครื่องว่างก็ไม่เกิน
+- `cpu.weight` คือ **ส่วนแบ่ง** — มีผลเฉพาะตอนแย่ง CPU กันเท่านั้น ถ้าไม่มีใครแย่ง ก็ใช้ได้เต็มที่
+
+<Example title="ส่วนแบ่ง CPU เมื่อสองตัวถูกบังคับให้แย่งคอร์เดียวกัน">
+`--cpuset-cpus=0` บังคับให้ทั้งคู่รันบน CPU คอร์ที่ 0 คอร์เดียว แล้วให้ส่วนแบ่งไม่เท่ากัน
+
+```bash
+docker run --rm -d --name big   --cpuset-cpus=0 --cpu-shares=1024 alpine sh -c 'yes >/dev/null'
+docker run --rm -d --name small --cpuset-cpus=0 --cpu-shares=512  alpine sh -c 'yes >/dev/null'
+```
+
+`--cpu-shares` ถูกแปลงเป็น `cpu.weight` โดย shares 1024 กลายเป็น weight 100
+
+```bash
+$ docker exec small cat /sys/fs/cgroup/cpu.weight
+59
+$ docker exec big   cat /sys/fs/cgroup/cpu.weight
+100
+```
+
+ผลจริง
+
+```
+CONTAINER ID   NAME    CPU %
+a537634c2bf1   small   36.53%
+e817da98c2c5   big     62.18%
+```
+
+ตรวจสัดส่วน: 36.53 / 62.18 = 0.59 ซึ่งเท่ากับ 59/100 พอดี — ส่วนแบ่งออกมาตรงตามน้ำหนักที่ตั้งไว้
+</Example>
+
+<Quiz question="ตั้ง --cpus=2 ให้ container หนึ่งตัวบนเครื่องที่ว่างสนิทและมี 8 คอร์ มันจะใช้ CPU ได้เท่าไหร่">
+ได้มากที่สุด 2 คอร์ เพราะ `--cpus` ไปเป็น `cpu.max` ซึ่งเป็นเพดานตายตัว ไม่เกี่ยวว่าเครื่องว่างหรือไม่ ต่างจาก `--cpu-shares` ที่ถ้าไม่มีใครแย่งก็ใช้ได้เต็มเครื่อง
+</Quiz>
+
+---
+
+## image กับ container ต่างกันยังไง
+
+<Term en="Image" th="แม่พิมพ์ของโปรแกรม" /> คือแพ็กเกจที่รันได้ซึ่งบรรจุทุกอย่างที่โปรแกรมต้องใช้ ได้แก่ โค้ด ไลบรารีที่มันพึ่งพา (เรียกรวมว่า <Term en="Dependencies" th="ของที่โปรแกรมต้องมีถึงจะรันได้" />) ไฟล์ตั้งค่า และตัวแปรสภาพแวดล้อม
+
+<Term en="Container" th="ของที่รันอยู่จริงหนึ่งชุด" /> คือหนึ่งครั้งของการรัน image นั้น
+
+ความสัมพันธ์นี้เทียบได้ตรง ๆ กับของที่คุณรู้จักอยู่แล้ว
+
+> image ต่อ container = program ต่อ process
+
+<Figure number={3} caption="image มีแต่เลเยอร์อ่านอย่างเดียว container คือเลเยอร์ชุดเดิมบวกเลเยอร์เขียนได้ของตัวเองอีกหนึ่งชั้น">
+  <ImageLayers />
+</Figure>
+
+---
+
+## ทำไมระบบไฟล์ธรรมดาไม่พอ
+
+<Why>
+image ต้องมีโครงสร้างไฟล์ที่บรรจุ dependency ครบทุกตัว แต่ image หลายอันมักใช้ของซ้ำกัน เช่น Ubuntu ตัวเดียวกัน Python ตัวเดียวกัน ถ้าเก็บแยกเต็มก้อนทุกอัน พื้นที่จะบานทันที และ container หลายตัวก็ควรใช้ image เดียวกันได้ โดยที่แต่ละตัวยังเขียนไฟล์ของตัวเองได้โดยไม่กระทบเพื่อน
+
+ระบบไฟล์ปกติทำสามข้อนี้พร้อมกันไม่ได้
+</Why>
+
+<Term en="Union File System" th="ระบบไฟล์แบบซ้อนชั้น" /> คือระบบไฟล์ที่เอาไฟล์และโฟลเดอร์จากหลายระบบไฟล์มาวางซ้อนกันเป็นชั้น ๆ แล้วทำให้ดูเหมือนเป็นระบบไฟล์เดียว แต่ละชั้นเป็นแบบอ่านอย่างเดียวหรืออ่านเขียนได้ก็ได้ จึงแก้บางชั้นโดยไม่แตะชั้นอื่นได้ ตัวอย่างที่ใช้จริงคือ Overlay2, AUFS และ Btrfs
+
+image ของ container ถูกเก็บแบบนี้ ชั้นที่ใช้ร่วมกันเป็นแบบอ่านอย่างเดียวและแชร์กันได้ทุก container จึงไม่มีการเก็บซ้ำ
+
+### copy-on-write
+
+ความสามารถสำคัญที่ทำให้ทั้งหมดนี้เป็นไปได้เรียกว่า <Term en="Copy-on-Write" th="ก๊อปตอนจะเขียนเท่านั้น" />
+
+<Example title="สอง container แก้ไฟล์ชื่อเดียวกันจาก image เดียวกัน">
+container A และ B สร้างจาก image เดียวกัน ซึ่งมีไฟล์ `app.py` อยู่ในชั้นอ่านอย่างเดียว
+
+1. ทั้งคู่อ่าน `app.py` — ต่างอ่านจากไฟล์ก้อนเดียวกัน ไม่มีการก๊อป ไม่กินพื้นที่เพิ่ม
+2. container A แก้ `app.py` — ระบบก๊อป `app.py` ขึ้นไปไว้ในชั้นเขียนได้ของ A ก่อน แล้วค่อยเขียนทับสำเนานั้น
+3. ต้นฉบับในชั้นล่างยังอยู่ครบ ไม่ถูกแตะ
+4. container B อ่าน `app.py` — ยังเห็นเนื้อหาเดิม ไม่รู้เรื่องที่ A ทำเลย
+
+ผลลัพธ์: พื้นที่ที่ใช้เพิ่มขึ้นคือขนาดของ `app.py` หนึ่งไฟล์ ไม่ใช่ image ทั้งก้อน
+</Example>
+
+<Pitfall>
+เพราะชั้นเขียนได้อยู่ใน container ไม่ใช่ใน image สิ่งที่คุณแก้ไว้จะหายไปพร้อม container เมื่อสั่งลบ ถ้าอยากให้อยู่ต่อ ต้องเลือกอย่างใดอย่างหนึ่ง: `docker commit` เพื่อแช่ให้เป็น image ใหม่ หรือใช้ที่เก็บข้อมูลถาวรที่จะพูดถึงในหัวข้อถัดไป
+</Pitfall>
+
+---
+
+## Docker
+
+<Term en="Docker" th="แพลตฟอร์มสำหรับสร้างและรัน container" /> คือแพลตฟอร์มที่ให้นักพัฒนา **พัฒนา ส่งมอบ และรัน** โปรแกรมด้วย container ของ Linux
+
+จุดที่ต้องรู้ก่อนใช้งานจริง — Docker for Mac และ Docker for Windows **ไม่ได้รัน container บน macOS หรือ Windows ตรง ๆ** แต่ยกเครื่อง Linux เสมือนขึ้นมาหนึ่งตัวแล้วรัน container ข้างในนั้น เพราะ container ต้องใช้ความสามารถของ Linux kernel
+
+สิ่งที่ Docker เปลี่ยนไปจริง ๆ มีสองข้อ
+
+- **Standardization** — เปลี่ยนการตั้งค่าเซิร์ฟเวอร์ที่เละและทำซ้ำไม่ได้ ให้กลายเป็นรูปแบบที่ย้ายที่ได้ คือ Dockerfile และ container image
+- **ไม่มีคำว่า "เครื่องผมรันได้นะ" อีก** — เพราะไลบรารีและไฟล์ไบนารีถูกมัดไปพร้อมโค้ดเลย พฤติกรรมบนโน้ตบุ๊กกับบนเซิร์ฟเวอร์จริงจึงเหมือนกัน
+
+### VM กับ container ต่างกันตรงไหนแน่
+
+<Figure number={4} caption="VM ก๊อประบบปฏิบัติการมาทั้งชุดต่อหนึ่งเครื่อง ส่วน container ใช้ kernel ของ host ร่วมกัน">
+  <VmVsContainer />
+</Figure>
+
+| | Virtual Machine | Container |
+| --- | --- | --- |
+| ซ่อนอะไรไว้ข้างใต้ | ฮาร์ดแวร์จริง | ทรัพยากรของระบบปฏิบัติการ |
+| ข้างในมีอะไร | ระบบปฏิบัติการครบชุด + โค้ด + ไลบรารี | โค้ด + ไลบรารี + การตั้งค่า |
+| ใครจัดการ | <Term en="Hypervisor" th="ตัวจัดการเครื่องเสมือน" /> | <Term en="Container Runtime" th="ตัวจัดการ container" /> เช่น Docker Engine |
+| kernel | มีของตัวเองต่อหนึ่ง VM | ใช้ของ host ร่วมกัน แต่ละตัวเป็น process ที่แยกขาดใน user space |
+| ขนาดและความเร็ว | ระดับ GB บูตช้า | ระดับ MB เริ่มเร็ว |
+
+### สองอย่างนี้ใช้ด้วยกันก็ได้
+
+สไลด์ยกไว้สองแบบ
+
+- **Docker without VM** — Docker Engine วางบนระบบปฏิบัติการที่วางบนเครื่องจริงเลย ทุก container แชร์ kernel เดียวกันหมด
+- **Docker with VMs** — hypervisor แบ่งเครื่องจริงเป็นหลาย VM ก่อน แล้วค่อยลง Docker Engine ในบาง VM ส่วน VM อื่นรันโปรแกรมแบบปกติ
+
+แบบหลังคือสิ่งที่ผู้ให้บริการคลาวด์ทำ: ผู้เช่าแต่ละรายได้ VM ของตัวเอง (แยกขาดจากผู้เช่าอื่น) แล้วในนั้นผู้เช่าจะรัน container กี่ตัวก็เรื่องของเขา
+
+### Docker Engine ประกอบด้วยอะไร
+
+<Figure number={5} caption="คำสั่งที่คุณพิมพ์คือฝั่ง client ส่วนตัวที่ครอบครองของจริงคือ daemon">
+  <DockerEngine />
+</Figure>
+
+เวลาพิมพ์ `docker run` สิ่งที่เกิดขึ้นคือ CLI แปลงคำสั่งเป็นคำขอ REST API ส่งไปให้ daemon แล้ว daemon เป็นคนสร้าง container จริง ๆ ตัว daemon นี่เองที่ถือครองและจัดการ container, image, network และ data volume ทั้งหมด
+
+---
+
+## image ของ Docker และการแบ่งชั้น
+
+Docker image คือ **แม่แบบแบบอ่านอย่างเดียว** สำหรับสร้าง container กฎที่ต้องจำมีสี่ข้อ
+
+1. Docker ใช้ union file system รวมหลายชั้นให้กลายเป็น image เดียว
+2. ชั้นล่างสุดเรียกว่า <Term en="Base Image" th="ชั้นฐาน" /> ซึ่งกำหนดสภาพแวดล้อมตอนรัน เช่น `ubuntu` หรือ `alpine`
+3. ตอน build ชั้นใหม่จะถูกเขียนทับซ้อนขึ้นไปเรื่อย ๆ ชั้นเหล่านี้เปลี่ยนไม่ได้และแชร์กันได้
+4. ตอนสร้าง container จาก image ระบบจะเอาระบบไฟล์แบบอ่านเขียนได้มา mount ทับด้านบนอีกหนึ่งชั้น
+
+<Figure number={6} caption="วงจรของ image: รันเป็น container แก้ของ แล้ว commit กลับเป็น image ใหม่ที่ยังแชร์ชั้นล่างกับ image เดิม">
+  <ImageEvolves />
+</Figure>
+
+จุดที่ทำให้ระบบนี้ประหยัดพื้นที่คือ **แต่ละชั้นมีลิงก์ชี้ไปชั้นที่อยู่ล่างกว่า** เวลาดึง image มา Docker จึงตามลิงก์ไปดึงครบทุกชั้นได้ และชั้นล่างชั้นเดียวกันถูกใช้ร่วมได้โดย image หลายอัน
+
+---
+
+## Registry: ที่เก็บและแจกจ่าย image
+
+<Why>
+สร้าง image เสร็จบนเครื่องตัวเองแล้วจะส่งให้เพื่อนหรือส่งขึ้นเซิร์ฟเวอร์ยังไง ก๊อปเป็นไฟล์ส่งไปทีละคนคงไม่ไหว
+</Why>
+
+<Term en="Registry" th="คลังเก็บและแจกจ่าย image" /> คือระบบเก็บและส่งมอบเนื้อหาที่ถือ Docker image ที่มีชื่อเอาไว้ Docker ดูแล registry สาธารณะชื่อ [Docker Hub](https://hub.docker.com/) และผู้ให้บริการรายอื่นก็มี registry ของตัวเองสำหรับ image คนละกลุ่ม
+
+สไลด์แบ่ง registry เป็นสองฝั่ง
+
+| ติดตั้งเอง (on-premises) | บนคลาวด์สาธารณะ |
+| --- | --- |
+| Hosted Docker Registry | Docker Hub Registry |
+| Docker Trusted Registry on-prem | Docker Trusted Registry on-cloud |
+| | Azure Container Registry |
+| | AWS Container Registry |
+| | Google Container Registry |
+| | Quay Registry |
+
+### ชื่อ image อ่านยังไง
+
+ชื่อเต็มของ image มีรูปแบบเดียว
+
+```
+registry/username/image_name:tag
+```
+
+ส่วนไหนไม่ได้เขียน Docker เติมค่าปริยายให้ ดังนั้น
+
+```bash
+docker pull hello-world
+# เป็นทางลัดของ
+docker pull docker.io/library/hello-world:latest
+```
+
+บน Docker Hub มีกติกาตั้งชื่อสองแบบ
+
+- **image ทางการ** ใช้แค่ชื่อ เช่น `ubuntu`, `hello-world`
+- **image ของคนอื่น** ต้องมีชื่อเจ้าของนำหน้า เช่น `ubuntu/nginx`, `grafana/grafana`, `prom/node-exporter`
+
+---
+
+## สามงานพื้นฐานของ Docker
+
+ทุกอย่างที่ Docker ทำ ย่อลงมาได้เป็นสามเส้นทางระหว่าง client, host และ registry
+
+| คำสั่ง | เกิดอะไรขึ้น |
+| --- | --- |
+| `docker build` | client สั่ง daemon ให้สร้าง image ใหม่จาก Dockerfile แล้วเก็บไว้ในคลัง image บนเครื่อง |
+| `docker pull` | daemon ไปดึง image จาก registry มาเก็บไว้ในคลัง image บนเครื่อง |
+| `docker run` | daemon เอา image จากคลังมาสร้าง container แล้วเริ่มรัน |
+
+### `docker run` ทำอะไรตามลำดับ
+
+<StepThrough>
+<Step title="ผู้ใช้สั่ง docker run">
+คุณพิมพ์ `docker run IMAGE` ที่เทอร์มินัล CLI ส่งคำขอไปที่ daemon
+</Step>
+<Step title="Docker หา image ในเครื่องก่อน">
+daemon ไปดูในคลัง image ของเครื่องนี้ว่ามี image ชื่อและ tag ตรงกันอยู่แล้วหรือเปล่า
+</Step>
+<Step title="ถ้ามีแล้ว ข้ามไปขั้นสร้าง container ได้เลย">
+ไม่ต้องต่อเน็ต ไม่ต้องดาวน์โหลดอะไร นี่คือเหตุผลที่รันครั้งที่สองเร็วกว่าครั้งแรกมาก
+</Step>
+<Step title="ถ้ายังไม่มี Docker ไปค้นที่ Docker Hub">
+ข้อความ `Unable to find image 'hello-world:latest' locally` ที่เห็นตอนรันครั้งแรก คือขั้นนี้
+</Step>
+<Step title="ถ้าเจอ ก็ดาวน์โหลด image มา">
+ดาวน์โหลดมาทีละชั้นตามลิงก์ที่แต่ละชั้นชี้ไป ชั้นไหนมีอยู่แล้วในเครื่องก็ข้าม
+</Step>
+<Step title="ติดตั้งชั้นของ image ลงเครื่องนี้">
+ชั้นทั้งหมดถูกวางเข้าที่ในระบบไฟล์แบบซ้อนชั้น พร้อมให้ container หลายตัวใช้ร่วมกันต่อไป
+</Step>
+<Step title="สร้าง container ใหม่แล้วเริ่มโปรแกรม">
+daemon สร้าง namespace ชุดใหม่และ cgroup ชุดใหม่ วางชั้นเขียนได้ทับด้านบน แล้วเริ่มรันคำสั่ง — container ทำงานแล้ว
+</Step>
+</StepThrough>
+
+<Example title="รัน image ครั้งแรก">
+```bash
+$ docker image ls
+REPOSITORY   TAG   IMAGE ID   CREATED   SIZE
+
+$ docker run hello-world
+Unable to find image 'hello-world:latest' locally
+latest: Pulling from library/hello-world
+1b930d010525: Pull complete
+Digest: sha256:b8ba256769a0ac28dd126d584e0a2011cd2877f3f76e093a7ae560f2a5301c00
+Status: Downloaded newer image for hello-world:latest
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+```
+
+คลัง image ว่างเปล่า Docker จึงดึงมาให้เองก่อนรัน หลังจากนั้น `docker image ls` จะเห็น `hello-world:latest` ขนาด 1.84kB
+</Example>
+
+---
+
+## คำสั่งที่ต้องใช้จริง
+
+### ชุดพื้นฐาน
+
+```bash
+## ดูรายการคำสั่งทั้งหมด
+docker
+docker COMMAND --help
+
+## ดึง image จาก registry
+docker pull IMAGE
+
+## รัน image (สร้าง container) — ใส่ COMMAND เพื่อทับคำสั่งปริยายของ image ได้
+docker run IMAGE [COMMAND]
+docker run --name NAME IMAGE [COMMAND]
+
+## ดูรายการ image
+docker image ls          # เท่ากับ docker images
+docker image ls --all    # เท่ากับ docker images -a
+
+## ดูรายการ container
+docker container ls          # เท่ากับ docker ps
+docker container ls --all    # เท่ากับ docker ps -a
+```
+
+<Pitfall>
+`docker ps` แสดงเฉพาะ container ที่ **กำลังรัน** เท่านั้น container ที่จบไปแล้วยังอยู่ในเครื่องแต่ไม่โผล่ ต้องใส่ `-a` ถึงจะเห็น หลายคนงงว่าทำไมพื้นที่ดิสก์หายไปทั้งที่ `docker ps` ว่างเปล่า
+</Pitfall>
+
+### ตัวเลือกของ `docker run` ที่ใช้บ่อยที่สุด
+
+```bash
+docker run [OPTIONS] IMAGE [COMMAND] [ARGS]
+```
+
+| ตัวเลือก | ทำอะไร |
+| --- | --- |
+| `--name` | ตั้งชื่อให้ container ถ้าไม่ตั้ง Docker สุ่มชื่อให้ เช่น `trusting_aryabhata` |
+| `-d` / `--detach` | รันเบื้องหลัง คืนเทอร์มินัลให้ทันที |
+| `-it` | รันแบบโต้ตอบพร้อมเทอร์มินัล ใช้ `-i` เดี่ยวได้ถ้าโปรแกรมไม่ต้องการเทอร์มินัล |
+| `--rm` | ลบ container ทิ้งอัตโนมัติเมื่อมันหยุด |
+| `-p` / `--publish` | จับคู่พอร์ตของ host เข้ากับพอร์ตของ container |
+| `-v` / `--volume` | ต่อที่เก็บข้อมูลถาวรเข้ามา |
+| `-e` | ตั้งตัวแปรสภาพแวดล้อม |
+
+container "Hello World" ที่เล็กที่สุดคือ
+
+```bash
+docker run ubuntu /bin/echo 'Hello world'
+```
+
+### `docker run` กับ `docker exec` ไม่เหมือนกัน
+
+<Compare>
+<Wrong>
+**`docker run IMAGE`**
+
+สร้าง container **ใหม่** ทุกครั้ง
+
+= namespace ชุดใหม่ + cgroup ชุดใหม่ + ชั้นเขียนได้ชุดใหม่
+
+พิมพ์ซ้ำสิบครั้งได้ container สิบตัวและไฟล์สิบชุดที่ไม่รู้จักกัน
+</Wrong>
+<Right>
+**`docker exec CONTAINER COMMAND`**
+
+สร้าง **process ใหม่ใน container ที่มีอยู่แล้ว**
+
+= เข้าไปร่วม namespace และ cgroup ของ container ตัวนั้น
+
+เห็นไฟล์เดียวกัน เห็นเครือข่ายเดียวกัน กินโควตาก้อนเดียวกัน
+</Right>
+</Compare>
+
+```bash
+$ docker run --detach --tty --name ubuntu ubuntu
+b91555fadae3c5f1cd65b4625528e900c8677babd59c50196771ea2216181ed7
+$ docker exec ubuntu hostname
+b91555fadae3
+$ docker exec -it ubuntu bash
+root@b91555fadae3:/# ls
+bin  boot  dev  etc  home  lib  ...
+```
+
+### หยุด เริ่มใหม่ และลบ
+
+| คำสั่ง | ผล |
+| --- | --- |
+| `docker stop CONTAINER` | จบ process ในนั้น แต่โค้ดและข้อมูลยังอยู่ครบ ให้เวลาปิดตัวเองก่อน 10 วินาที |
+| `docker kill CONTAINER` | บังคับจบทันที ไม่ให้เวลา |
+| `docker start CONTAINER` | ปลุก container ที่หยุดอยู่ให้กลับมารัน พร้อมโค้ดและข้อมูลเดิม |
+| `docker container rm CONTAINER` | ลบทิ้งจริง ข้อมูลในชั้นเขียนได้หายไปด้วย |
+
+`docker start` จะรัน **คำสั่งเดิม** ที่ใช้ตอนสร้าง container นั้น ซึ่งก็คือ `CMD` ใน Dockerfile หรือ `COMMAND` ที่ใส่ต่อท้าย `docker run` ถ้าอยากรู้ว่าคำสั่งนั้นคืออะไร ให้ดูส่วน `Config` จาก `docker inspect CONTAINER`
+
+ลบทีเดียวหลายตัว
+
+```bash
+docker container rm $(docker container ls --all --quiet)
+# เขียนสั้นได้เป็น
+docker rm $(docker ps -a -q)
+```
+
+<Figure number={7} caption="สถานะทั้งสี่ของ container และคำสั่งที่ทำให้ย้ายสถานะ">
+  <ContainerStates />
+</Figure>
+
+<Quiz question="สั่ง docker stop แล้ว docker start ไฟล์ที่เขียนไว้ใน container ยังอยู่ไหม แล้วถ้าสั่ง docker rm ล่ะ">
+`stop` แล้ว `start` — ไฟล์ยังอยู่ครบ เพราะชั้นเขียนได้ของ container ไม่ได้ถูกลบ แค่ process หยุดไปเฉย ๆ
+
+`rm` — หายหมด เพราะชั้นเขียนได้ถูกลบไปพร้อม container ถ้าอยากเก็บ ต้อง `docker commit` ไว้ก่อน หรือใช้ volume/bind mount ตั้งแต่แรก
+</Quiz>
+
+### ดูว่าเปลี่ยนอะไรไปบ้าง แล้วแช่ให้เป็น image ใหม่
+
+<Example title="ติดตั้ง net-tools ลง container แล้ว commit เป็น image ใหม่">
+เริ่มจาก container ubuntu เปล่า ๆ ที่ไม่มีคำสั่ง `ifconfig`
+
+```bash
+$ docker run -it ubuntu
+root@f33b176d0054:/# ifconfig
+bash: ifconfig: command not found
+root@f33b176d0054:/# apt update
+root@f33b176d0054:/# apt install net-tools
+root@f33b176d0054:/# ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 172.17.0.3  netmask 255.255.0.0  broadcast 172.17.255.255
+```
+
+เปิดอีกเทอร์มินัลหนึ่ง ดูว่าชั้นเขียนได้มีอะไรเปลี่ยนไปบ้าง
+
+```bash
+$ docker diff f33b176d0054
+C /sbin
+A /sbin/mii-tool
+A /sbin/slattach
+A /sbin/ifconfig
+```
+
+`docker diff` แสดงส่วนต่างของชั้นเขียนได้ชั้นบน (`A` = เพิ่ม, `C` = เปลี่ยน, `D` = ลบ)
+
+แช่แข็งชั้นนั้นให้กลายเป็นชั้นอ่านอย่างเดียวชั้นใหม่
+
+```bash
+$ docker commit f33b176d0054 ubuntu-nettools
+sha256:2eca02e842367861f911c06c5f9a09be398b5554b3c037b12d5074439d4b18dc
+$ docker images
+REPOSITORY        TAG      IMAGE ID       CREATED          SIZE
+ubuntu-nettools   latest   2eca02e84236   8 seconds ago    103MB
+```
+
+container ที่สร้างจาก image ใหม่นี้จะมี `ifconfig` มาให้ตั้งแต่แรก
+</Example>
+
+### ลบ image และเก็บกวาด
+
+```bash
+## ลบ image หนึ่งอัน — container ทุกตัวที่รันจาก image นี้ต้องถูกลบก่อน
+docker image rm IMAGE
+
+## ลบ image ทั้งหมด
+docker image rm $(docker image ls -q)
+```
+
+<Term en="Dangling Image" th="image ที่ไม่มีชื่อเหลืออยู่" /> คือ image ที่ไม่ได้ใช้และไม่มีชื่อกับ tag แล้ว มันเกิดตอนที่ image ชื่อและ tag เดิมถูกเขียนทับด้วย image ใหม่ ตัวเก่าจึงกลายเป็น `<none>:<none>` แต่ยังกินพื้นที่อยู่
+
+```bash
+## หา
+docker image ls -f "dangling=true"
+
+## ลบทั้งหมด
+docker image rm $(docker image ls -f "dangling=true" -q)
+```
+
+มีคำสั่งกวาดแบบสั้นให้ด้วย
+
+```bash
+docker container prune   # ลบ container ที่หยุดแล้วทั้งหมด
+docker image prune       # ลบ image ที่ไม่ได้ใช้
+```
+
+### ส่ง image ขึ้น registry
+
+<StepThrough>
+<Step title="รัน registry ของตัวเองขึ้นมาก่อน (ถ้าจะใช้ registry ในเครื่อง)">
+```bash
+docker run -d -p 5000:5000 --name registry registry
+```
+registry ก็เป็น container ตัวหนึ่งเหมือนกัน
+</Step>
+<Step title="สร้าง image">
+```bash
+cd docker/hello_python/
+docker build -t hello .
+```
+ได้ image ชื่อ `hello` ขนาด 918MB
+</Step>
+<Step title="ตั้ง tag ให้ชี้ไปที่ registry ปลายทาง">
+```bash
+docker image tag hello localhost:5000/my-image
+```
+สังเกตว่า `docker image ls` จะเห็นสองชื่อที่มี IMAGE ID เดียวกัน — เพราะ tag คือชื่อเรียก ไม่ใช่สำเนา
+</Step>
+<Step title="push ขึ้น registry">
+```bash
+docker push localhost:5000/my-image
+```
+ผลลัพธ์จะแสดงว่าแต่ละชั้นถูก push ขึ้นไปทีละชั้น
+</Step>
+<Step title="ดึงกลับมาตรวจ">
+```bash
+docker pull localhost:5000/my-image
+```
+</Step>
+<Step title="ถ้าจะขึ้น Docker Hub ให้สมัครและสร้าง repository ก่อน">
+ที่ [hub.docker.com](https://hub.docker.com/) เลือกได้ว่าจะให้ repository เป็น Public หรือ Private
+</Step>
+<Step title="ตั้ง tag ด้วยชื่อผู้ใช้ ล็อกอิน แล้ว push">
+```bash
+docker tag hello mveera/hello
+docker login
+docker push mveera/hello
+```
+ตอนนี้ใครก็ตามสั่ง `docker pull mveera/hello` แล้วได้ image เดียวกันไปรัน
+</Step>
+</StepThrough>
+
+### คำสั่งไว้ส่องและตรวจปัญหา
+
+`docker inspect` แสดงข้อมูลระดับล่างของอ็อบเจ็กต์ทุกชนิดของ Docker ทั้ง image, container, network และ volume
+
+```bash
+docker inspect [OPTIONS] NAME|ID
+
+## ดึงเฉพาะค่าที่ต้องการด้วย --format
+docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' 44407e86ac38
+172.17.0.2
+```
+
+ชุดคำสั่งสำหรับดูว่าเกิดอะไรขึ้นข้างใน
+
+```bash
+docker top CONTAINER          # process ที่กำลังรันใน container
+docker logs CONTAINER         # log ที่ container พ่นออกมา
+docker exec -it CONTAINER bash # เปิด shell เข้าไปดูเอง
+docker stats                  # การใช้ทรัพยากรแบบสด ๆ ของทุก container
+```
+
+---
+
+## Persistent Storage: ทำยังไงให้ไฟล์ไม่หาย
+
+<Why>
+container ก็คือ process ตัวหนึ่ง ไฟล์ที่มันเขียนอยู่ในชั้นเขียนได้ซึ่งมีอายุเท่ากับ container พอ container หายไป ไฟล์หายตาม ฐานข้อมูลที่รันใน container จึงล้างตัวเองทุกครั้งที่ deploy ใหม่ ถ้าไม่ทำอะไรเลย
+</Why>
+
+Docker ให้สองวิธีในการฝากไฟล์ไว้นอก container
+
+<Figure number={8} caption="bind mount ผูกโฟลเดอร์ของเครื่องจริงเข้ามา ส่วน volume ใช้พื้นที่ที่ Docker สร้างและดูแลเอง">
+  <PersistentData />
+</Figure>
+
+### วิธีที่ 1: Bind Mount
+
+ผูกโฟลเดอร์ของ host เข้ากับโฟลเดอร์ใน container ตรง ๆ
+
+```bash
+docker run -v [host_directory]:[container_directory] IMAGE
+```
+
+<Example title="เขียนไฟล์ใน container แล้วลบ container ทิ้ง">
+```bash
+$ ls /home/veera/container/
+                                     # ว่างเปล่า
+$ docker run --name ubuntu -it -v /home/veera/container:/home ubuntu
+root@3cfc393b56a3:/# cat > /home/test.txt
+test
+root@3cfc393b56a3:/# exit
+
+$ docker rm ubuntu
+ubuntu
+$ cat /home/veera/container/test.txt
+test
+```
+
+container ถูกลบไปแล้ว แต่ไฟล์ยังอยู่บนเครื่อง เพราะมันไม่เคยอยู่ใน container ตั้งแต่แรก
+</Example>
+
+### วิธีที่ 2: Volume Mapping
+
+<Term en="Volume" th="พื้นที่เก็บข้อมูลที่ Docker สร้างและดูแลให้" /> คือที่เก็บข้อมูลถาวรที่ถูกสร้างขึ้นนอก container เก็บอยู่ในระบบไฟล์ของ host แต่ **Docker เป็นคนจัดการให้** สไลด์แนะนำให้ใช้วิธีนี้เป็นหลัก เพราะย้ายที่ได้ง่ายกว่า
+
+```bash
+docker volume create myvol
+docker run -v [volume]:[container_directory] IMAGE
+```
+
+<Example title="สร้าง volume แล้วดูว่ามันไปอยู่ที่ไหนบนเครื่องจริง">
+```bash
+$ docker volume create myvol
+myvol
+$ docker volume ls
+DRIVER    VOLUME NAME
+local     myvol
+$ docker volume inspect myvol
+[
+    {
+        "CreatedAt": "2019-09-16T00:01:18+07:00",
+        "Driver": "local",
+        "Mountpoint": "/var/lib/docker/volumes/myvol/_data",
+        "Name": "myvol",
+        "Scope": "local"
+    }
+]
+
+$ docker run --name ubuntu -it -v myvol:/home ubuntu
+root@c376a358e77a:/# cat > /home/test
+test
+root@c376a358e77a:/# exit
+$ docker rm ubuntu
+ubuntu
+$ sudo cat /var/lib/docker/volumes/myvol/_data/test
+test
+```
+
+ต่างจาก bind mount ตรงที่คุณไม่ได้เลือกที่อยู่เอง Docker เลือกให้ที่ `/var/lib/docker/volumes/`
+</Example>
+
+<Compare>
+<Wrong>
+**Bind Mount**
+
+คุณระบุพาธของ host เอง
+
+ผูกกับโครงสร้างโฟลเดอร์ของเครื่องนั้น ย้ายเครื่องแล้วพาธอาจไม่มี
+
+เหมาะกับตอนพัฒนา เช่น ให้ container เห็นซอร์สโค้ดในโปรเจกต์ที่กำลังแก้อยู่
+</Wrong>
+<Right>
+**Volume**
+
+Docker สร้างและดูแลที่อยู่ให้
+
+ไม่ผูกกับโครงสร้างโฟลเดอร์ของเครื่องไหน ย้ายที่ได้ง่ายกว่า
+
+เหมาะกับข้อมูลจริงที่ต้องอยู่ยาว เช่น ฐานข้อมูล — เป็นตัวเลือกที่สไลด์แนะนำ
+</Right>
+</Compare>
+
+---
+
+## Docker Networking
+
+### container ทุกตัวได้ IP มาเองอัตโนมัติ
+
+```bash
+$ docker container inspect nginx | grep IPAddress
+        "SecondaryIPAddresses": null,
+        "IPAddress": "172.17.0.2",
+```
+
+### เปิดพอร์ตให้โลกภายนอกเข้าถึง
+
+<Why>
+container ถูกแยกขาดไว้ตั้งแต่ต้น ของข้างนอกจึงเข้าไม่ถึงจนกว่าจะประกาศเปิดพอร์ตให้ชัดเจน และเพราะ container หลายตัวมักใช้พอร์ตปริยายเดียวกัน (เว็บเซิร์ฟเวอร์ใช้ 80, MySQL ใช้ 3306) จะเอาพอร์ตเดิมของ host ให้ทุกตัวไม่ได้ ต้อง map ไปคนละพอร์ต
+</Why>
+
+```bash
+docker run -p [host_port]:[container_port] IMAGE
+docker run -p [container_port] IMAGE          # ให้ Docker สุ่มพอร์ตฝั่ง host ให้
+```
+
+<Example title="nginx บนพอร์ต 4000 ของเครื่อง แต่พอร์ต 80 ข้างใน">
+```bash
+$ docker run -d --name nginx -p 4000:80 nginx
+533898a25687d5cda2911b935053c9740d646984d99025e2e2a3254b7f1bd6b4
+$ docker ps
+CONTAINER ID   IMAGE   COMMAND                  PORTS
+533898a25687   nginx   "/docker-entrypoint.…"   0.0.0.0:4000->80/tcp, :::4000->80/tcp
+```
+
+ทดสอบสามทาง
+
+```bash
+# 1. จากเครื่อง host ผ่านพอร์ต 4000
+$ curl localhost:4000
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+
+# 2. จากข้างใน container เดียวกัน ผ่านพอร์ต 80
+$ docker exec -it nginx bash
+root@0f5e4c2df1fb:/# curl localhost:80
+<!DOCTYPE html>
+```
+
+เลข 4000 มีอยู่แค่ฝั่งนอก ส่วนข้างใน container ยังเป็น 80 เสมอ
+</Example>
+
+### ภาพรวมสามชั้นของที่อยู่
+
+<Figure number={9} caption="เครื่องจริง Docker host และเครือข่าย bridge ที่ container อยู่ — แต่ละชั้นมีชุด IP ของตัวเอง">
+  <NetworkTopology />
+</Figure>
+
+สไลด์ใช้ container ตัวช่วยตัวหนึ่งชื่อ `ubuntu_tools` ในการทดลอง มันคือ ubuntu ที่ลงเครื่องมือเครือข่ายเพิ่มไว้
+
+```dockerfile
+FROM ubuntu
+# add tools
+RUN apt-get update
+RUN apt-get install -y iputils-ping
+RUN apt-get install -y net-tools
+RUN apt-get install -y iproute2
+RUN apt-get install -y curl
+CMD ["bash"]
+```
+
+| แพ็กเกจ | ได้คำสั่ง |
+| --- | --- |
+| `iputils-ping` | `ping` |
+| `net-tools` | `ifconfig` |
+| `iproute2` | `ip` |
+| `curl` | `curl` |
+
+<Example title="เข้าถึง nginx จากสองที่">
+จากเครื่อง host เปิดเบราว์เซอร์ไปที่ `localhost:4000` — เห็นหน้า Welcome to nginx
+
+จาก container `ubuntu_tools` เรียกด้วย IP ของ container โดยตรง
+
+```bash
+root@863d667ab61d:/# curl 172.17.0.2:80
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+
+root@863d667ab61d:/# ping 172.17.0.2
+PING 172.17.0.2 (172.17.0.2) 56(84) bytes of data.
+64 bytes from 172.17.0.2: icmp_seq=1 ttl=64 time=0.238 ms
+```
+
+ทั้งสองทางใช้ได้ แต่คนละพอร์ต — ข้างใน network ของ Docker ใช้ 80 ตรง ๆ ไม่ต้องผ่าน port mapping
+</Example>
+
+### ปัญหา: container ไม่รู้จักกันด้วยชื่อ
+
+พอลองเรียกด้วยชื่อแทน IP กลับพัง
+
+```bash
+root@863d667ab61d:/# curl nginx:80
+curl: (6) Could not resolve host: nginx
+
+root@863d667ab61d:/# curl 9dc8ed7ab142:80
+curl: (6) Could not resolve host: 9dc8ed7ab142
+root@863d667ab61d:/# ping 9dc8ed7ab142
+ping: 9dc8ed7ab142: Name or service not known
+```
+
+เหตุผลอยู่ในไฟล์ `/etc/hosts` ของ container ซึ่งเก็บการจับคู่ IP กับชื่อเครื่อง
+
+```bash
+root@863d667ab61d:/# cat /etc/hosts
+127.0.0.1       localhost
+::1     localhost ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+172.17.0.3      863d667ab61d
+```
+
+มีแต่ชื่อของตัวเอง ไม่มีบรรทัดของ nginx เลย
+
+<Pitfall>
+ปัญหานี้ร้ายกว่าที่คิด เพราะ IP ของ container ไม่คงที่ พอลบแล้วสร้างใหม่ เลขเปลี่ยน โค้ดที่ hardcode `172.17.0.2` ไว้จะพังเงียบ ๆ ในวันที่คุณ restart อะไรสักอย่าง
+</Pitfall>
+
+### Bridge network
+
+<Term en="Bridge Network" th="เครือข่ายสะพานภายในเครื่อง" /> คือเครือข่ายที่ทำให้ container ที่ต่ออยู่บน bridge เดียวกันคุยกันได้ ส่วน container ที่อยู่คนละ bridge จะคุยกันตรง ๆ ไม่ได้
+
+กฎที่ต้องรู้
+
+- Docker สร้าง bridge ปริยายชื่อ `bridge` ให้อัตโนมัติตอนเริ่มทำงาน
+- container ที่สร้างใหม่จะต่อเข้ากับ bridge นี้เอง ถ้าไม่ระบุอย่างอื่น
+- bridge network ใช้ได้เฉพาะ container ที่อยู่บน Docker daemon เครื่องเดียวกัน
+
+```bash
+$ docker network inspect bridge
+        "Subnet": "172.17.0.0/16",
+        "Gateway": "172.17.0.1"
+        ...
+        "Containers": {
+            "863d667ab61d...": { "Name": "ubuntu_tools", "IPv4Address": "172.17.0.3/16" },
+            "9dc8ed7ab142...": { "Name": "nginx",        "IPv4Address": "172.17.0.2/16" }
+        }
+```
+
+### ทางแก้: สร้าง bridge ของตัวเอง
+
+ความต่างมีข้อเดียว แต่เป็นข้อที่เปลี่ยนทุกอย่าง
+
+| | bridge ปริยาย | bridge ที่สร้างเอง |
+| --- | --- | --- |
+| DNS ในตัว | **ไม่มี** | **มี** |
+| เรียกกันยังไง | ได้แต่ IP | ใช้ชื่อ container หรือ alias ได้ |
+
+<Figure number={10} caption="สิ่งเดียวที่ bridge ที่สร้างเองเพิ่มเข้ามา คือ DNS ที่แปลชื่อ container เป็น IP ให้">
+  <BridgeDns />
+</Figure>
+
+<StepThrough>
+<Step title="สร้างเครือข่ายใหม่">
+```bash
+$ docker network create mynet
+045e8187e372b7778af6d8517a096e52032ca69605b23dc65055187801023090
+$ docker network ls
+NETWORK ID     NAME     DRIVER   SCOPE
+08d98d8ae48b   bridge   bridge   local
+e1eeed546e58   host     host     local
+045e8187e372   mynet    bridge   local
+731053211c6d   none     null     local
+```
+</Step>
+<Step title="ดูว่ามันได้ช่วง IP อะไรมา">
+```bash
+$ docker network inspect mynet
+        "Subnet": "172.18.0.0/16",
+        "Gateway": "172.18.0.1"
+        "Containers": {},
+```
+`172.18.0.0/16` คนละช่วงกับ bridge ปริยาย และยังไม่มี container ต่ออยู่
+</Step>
+<Step title="เอา container ที่มีอยู่แล้วมาต่อเพิ่ม">
+```bash
+docker network connect mynet nginx
+docker network connect mynet ubuntu_tools
+```
+ตอนนี้ `docker inspect nginx` จะเห็นสองเครือข่ายพร้อมกัน: `bridge` ที่ `172.17.0.2` และ `mynet` ที่ `172.18.0.2` — **container หนึ่งตัวอยู่ได้หลายเครือข่าย**
+</Step>
+<Step title="หรือสร้าง container ใหม่บนเครือข่ายนั้นเลย">
+```bash
+$ docker run -it --name ubuntu_tools3 --network mynet ubuntu_tools
+root@f6deac8fc947:/# ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 172.18.0.4  netmask 255.255.0.0  broadcast 172.18.255.255
+```
+ระวังจุดนี้: container ที่ระบุ `--network` ตอนสร้าง จะ **ไม่** ต่อกับ bridge ปริยายด้วย
+</Step>
+<Step title="ทดสอบว่าเรียกด้วยชื่อได้แล้ว">
+```bash
+root@f6deac8fc947:/# curl nginx
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+```
+ไม่ต้องรู้ IP อีกแล้ว
+</Step>
+<Step title="ถอดออกจากเครือข่ายที่ไม่ต้องการ">
+```bash
+docker network disconnect bridge nginx
+docker network disconnect bridge ubuntu_tools
+```
+`docker network inspect bridge` จะเห็น `"Containers": {}` — ว่างเปล่า ทั้งคู่ย้ายไปอยู่ `mynet` อย่างเดียวแล้ว
+</Step>
+</StepThrough>
+
+### ใช้หลายเครือข่ายเพื่อกันไม่ให้ของหลังบ้านโดนเข้าถึง
+
+<Why>
+ในระบบจริง มีบริการที่ต้องเปิดให้โลกภายนอกเข้า เช่น frontend และ API แต่มีบริการที่ **ไม่ควรเปิดเด็ดขาด** เช่น ฐานข้อมูล การใส่ไฟร์วอลล์ทีหลังเป็นการแก้ปลายเหตุ วิธีที่ตรงกว่าคือไม่ให้มันอยู่บนเครือข่ายเดียวกันตั้งแต่แรก
+</Why>
+
+<Example title="แยกเป็นสองเครือข่าย ให้ฐานข้อมูลไม่มีทางออกสู่ภายนอก">
+```bash
+docker network create backend-network
+docker network create frontend-network
+
+docker run -d --name backend-app --network backend-network my-backend-app
+
+docker run -d --name frontend-app --network frontend-network \
+  --network backend-network -p 80:80 my-frontend-app
+```
+
+ผลที่ได้
+
+- `backend-app` อยู่บน `backend-network` อย่างเดียว และไม่มี `-p` จึงไม่มีพอร์ตไหนของ host ชี้มาถึงมันเลย
+- `frontend-app` อยู่ทั้งสองเครือข่าย และเปิดพอร์ต 80 ออกสู่ภายนอก
+- ผลลัพธ์คือ โลกภายนอกคุยกับ frontend ได้ frontend คุยกับ backend ได้ แต่โลกภายนอกไปถึง backend ไม่ได้
+</Example>
+
+<Quiz question="สร้าง container ด้วย docker run --network mynet ... แล้วสั่ง curl ไปที่ container อีกตัวที่อยู่บน bridge ปริยาย จะได้ผลไหม">
+ไม่ได้ เพราะ container ที่ระบุ `--network` ตอนสร้าง จะไม่ถูกต่อเข้ากับ bridge ปริยายเลย และ container ที่อยู่คนละ bridge คุยกันตรง ๆ ไม่ได้
+
+ถ้าอยากให้คุยกัน ต้องสั่ง `docker network connect` เพิ่มเครือข่ายให้ตัวใดตัวหนึ่ง
+</Quiz>
+
+---
+
+## ตัวอย่างรวม: ระบบเฝ้าดูทรัพยากรใน 3 container
+
+ท้ายคาบสไลด์ประกอบทุกอย่างที่ผ่านมาเป็นระบบเดียว — เครือข่ายที่สร้างเอง การเปิดพอร์ต การ mount ไฟล์ตั้งค่า และ volume
+
+<Figure number={11} caption="สาม container คนละหน้าที่บนเครือข่ายเดียวกัน จึงเรียกกันด้วยชื่อได้">
+  <MonitoringStack />
+</Figure>
+
+<StepThrough>
+<Step title="Node Exporter — คนอ่านตัวเลขจากเครื่อง">
+โปรแกรมที่เก็บ metric ของฮาร์ดแวร์และระบบปฏิบัติการ ใช้วัดทรัพยากรของเซิร์ฟเวอร์ เช่น การใช้ CPU, RAM, พื้นที่ดิสก์
+
+```bash
+docker run --rm -d -p 9100:9100 --network mynet --name node-exporter prom/node-exporter
+```
+
+เปิด `http://localhost:9100/metrics` จะเห็นตัวเลขดิบ ๆ เป็นบรรทัด ๆ กด refresh แล้วตัวเลขเปลี่ยน
+
+```
+# HELP go_goroutines Number of goroutines that currently exist.
+# TYPE go_goroutines gauge
+go_goroutines 8
+```
+</Step>
+<Step title="Prometheus — คนไปดึงมาเก็บเป็นประวัติ">
+ระบบเฝ้าดูที่เก็บ metric จากเป้าหมายที่ตั้งไว้ตามช่วงเวลาที่กำหนด ประเมินนิพจน์ของกฎ แล้วแสดงผล
+
+ไฟล์ตั้งค่า `prometheus.yml`
+
+```yaml
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: node
+    static_configs:
+      - targets: ['node-exporter:9100']
+```
+
+สังเกตว่าเป้าหมายเขียนเป็น `node-exporter:9100` — **ใช้ชื่อ container ได้เพราะอยู่บน `mynet` ที่สร้างเอง** ถ้าอยู่บน bridge ปริยาย ต้องกรอก IP ซึ่งเปลี่ยนทุกครั้งที่สร้างใหม่
+
+```bash
+docker run --rm -d -p 9090:9090 --network mynet --name prometheus \
+  -v /home/veera/docker/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml \
+  prom/prometheus:v3.0.1
+```
+
+ไฟล์ตั้งค่าเข้าไปด้วย bind mount — แก้ไฟล์บนเครื่องแล้ว restart container ก็ใช้ค่าใหม่ได้ทันที
+</Step>
+<Step title="ลองใช้หน้าเว็บของ Prometheus">
+เปิด `http://localhost:9090/` พิมพ์ชื่อ metric เช่น `node_procs_running` กด Execute แล้วสลับไปแท็บ Graph จะเห็นกราฟย้อนหลัง
+</Step>
+<Step title="Grafana — คนวาดกราฟให้สวยและตั้งเตือนได้">
+เว็บแอปสำหรับวิเคราะห์และแสดงผลแบบโต้ตอบ ให้ทั้งกราฟ แผนภูมิ และการแจ้งเตือน เมื่อต่อกับแหล่งข้อมูลที่รองรับ
+
+Grafana เก็บฐานข้อมูล dashboard ไว้ที่ `/var/lib/grafana` ถ้าไม่ทำอะไร dashboard ที่สร้างไว้จะหายเมื่อ container ตาย จึงต้องสร้าง volume มารับ
+
+```bash
+docker volume create grafana-vol
+
+docker run --rm -d -p 3000:3000 --network mynet \
+  -v grafana-vol:/var/lib/grafana --name grafana grafana/grafana:11.4.0
+```
+
+เปิด `http://localhost:3000` ล็อกอินด้วยชื่อผู้ใช้และรหัสผ่านเริ่มต้นของ Grafana คือ `admin` / `admin` เมื่อระบบขอให้เปลี่ยนรหัส สไลด์บอกให้กด skip ไปก่อนสำหรับการทดลองในคาบ
+</Step>
+<Step title="ต่อ Grafana เข้ากับ Prometheus">
+ไปที่ Connections → Data sources → Add data source → เลือก Prometheus
+
+ช่อง Prometheus server URL กรอก `http://prometheus:9090` แล้วกด Save & test
+
+ตรงนี้คือหัวใจของทั้งตัวอย่าง — Grafana เรียก Prometheus **ด้วยชื่อ** ได้ เพราะทั้งคู่อยู่บน `mynet`
+</Step>
+<Step title="สร้าง dashboard">
+Dashboards → Create dashboard → Add visualization → เลือก data source `prometheus`
+
+ในช่อง Metric ใช้ Metrics explorer ค้นหา เช่น `node_load1` (ค่าเฉลี่ยโหลด 1 นาที) แล้วกด Select
+</Step>
+<Step title="รัน query แล้ว Apply">
+กด Run queries เพื่อดูผลก่อน ถ้ากราฟถูกต้องแล้วกด Apply เพื่อเอาแผงนี้เข้า dashboard
+</Step>
+<Step title="ตั้งอัตรารีเฟรชและบันทึก">
+เลือกอัตรารีเฟรชที่มุมขวาบน เช่น `1m` เพื่อให้กราฟอัปเดตเอง แล้วกดปุ่มบันทึก ตั้งชื่อ dashboard เช่น `Node Monitoring` แล้วกด Save
+
+เพราะสร้าง `grafana-vol` ไว้ dashboard นี้จะยังอยู่แม้ container ถูกลบและสร้างใหม่
+</Step>
+</StepThrough>
+
+<Recap>
+- **ปัญหาต้นทาง** — โปรแกรมพึ่งพาเวอร์ชันของไลบรารี runtime และ OS ย้ายเครื่องแล้วพัง คำถามคือจะเขียนครั้งเดียวแล้วรันได้ทุกที่ยังไง
+- **ทางเลือกที่มีอยู่** — VM พกทุกอย่างไปได้แต่ใหญ่และช้า ส่วน process เบาแต่ไม่แยกขาดและย้ายไม่ได้ container คือ process ที่อุดสองรูนี้
+- **namespace** ให้ isolation — แต่ละ namespace มีชุด identifier ของตัวเอง มี 6 ชนิด: PID, mount, network, user ID, UTS, IPC ตัวอย่างในสไลด์: `top` เป็น PID 11 ข้างใน แต่เป็น PID 27474 ในสายตา host
+- **cgroup** ให้ resource control — จับ process รวมกลุ่มแล้วบังคับเพดาน เขียนเป็นไฟล์ใน `/sys/fs/cgroup/` `cpu.max` คือเพดานตายตัว ส่วน `cpu.weight` คือส่วนแบ่งที่มีผลเฉพาะตอนแย่งกัน
+- **union file system** ให้ portability — ไฟล์ซ้อนเป็นชั้น ชั้นล่างอ่านอย่างเดียวและแชร์ได้ ชั้นบนเขียนได้ต่อ container การแก้ไฟล์ใช้ copy-on-write คือก๊อปขึ้นชั้นบนก่อนแล้วค่อยเขียน
+- **image ต่อ container = program ต่อ process** — image คือแม่พิมพ์อ่านอย่างเดียว container คือหนึ่งครั้งของการรัน
+- **Docker** ประกอบด้วย CLI (client) → REST API → daemon (server) ซึ่งเป็นเจ้าของ container, image, network และ volume ทั้งหมด บน Mac และ Windows มันรัน container ใน Linux VM
+- **ชื่อ image เต็ม** คือ `registry/username/image_name:tag` ที่ขาดไปจะถูกเติมเป็น `docker.io/library/...:latest`
+- **`docker run` กับ `docker exec`** — run สร้าง container ใหม่พร้อม namespace และ cgroup ชุดใหม่ ส่วน exec สร้าง process ใหม่ที่เข้าไปร่วมของเดิม
+- **สถานะของ container** — running, paused, exited, restarting `stop` ไม่ลบข้อมูล มีแต่ `rm` ที่ลบ
+- **`docker diff` แล้ว `docker commit`** เปลี่ยนชั้นเขียนได้ให้เป็นชั้นอ่านอย่างเดียวชั้นใหม่ กลายเป็น image ใหม่
+- **ที่เก็บข้อมูลถาวรมีสองแบบ** — bind mount ผูกพาธของ host เอง เหมาะกับตอนพัฒนา ส่วน volume ให้ Docker ดูแลที่อยู่ให้ ย้ายที่ง่ายกว่า และเป็นตัวเลือกที่แนะนำ
+- **เครือข่าย** — container ได้ IP อัตโนมัติ ต้อง `-p` ถึงจะเข้าจากภายนอกได้ bridge ปริยายไม่มี DNS จึงเรียกกันได้แต่ด้วย IP ส่วน bridge ที่สร้างเองมี DNS เรียกด้วยชื่อ container ได้
+- **container หนึ่งตัวอยู่ได้หลายเครือข่าย** ซึ่งเป็นวิธีกันไม่ให้ฐานข้อมูลถูกเข้าถึงจากภายนอก โดยให้ frontend อยู่ทั้งสองฝั่งแต่ backend อยู่ฝั่งในอย่างเดียว
+- **ตัวอย่างรวม** — node-exporter (9100) → Prometheus (9090) → Grafana (3000) ทั้งหมดอยู่บน `mynet` จึงตั้งค่าเป้าหมายเป็น `node-exporter:9100` และ `http://prometheus:9090` ด้วยชื่อได้ ส่วน dashboard ของ Grafana ต้องมี volume ถึงจะไม่หาย
+</Recap>
