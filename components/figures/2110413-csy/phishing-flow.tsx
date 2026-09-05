@@ -16,7 +16,7 @@ export function PhishingFlow() {
       fill="currentColor"
     >
       <text x="310" y="26" textAnchor="middle" fontSize="11" opacity="0.8">
-        สไลด์หน้า 7 ถามว่า ถ้าคุณพิมพ์ username กับ password ลงไป จะเกิดอะไรขึ้น
+        ถ้าคุณพิมพ์ username กับ password ลงไป จะเกิดอะไรขึ้น
       </text>
 
       {STEPS.map((s, i) => (
@@ -35,7 +35,7 @@ export function PhishingFlow() {
       ))}
 
       <text x="310" y="176" textAnchor="middle" fontSize="11" opacity="0.78">
-        ช่องทางที่สไลด์ระบุไว้: อีเมล โทรศัพท์ เว็บ และแชท
+        ช่องทางที่ใช้ได้: อีเมล โทรศัพท์ เว็บ และแชท
       </text>
       <text x="310" y="204" textAnchor="middle" fontSize="11" opacity="0.78">
         FBI รายงานปี 2004 ว่าใน 12 เดือนมีอีเมลหลอกลวงถูกแจ้ง 57 ล้านฉบับ

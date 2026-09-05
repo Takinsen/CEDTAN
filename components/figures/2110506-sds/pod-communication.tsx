@@ -93,7 +93,7 @@ export function PodCommunication() {
         `localhost` ใน pod หมายถึงตัว pod เอง จึงใช้ข้าม pod ไม่ได้
       </text>
       <text x="310" y="258" textAnchor="middle" fontSize="11" opacity="0.78">
-        สไลด์แนะนำให้ใช้ชื่อ Service ทั้งสองกรณี เพราะย้าย container ทีหลังได้โดยไม่ต้องแก้โค้ด
+        แนะนำให้ใช้ชื่อ Service ทั้งสองกรณี เพราะย้าย container ทีหลังได้โดยไม่ต้องแก้โค้ด
       </text>
 
       <defs>

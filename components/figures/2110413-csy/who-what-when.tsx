@@ -10,12 +10,12 @@ export function WhoWhatWhen() {
     <svg
       viewBox="0 0 620 218"
       role="img"
-      aria-label="นิยามของ security ที่สไลด์สรุปไว้ แยกเป็นสามคำถามคือใคร ทำอะไรได้ และตอนไหน สามคำนี้รวมกันเป็นการปกป้องทรัพยากรจากคนที่ไม่มีสิทธิ์ ณ เวลาหนึ่ง"
+      aria-label="นิยามของ security แยกเป็นสามคำถามคือใคร ทำอะไรได้ และตอนไหน สามคำนี้รวมกันเป็นการปกป้องทรัพยากรจากคนที่ไม่มีสิทธิ์ ณ เวลาหนึ่ง"
       className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       <text x="310" y="26" textAnchor="middle" fontSize="11" opacity="0.8">
-        นิยามที่สไลด์หน้า 33 สรุปไว้ — Who can do what when?
+        นิยามที่วิชานี้ใช้ — Who can do what when?
       </text>
 
       {PARTS.map((p) => (

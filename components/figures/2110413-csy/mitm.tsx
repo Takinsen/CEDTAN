@@ -37,7 +37,7 @@ export function Mitm() {
         คนกลางอ่านและแก้ข้อความได้ทั้งสองทาง โดยไม่มีฝั่งไหนรู้ตัว
       </text>
       <text x="310" y="200" textAnchor="middle" fontSize="11" opacity="0.78">
-        สไลด์ระบุว่าเดิมทีเรียกว่า MIG-in-the-middle attack ของรัสเซีย
+        เดิมทีเรียกว่า MIG-in-the-middle attack ของรัสเซีย
       </text>
       <text x="310" y="224" textAnchor="middle" fontSize="11" opacity="0.78">
         รูปในสไลด์มาจากหนังสือ Security Engineering ของ Ross Anderson
