@@ -5,7 +5,7 @@ export function PersistentData() {
       viewBox="0 0 620 325"
       role="img"
       aria-label="bind mount ผูกโฟลเดอร์ของ host เข้ากับ container ส่วน volume mapping ใช้พื้นที่ที่ Docker สร้างและดูแลเอง"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       <rect x="15" y="25" width="590" height="285" rx="12" fillOpacity="0.03" stroke="currentColor" strokeOpacity="0.3" />

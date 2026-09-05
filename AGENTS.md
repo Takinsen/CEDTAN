@@ -145,3 +145,7 @@ Never extract an image from the slides. It cannot be re-themed and it is the lec
   counts those dividers and reads `ส่วนที่ 3 จาก 6`. A page with no divider falls back to
   counting every `##`, which still works but reads `หัวข้อ 12 จาก 16`.
 - Comments in code: one line, saying what the block does.
+- In a `<Figure>` SVG, no text below `fontSize="11"` and no shape stroke below
+  `strokeOpacity="0.5"`. The card scales the drawing up by about 1.28x, so 11 units lands near
+  14px; anything smaller loses Thai tone marks, and a fainter stroke drops under 3:1.
+- Give a two-line label inside a small box 15 units between baselines. 12 collides.

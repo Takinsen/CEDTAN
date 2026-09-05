@@ -17,7 +17,7 @@ export function SdsStack() {
       viewBox="0 0 620 370"
       role="img"
       aria-label="สี่ชั้นของ software-defined systems เรียงจากล่างขึ้นบน"
-      className="mx-auto h-auto w-full min-w-[520px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[520px]"
       fill="currentColor"
     >
       {layers.map((layer) => (

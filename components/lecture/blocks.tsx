@@ -48,7 +48,7 @@ export function Example({ title, added, children }: BlockProps & { added?: boole
       label="ตัวอย่าง"
       title={title}
       badge={added ? 'เสริม — ไม่ได้อยู่ในสไลด์' : undefined}
-      accent={added ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}
+      accent="text-emerald-700 dark:text-emerald-400"
     >
       {children}
     </LectureBox>

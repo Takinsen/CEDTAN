@@ -24,7 +24,7 @@ export function BridgeDns() {
       viewBox="0 0 620 275"
       role="img"
       aria-label="เครือข่าย bridge เริ่มต้นเรียกกันได้ด้วย IP เท่านั้น ส่วน bridge ที่สร้างเองเรียกด้วยชื่อ container ได้"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       {panels.map((p) => (

@@ -5,7 +5,7 @@ export function TodoGatewayArch() {
       viewBox="0 0 620 285"
       role="img"
       aria-label="เบราว์เซอร์เปิดเว็บที่พอร์ต 3000 และยิง API ที่พอร์ต 8000 ผ่าน API Gateway ซึ่งส่งต่อ /todo ไป Todo Service และ /notification ไป Notification Service โดยทั้งคู่ใช้ Redis"
-      className="mx-auto h-auto w-full min-w-[590px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       <rect x="165" y="18" width="445" height="250" rx="10" fill="none" stroke="currentColor" strokeOpacity="0.3" strokeDasharray="5 3" />

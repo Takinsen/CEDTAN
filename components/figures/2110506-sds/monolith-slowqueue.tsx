@@ -5,7 +5,7 @@ export function MonolithSlowQueue() {
       viewBox="0 0 620 300"
       role="img"
       aria-label="เบราว์เซอร์คุยกับ Tomcat AppServer ที่บรรจุ Web Frontend, Membership, Queue และ Restaurant Management ไว้ในไฟล์เดียว แล้วต่อกับ MySQL"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       <text x="295" y="16" textAnchor="middle" fontSize="11.5" fontWeight="600" opacity="0.85">

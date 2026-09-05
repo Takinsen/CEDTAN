@@ -7,7 +7,7 @@ export function VmVsContainer() {
       viewBox="0 0 620 290"
       role="img"
       aria-label="เทียบชั้นของ virtual machine กับ container: VM มี guest OS ของตัวเอง ส่วน container ใช้ kernel ของ host ร่วมกัน"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       <text x="155" y="30" textAnchor="middle" fontSize="15" fontWeight="600">

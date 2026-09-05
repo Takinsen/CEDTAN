@@ -15,7 +15,7 @@ import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { gitConfig } from '@/lib/shared';
 import { Legend } from '@/components/lecture/legend';
 import { ReadingProgress } from '@/components/lecture/reading-progress';
-import { ReadingTools } from '@/components/lecture/reading-tools';
+import { ReadingTools, ReadingToolsProvider } from '@/components/lecture/reading-tools';
 
 export default async function Page(props: PageProps<'/[...slug]'>) {
   const params = await props.params;
@@ -44,40 +44,49 @@ export default async function Page(props: PageProps<'/[...slug]'>) {
   const raw = page.absolutePath ? await readFile(page.absolutePath, 'utf8') : '';
   const hasFolds = /<Detail\b/.test(raw);
 
+  // the reading tools ride along with the toc so they stay reachable down a 34,000px page
+  const rail = (
+    <>
+      {marks.length > 1 && (
+        <ReadingProgress
+          label={parts.length > 0 ? 'ส่วนที่' : 'หัวข้อ'}
+          ids={marks.map((item) => item.url.slice(1))}
+        />
+      )}
+      <ReadingTools variant="rail" />
+    </>
+  );
+
   return (
-    <DocsPage
-      toc={toc}
-      full={page.data.full}
-      tableOfContent={{
-        header: marks.length > 1 && (
-          <ReadingProgress
-            label={parts.length > 0 ? 'ส่วนที่' : 'หัวข้อ'}
-            ids={marks.map((item) => item.url.slice(1))}
+    <ReadingToolsProvider hasFolds={hasFolds}>
+      <DocsPage
+        toc={toc}
+        full={page.data.full}
+        tableOfContent={{ header: rail }}
+        tableOfContentPopover={{ header: <div className="pb-2">{rail}</div> }}
+      >
+        <DocsTitle>{page.data.title}</DocsTitle>
+        <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
+        {meta.length > 0 && <p className="text-sm text-fd-muted-foreground">{meta.join(' · ')}</p>}
+        <div className="flex flex-row flex-wrap gap-2 items-center border-b pb-6">
+          <MarkdownCopyButton markdownUrl={markdownUrl} />
+          <ViewOptionsPopover
+            markdownUrl={markdownUrl}
+            githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/${page.path}`}
           />
-        ),
-      }}
-    >
-      <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
-      {meta.length > 0 && <p className="text-sm text-fd-muted-foreground">{meta.join(' · ')}</p>}
-      <div className="flex flex-row flex-wrap gap-2 items-center border-b pb-6">
-        <MarkdownCopyButton markdownUrl={markdownUrl} />
-        <ViewOptionsPopover
-          markdownUrl={markdownUrl}
-          githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/${page.path}`}
-        />
-        <ReadingTools hasFolds={hasFolds} />
-      </div>
-      <Legend />
-      <DocsBody>
-        <MDX
-          components={getMDXComponents({
-            // this allows you to link to other pages with relative file paths
-            a: createRelativeLink(source, page),
-          })}
-        />
-      </DocsBody>
-    </DocsPage>
+          <ReadingTools />
+        </div>
+        <Legend />
+        <DocsBody>
+          <MDX
+            components={getMDXComponents({
+              // this allows you to link to other pages with relative file paths
+              a: createRelativeLink(source, page),
+            })}
+          />
+        </DocsBody>
+      </DocsPage>
+    </ReadingToolsProvider>
   );
 }
 

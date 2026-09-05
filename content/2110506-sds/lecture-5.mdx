@@ -625,6 +625,9 @@ kubectl delete -f kuard-pod.yaml
 
 ลบด้วยไฟล์เดิมที่ใช้สร้าง ทำให้ไม่ต้องจำว่าไฟล์นั้นสร้างอะไรไว้บ้าง
 
+</Step>
+</StepThrough>
+
 <Detail label="ดูผลลัพธ์ของการลบแล้วสร้างใหม่">
 
 ```text
@@ -641,8 +644,6 @@ kuard   1/1     Running   0          3s
 
 คอลัมน์ `READY` เขียนว่า `1/1` แปลว่า **container ที่พร้อมทำงาน 1 ตัว จากทั้งหมด 1 ตัวใน pod นี้** ถ้า pod มีสอง container แล้วขึ้นแค่ตัวเดียว จะเห็น `1/2`
 </Detail>
-</Step>
-</StepThrough>
 
 <Compare>
 <Wrong title="kubectl run">

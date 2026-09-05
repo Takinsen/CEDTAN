@@ -15,7 +15,7 @@ export function ApiGatewayFacade() {
       viewBox="0 0 620 300"
       role="img"
       aria-label="ซ้าย client ต้องรู้ที่อยู่ของทุกบริการ ขวา client รู้จักแค่ API Gateway แล้ว gateway กระจายต่อให้"
-      className="mx-auto h-auto w-full min-w-[590px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       <text x="155" y="22" textAnchor="middle" fontSize="11.5" fontWeight="600" opacity="0.85">

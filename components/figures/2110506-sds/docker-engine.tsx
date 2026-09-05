@@ -12,7 +12,7 @@ export function DockerEngine() {
       viewBox="0 0 620 250"
       role="img"
       aria-label="docker CLI ส่งคำสั่งผ่าน REST API ไปให้ docker daemon ซึ่งเป็นตัวจัดการ container image network และ volume"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       <rect x="40" y="40" width="150" height="52" rx="8" fillOpacity="0.1" stroke="currentColor" strokeOpacity="0.45" />

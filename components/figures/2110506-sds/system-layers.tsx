@@ -12,7 +12,7 @@ export function SystemLayers() {
       viewBox="0 0 640 340"
       role="img"
       aria-label="ชั้นของระบบคอมพิวเตอร์ และชื่อของแต่ละชั้นเมื่อถูกทำให้เป็น software-defined"
-      className="mx-auto h-auto w-full min-w-[560px] max-w-[640px]"
+      className="mx-auto h-auto w-full min-w-[560px]"
       fill="currentColor"
     >
       <text x="410" y="16" textAnchor="middle" fontSize="13" fontWeight="600" opacity="0.7">

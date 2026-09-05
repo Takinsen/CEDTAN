@@ -12,7 +12,7 @@ export function DependencyProblem() {
       viewBox="0 0 600 265"
       role="img"
       aria-label="โปรแกรมเดียวกันถูกย้ายไปสี่เครื่องที่มีเวอร์ชันไลบรารีและระบบปฏิบัติการต่างกัน"
-      className="mx-auto h-auto w-full min-w-[560px] max-w-[600px]"
+      className="mx-auto h-auto w-full min-w-[560px]"
       fill="currentColor"
     >
       {/* the one program everybody wants to run */}

@@ -5,7 +5,7 @@ export function NetworkTopology() {
       viewBox="0 0 620 325"
       role="img"
       aria-label="เบราว์เซอร์บนเครื่องจริงเข้าพอร์ต 4000 ของ Docker host ซึ่ง map ไปพอร์ต 80 ของ container nginx บนเครือข่าย bridge"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       <rect x="15" y="20" width="590" height="290" rx="12" fillOpacity="0.03" stroke="currentColor" strokeOpacity="0.3" />

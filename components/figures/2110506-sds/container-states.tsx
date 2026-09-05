@@ -12,7 +12,7 @@ export function ContainerStates() {
       viewBox="0 0 620 300"
       role="img"
       aria-label="สถานะของ container: running, paused, exited และ restarting กับคำสั่งที่ทำให้เปลี่ยนสถานะ"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       {states.map((s) => (

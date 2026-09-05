@@ -5,7 +5,7 @@ export function MultiNetwork() {
       viewBox="0 0 620 245"
       role="img"
       aria-label="nginx อยู่บน frontend, db อยู่บน backend, web อยู่ทั้งสองเครือข่าย ทำให้ db ไม่มีทางถูกเรียกจากภายนอก"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       <line x1="115" y1="16" x2="115" y2="43" stroke="currentColor" strokeOpacity="0.6" strokeWidth="1.6" markerEnd="url(#mn-arrow)" />

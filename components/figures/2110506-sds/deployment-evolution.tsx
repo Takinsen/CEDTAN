@@ -23,7 +23,7 @@ export function DeploymentEvolution() {
       viewBox="0 0 620 250"
       role="img"
       aria-label="เทียบสามยุคของการวางแอปลงเครื่อง แบบดั้งเดิม แบบใช้ VM และแบบใช้ container"
-      className="mx-auto h-auto w-full min-w-[590px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       {COLUMNS.map((col, ci) => {
@@ -47,9 +47,9 @@ export function DeploymentEvolution() {
                     rx="4"
                     fillOpacity={label === 'Hardware' ? 0.2 : 0.12}
                     stroke="currentColor"
-                    strokeOpacity="0.45"
+                    strokeOpacity="0.5"
                   />
-                  <text x={x0 + li * (cw + 6) + cw / 2} y={y + 17} textAnchor="middle" fontSize="9.5">
+                  <text x={x0 + li * (cw + 6) + cw / 2} y={y + 17} textAnchor="middle" fontSize="11">
                     {label}
                   </text>
                 </g>
@@ -64,7 +64,7 @@ export function DeploymentEvolution() {
               {col.title}
             </text>
             {rows}
-            <text x={x0 + w / 2} y="228" textAnchor="middle" fontSize="9.5" opacity="0.75">
+            <text x={x0 + w / 2} y="228" textAnchor="middle" fontSize="11" opacity="0.75">
               {col.note}
             </text>
           </g>

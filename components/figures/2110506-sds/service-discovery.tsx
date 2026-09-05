@@ -6,7 +6,7 @@ export function ServiceDiscovery() {
       viewBox="0 0 620 300"
       role="img"
       aria-label="ซ้าย client ถาม service registry เองแล้วเรียกบริการตรง ขวา client ยิงเข้า load balancer แล้ว load balancer เป็นฝ่ายถาม registry"
-      className="mx-auto h-auto w-full min-w-[590px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       <text x="155" y="22" textAnchor="middle" fontSize="11.5" fontWeight="600" opacity="0.85">

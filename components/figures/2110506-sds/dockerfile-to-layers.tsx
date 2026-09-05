@@ -13,7 +13,7 @@ export function DockerfileToLayers() {
       viewBox="0 0 640 265"
       role="img"
       aria-label="แต่ละบรรทัดใน Dockerfile กลายเป็นหนึ่ง layer ใน image บรรทัดที่เป็นแค่ metadata มีขนาด 0 ไบต์"
-      className="mx-auto h-auto w-full min-w-[600px] max-w-[640px]"
+      className="mx-auto h-auto w-full min-w-[600px]"
       fill="currentColor"
     >
       <text x="20" y="22" fontSize="12" fontWeight="600" opacity="0.85">

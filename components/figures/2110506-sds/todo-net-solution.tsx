@@ -5,7 +5,7 @@ export function TodoNetSolution() {
       viewBox="0 0 620 285"
       role="img"
       aria-label="ซ้าย todo กับ redis เปิดพอร์ตออกหา host ทั้งคู่แต่คุยกันไม่ได้ ขวา ทั้งคู่อยู่บนเครือข่าย todo-net จึงเรียกกันด้วยชื่อได้"
-      className="mx-auto h-auto w-full min-w-[590px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       <text x="155" y="22" textAnchor="middle" fontSize="11.5" fontWeight="600" opacity="0.85">

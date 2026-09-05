@@ -20,7 +20,7 @@ export function ContainerVsVmStartup() {
       viewBox="0 0 620 265"
       role="img"
       aria-label="กราฟแท่งเปรียบเทียบเวลาเริ่มระบบของ container กับ VM ตั้งแต่ 2 ถึง 512 ตัว แกนตั้งเป็นสเกลลอการิทึม VM รันครบ 512 ตัวไม่ได้"
-      className="mx-auto h-auto w-full min-w-[590px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       {[1, 10, 100, 1000, 10000].map((v) => (

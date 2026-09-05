@@ -11,7 +11,7 @@ export function MonitoringStack() {
       viewBox="0 0 620 215"
       role="img"
       aria-label="node-exporter ส่งตัวเลขให้ prometheus แล้ว grafana ดึงจาก prometheus มาวาดกราฟ ทั้งสามอยู่บนเครือข่าย mynet"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       {parts.map((p) => (

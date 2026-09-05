@@ -5,7 +5,7 @@ export function ComposeResult() {
       viewBox="0 0 600 300"
       role="img"
       aria-label="ผลลัพธ์หลังสั่ง docker compose up: webapp, todo service และ redis ต่อกันบนเครือข่าย todo-net"
-      className="mx-auto h-auto w-full min-w-[520px] max-w-[600px]"
+      className="mx-auto h-auto w-full min-w-[520px]"
       fill="currentColor"
     >
       <rect

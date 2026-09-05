@@ -70,3 +70,25 @@ body {
 .dark {
   --color-fd-ring: var(--color-fd-primary);
 }
+
+/* the framework hides its anchor-link buttons until hover, so 53 tab stops paint no focus ring */
+#nd-page .group\/heading > button:focus-visible {
+  opacity: 1;
+}
+
+/* a focused control inside a hidden bar still paints nothing, so lift the bar with it */
+#nd-sidebar div:has(> button:focus-visible),
+#nd-sidebar div:has(> a:focus-visible) {
+  opacity: 1;
+}
+
+/* the mobile header and toc bar blur what scrolls under them, which the Flat-Forever Rule rules out */
+#nd-docs-layout [class*='backdrop-blur'] {
+  backdrop-filter: none;
+  background-color: var(--color-fd-background);
+}
+
+/* the landing page has no docs shell to skip past, so its skip link has nothing to point at */
+body:not(:has(#nd-page)) [data-skip-link] {
+  display: none;
+}

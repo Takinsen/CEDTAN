@@ -7,7 +7,7 @@ export function SingleVsCluster() {
       viewBox="0 0 620 302"
       role="img"
       aria-label="เครื่องเดียวรันได้ไม่กี่แอป ส่วนคลัสเตอร์มี orchestrator คั่นกลางระหว่างแอปกับเครื่องหลายสิบเครื่อง"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       <rect x="20" y="24" width="580" height="92" rx="9" fillOpacity="0.05" stroke="currentColor" strokeOpacity="0.4" />

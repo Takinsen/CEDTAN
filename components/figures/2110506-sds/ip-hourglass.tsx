@@ -13,7 +13,7 @@ export function IpHourglass() {
       viewBox="0 0 620 290"
       role="img"
       aria-label="รูปนาฬิกาทราย โปรโตคอลจำนวนมากอยู่บนและล่าง แต่ชั้น network มี IP ตัวเดียว"
-      className="mx-auto h-auto w-full min-w-[520px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[520px]"
       fill="currentColor"
     >
       {rows.map((row) => {

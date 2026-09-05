@@ -5,7 +5,7 @@ export function ContainerFoundation() {
       viewBox="0 0 600 300"
       role="img"
       aria-label="ส่วนประกอบของ Docker: daemon และ libcontainer อยู่ใน user space ส่วน cgroups และ namespaces อยู่ใน kernel"
-      className="mx-auto h-auto w-full min-w-[560px] max-w-[600px]"
+      className="mx-auto h-auto w-full min-w-[560px]"
       fill="currentColor"
     >
       {/* which half of the system each row belongs to */}

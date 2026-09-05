@@ -49,7 +49,7 @@ export function DeploymentModels() {
       viewBox="0 0 600 265"
       role="img"
       aria-label="เปรียบเทียบ virtual machine, container และ container ที่รันอยู่ใน virtual machine"
-      className="mx-auto h-auto w-full min-w-[600px] max-w-[600px]"
+      className="mx-auto h-auto w-full min-w-[600px]"
       fill="currentColor"
     >
       {/* virtual machines carry a full operating system each */}

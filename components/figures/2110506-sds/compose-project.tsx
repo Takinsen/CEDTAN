@@ -11,7 +11,7 @@ export function ComposeProject() {
       viewBox="0 0 620 270"
       role="img"
       aria-label="project ชื่อ monitoring ครอบ service สามตัว หนึ่ง network และหนึ่ง volume ชื่อของทุกอย่างขึ้นต้นด้วยชื่อ project"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       <rect x="20" y="28" width="580" height="190" rx="10" fillOpacity="0.05" stroke="currentColor" strokeOpacity="0.5" strokeDasharray="6 4" />

@@ -19,7 +19,7 @@ export function BuildPushRun() {
       viewBox="0 0 640 235"
       role="img"
       aria-label="Dockerfile ถูก build เป็น image บนเครื่องพัฒนา แล้ว push ขึ้น registry อีกเครื่องหนึ่ง pull ลงมาแล้ว run เป็น container"
-      className="mx-auto h-auto w-full min-w-[600px] max-w-[640px]"
+      className="mx-auto h-auto w-full min-w-[600px]"
       fill="currentColor"
     >
       {steps.map((s) => (

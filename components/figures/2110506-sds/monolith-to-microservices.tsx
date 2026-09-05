@@ -5,7 +5,7 @@ export function MonolithToMicroservices() {
       viewBox="0 0 580 215"
       role="img"
       aria-label="แอปก้อนเดียว SQ 4.0 ถูกแยกออกเป็น Queue Service, Restaurant Service, Ads Service และบริการอื่น ๆ"
-      className="mx-auto h-auto w-full min-w-[540px] max-w-[580px]"
+      className="mx-auto h-auto w-full min-w-[540px]"
       fill="currentColor"
     >
       <rect x="20" y="40" width="150" height="120" rx="10" fillOpacity="0.14" stroke="currentColor" strokeOpacity="0.5" />

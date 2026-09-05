@@ -5,17 +5,17 @@ export function ControlLoop() {
       viewBox="0 0 620 250"
       role="img"
       aria-label="วงจรควบคุมของ Kubernetes เปรียบสถานะที่ต้องการกับสถานะจริง แล้วลงมือแก้ให้ตรงกัน วนแบบนี้ตลอดเวลา"
-      className="mx-auto h-auto w-full min-w-[590px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       <rect x="20" y="70" width="150" height="66" rx="9" fillOpacity="0.18" stroke="currentColor" strokeOpacity="0.55" />
       <text x="95" y="96" textAnchor="middle" fontSize="11.5" fontWeight="600">
         Desired State
       </text>
-      <text x="95" y="114" textAnchor="middle" fontSize="10" opacity="0.78">
+      <text x="95" y="114" textAnchor="middle" fontSize="11" opacity="0.78">
         replicas: 3
       </text>
-      <text x="95" y="152" textAnchor="middle" fontSize="9.5" opacity="0.72">
+      <text x="95" y="152" textAnchor="middle" fontSize="11" opacity="0.72">
         เราเขียนไว้ในไฟล์
       </text>
 
@@ -23,7 +23,7 @@ export function ControlLoop() {
       <text x="310" y="96" textAnchor="middle" fontSize="11.5" fontWeight="600">
         เปรียบเทียบ
       </text>
-      <text x="310" y="114" textAnchor="middle" fontSize="10" opacity="0.78">
+      <text x="310" y="114" textAnchor="middle" fontSize="11" opacity="0.78">
         ต่างกันตรงไหน
       </text>
 
@@ -31,10 +31,10 @@ export function ControlLoop() {
       <text x="525" y="96" textAnchor="middle" fontSize="11.5" fontWeight="600">
         Actual State
       </text>
-      <text x="525" y="114" textAnchor="middle" fontSize="10" opacity="0.78">
+      <text x="525" y="114" textAnchor="middle" fontSize="11" opacity="0.78">
         กำลังรันอยู่ 2
       </text>
-      <text x="525" y="152" textAnchor="middle" fontSize="9.5" opacity="0.72">
+      <text x="525" y="152" textAnchor="middle" fontSize="11" opacity="0.72">
         สิ่งที่เกิดขึ้นจริงในคลัสเตอร์
       </text>
 
@@ -45,14 +45,14 @@ export function ControlLoop() {
       </g>
 
       <rect x="330" y="166" width="150" height="28" rx="6" fillOpacity="0.2" stroke="currentColor" strokeOpacity="0.55" />
-      <text x="405" y="185" textAnchor="middle" fontSize="10.5" fontWeight="600">
+      <text x="405" y="185" textAnchor="middle" fontSize="11" fontWeight="600">
         ลงมือแก้ให้ตรง
       </text>
 
       <text x="310" y="35" textAnchor="middle" fontSize="11" opacity="0.8">
         วนแบบนี้ตลอดเวลา ไม่ใช่ทำครั้งเดียวจบ
       </text>
-      <text x="310" y="228" textAnchor="middle" fontSize="10.5" opacity="0.78">
+      <text x="310" y="228" textAnchor="middle" fontSize="11" opacity="0.78">
         เราบอกแค่ปลายทาง Kubernetes เป็นคนหาทางไปเอง
       </text>
 

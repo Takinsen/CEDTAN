@@ -10,7 +10,7 @@ export function TeamPipelines() {
       viewBox="0 0 620 250"
       role="img"
       aria-label="สามทีมแยกกัน แต่ละทีมมี repository ของตัวเอง มี deployment pipeline ของตัวเอง และปล่อยบริการของตัวเอง"
-      className="mx-auto h-auto w-full min-w-[590px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       <rect x="8" y="16" width="112" height="230" rx="9" fill="none" stroke="currentColor" strokeOpacity="0.35" strokeDasharray="4 3" />

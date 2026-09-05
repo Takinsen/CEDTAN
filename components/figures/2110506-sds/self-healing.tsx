@@ -11,7 +11,7 @@ export function SelfHealing() {
       viewBox="0 0 580 205"
       role="img"
       aria-label="เมื่อ pod หนึ่งตาย จำนวนจริงเหลือสอง Kubernetes เห็นว่าไม่ตรงกับสามที่ต้องการ จึงสร้าง pod ใหม่ขึ้นมาทดแทนเอง"
-      className="mx-auto h-auto w-full min-w-[550px] max-w-[580px]"
+      className="mx-auto h-auto w-full min-w-[550px]"
       fill="currentColor"
     >
       {FRAMES.map((f, fi) => {
@@ -21,7 +21,7 @@ export function SelfHealing() {
             <text x={x0 + 68} y="22" textAnchor="middle" fontSize="11" fontWeight="600" opacity="0.85">
               {f.title}
             </text>
-            <rect x={x0} y="34" width="136" height="76" rx="8" fillOpacity="0.05" stroke="currentColor" strokeOpacity="0.4" />
+            <rect x={x0} y="34" width="136" height="76" rx="8" fillOpacity="0.05" stroke="currentColor" strokeOpacity="0.5" />
             {f.pods.map((p, pi) => (
               <g key={pi}>
                 <rect
@@ -32,7 +32,7 @@ export function SelfHealing() {
                   rx="5"
                   fillOpacity={p === 'dead' ? 0.04 : p === 'new' ? 0.32 : 0.16}
                   stroke="currentColor"
-                  strokeOpacity={p === 'dead' ? 0.3 : 0.5}
+                  strokeOpacity="0.5"
                   strokeDasharray={p === 'dead' ? '3 2' : undefined}
                 />
                 {p === 'dead' ? (
@@ -45,13 +45,13 @@ export function SelfHealing() {
                     strokeLinecap="round"
                   />
                 ) : (
-                  <text x={x0 + 28 + pi * 42} y="77" textAnchor="middle" fontSize="9">
+                  <text x={x0 + 28 + pi * 42} y="77" textAnchor="middle" fontSize="11">
                     pod
                   </text>
                 )}
               </g>
             ))}
-            <text x={x0 + 68} y="128" textAnchor="middle" fontSize="9.5" opacity="0.78">
+            <text x={x0 + 68} y="128" textAnchor="middle" fontSize="11" opacity="0.78">
               {f.note}
             </text>
             {fi < 2 && (
@@ -70,10 +70,10 @@ export function SelfHealing() {
         );
       })}
 
-      <text x="290" y="164" textAnchor="middle" fontSize="10.5" opacity="0.78">
+      <text x="290" y="164" textAnchor="middle" fontSize="11" opacity="0.78">
         ไม่มีใครสั่งให้สร้างใหม่ — Kubernetes เห็นว่าจำนวนจริงไม่ตรงกับที่ประกาศไว้ แล้วแก้เอง
       </text>
-      <text x="290" y="186" textAnchor="middle" fontSize="10.5" opacity="0.78">
+      <text x="290" y="186" textAnchor="middle" fontSize="11" opacity="0.78">
         pod ใหม่ได้ IP ใหม่ ผู้เรียกจึงต้องเรียกผ่าน Service ไม่ใช่ IP ของ pod
       </text>
 

@@ -310,8 +310,19 @@ exist because the primary reader arrives to scan, not to read: one jumps to `#re
 opens every fold at once so find-in-page can reach folded text. The toggle hides itself on a
 page with no folds, and never opens a `<Quiz>` — those are marked apart by `data-fold`.
 
-Controls are 8px radius, hairline border, `bg-fd-secondary/50`, and focus as a 2px ink outline
-at 2px offset.
+The same two controls appear again in the table-of-contents column and in the mobile
+table-of-contents popover, under the progress line, joined there by `กลับขึ้นบนสุด`. That copy
+is what makes them usable: the strip at the top scrolls away after 400px of a 34,000px page,
+and the reader who wants them is the one who has scrolled furthest. Both copies read one
+state, so the label and `aria-pressed` never disagree.
+
+The strip's controls are 8px radius, hairline border, `bg-fd-secondary/50`. The rail's are
+borderless muted rows that align with the table-of-contents entries beneath them. Focus is a
+2px ink outline at 2px offset on both.
+
+A skip link sits first in `<body>` and jumps to `#nd-page`. Without it the sidebar costs 14 tab
+presses before the article, on every page. It hides itself where there is no docs shell to
+skip.
 
 ### Legend
 
@@ -360,6 +371,16 @@ A 12px card wrapping one inline SVG, with the caption centred beneath in muted 1
 numbered `รูปที่ N:`. The SVG scrolls horizontally inside the card on a narrow screen; the
 card itself never overflows.
 
+The SVG fills the card rather than sitting at its natural size — it carries a `min-width` for
+the mobile scroll and no `max-width`, so a 620-unit drawing renders 1.28x larger in a 792px
+card and every label grows with it.
+
+Nothing inside a diagram is set below **11 viewBox units**, which lands near 14px once the card
+scales it, and no stroke that defines a shape drops below **0.5 opacity**, which is where a
+`currentColor` line clears 3:1 on the card in both themes. Below those two floors Thai loses
+its tone marks and a box loses its edge. Two stacked lines inside one small box need 15 units
+between baselines; 12 collides.
+
 A mark inside a diagram — a cross, a tick, an arrow — is drawn as a stroked path, not as a
 text glyph. A `✕` set at 9px and 45% opacity measured 2.71:1; the same cross as two 1.6px
 strokes at 75% measures 8.7:1 and keeps its weight at any zoom.
@@ -407,14 +428,17 @@ page carries the legend, and no block ships a colour that the legend does not na
 - **Do** check every new colour at 4.5:1 for text and 3:1 for an icon, in both themes, against
   the surface (`#f1f1f1` / `#191919`) rather than the page.
 - **Do** tab through a page after any control change and check the focus ring at 3:1 in both
-  themes; a framework default is not a checked value.
+  themes, and check that the focused control actually paints — a ring at 16:1 on an element the
+  framework holds at `opacity: 0` is still an invisible focus.
+- **Do** keep diagram text at 11 viewBox units or more and shape strokes at 0.5 opacity or more.
 - **Do** start MDX headings at `##` and stop at `####`.
 - **Do** end every page with `<Recap>`; the table of contents pins a `สรุปท้ายคาบ` entry that
   points at its `#recap` anchor whether or not the block is there.
 
 ### Don't:
 
-- **Don't** add a shadow, a gradient, a glass blur, or a coloured side stripe to any block.
+- **Don't** add a shadow, a gradient, a glass blur, or a coloured side stripe to any block. The
+  framework blurs its two mobile bars by default; `app/global.css` turns that off.
 - **Don't** introduce a third background grey, or nest a card inside a card.
 - **Don't** give a block a tinted background — the comparison pair is the single exception.
 - **Don't** use a hue that has no meaning in the legend, or reuse a legend hue for decoration.

@@ -8,7 +8,7 @@ export function ControlPlane() {
       viewBox="0 0 620 250"
       role="img"
       aria-label="เปรียบเทียบ control plane แบบกระจายอยู่ในทุก router กับแบบรวมศูนย์ที่ controller"
-      className="mx-auto h-auto w-full min-w-[600px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[600px]"
       fill="currentColor"
     >
       <text x="150" y="20" textAnchor="middle" fontSize="12.5" fontWeight="600">

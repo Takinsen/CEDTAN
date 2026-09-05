@@ -5,7 +5,7 @@ export function MicroserviceTopology() {
       viewBox="0 0 620 285"
       role="img"
       aria-label="เบราว์เซอร์ผ่าน Content Router ไปยังเว็บแอป มือถือผ่าน API Gateway ไปยังบริการ และแต่ละบริการมีฐานข้อมูลของตัวเอง"
-      className="mx-auto h-auto w-full min-w-[590px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       <rect x="12" y="45" width="88" height="40" rx="7" fillOpacity="0.11" stroke="currentColor" strokeOpacity="0.45" />

@@ -12,7 +12,7 @@ export function ImageLayers() {
       viewBox="0 0 620 300"
       role="img"
       aria-label="image มีแต่เลเยอร์อ่านอย่างเดียว ส่วน container คือเลเยอร์เดิมบวกเลเยอร์เขียนได้อีกหนึ่งชั้น"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       <text x="125" y="28" textAnchor="middle" fontSize="15" fontWeight="600">

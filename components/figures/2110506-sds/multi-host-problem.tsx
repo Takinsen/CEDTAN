@@ -5,7 +5,7 @@ export function MultiHostProblem() {
       viewBox="0 0 620 250"
       role="img"
       aria-label="สองเครื่องต่างสร้างเครือข่ายชื่อ mynet ของตัวเอง ชื่อซ้ำกันแต่เป็นคนละเครือข่าย container ข้ามเครื่องจึงเรียกกันด้วยชื่อไม่ได้"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       <rect x="20" y="30" width="265" height="150" rx="9" fillOpacity="0.05" stroke="currentColor" strokeOpacity="0.45" />

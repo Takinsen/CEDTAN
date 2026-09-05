@@ -37,7 +37,7 @@ export function ImageEvolves() {
       viewBox="0 0 620 400"
       role="img"
       aria-label="Image A รันเป็น Container A1 แล้ว commit กลายเป็น Image B ที่มีเลเยอร์เพิ่มมาหนึ่งชั้น"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       {box(20, 36, 'Image A', ['Base: Ubuntu', 'Python'])}

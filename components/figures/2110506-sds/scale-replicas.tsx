@@ -11,7 +11,7 @@ export function ScaleReplicas() {
       viewBox="0 0 620 265"
       role="img"
       aria-label="service web ถูกขยายเป็นสามสำเนา แต่ละสำเนาได้พอร์ตบนเครื่องคนละพอร์ต ทั้งสามต่อไปที่ mongo ตัวเดียวกัน"
-      className="mx-auto h-auto w-full min-w-[580px] max-w-[620px]"
+      className="mx-auto h-auto w-full min-w-[580px]"
       fill="currentColor"
     >
       {replicas.map((r) => (

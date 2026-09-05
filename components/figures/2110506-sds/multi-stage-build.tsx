@@ -7,7 +7,7 @@ export function MultiStageBuild() {
       viewBox="0 0 640 250"
       role="img"
       aria-label="stage แรกมี compiler และ source code ครบ stage สุดท้ายเริ่มจาก scratch แล้ว copy เฉพาะไฟล์ที่ compile เสร็จมาชั้นเดียว"
-      className="mx-auto h-auto w-full min-w-[600px] max-w-[640px]"
+      className="mx-auto h-auto w-full min-w-[600px]"
       fill="currentColor"
     >
       <rect x="20" y="38" width="255" height="150" rx="9" fillOpacity="0.09" stroke="currentColor" strokeOpacity="0.45" />
