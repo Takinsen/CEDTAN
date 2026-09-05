@@ -53,6 +53,14 @@ Every one of these is a blocker, not a preference.
   the lecture that covers it.
 - **Thai prose, English terms.** Explain in Thai. Keep standard technical terms in English.
   Wrap the first use of each term in `<Term en="..." th="..." />`.
+- **Own the order.** Group sections by idea, and sequence them so each one is understandable
+  from the ones before it. The deck's order is a candidate, not the default. Follow it only
+  where it is already the best teaching order, and know that you decided to.
+  Two things go wrong when the deck sets the order. Topics that belong together stay apart
+  because the deck put them on different slides. And the page inherits the deck's gaps: a name
+  the deck lists but never explains gets listed and never explained here either. Check the
+  second one directly — for every name in a list, grep the page and confirm it appears
+  somewhere other than that list.
 - **End with `<Recap>`.** Bullets a student can read the night before an exam. The table of
   contents pins a `สรุปท้ายคาบ` entry pointing at `#recap` on every page, so a page without a
   `<Recap>` leaves a dead link.
@@ -172,3 +180,16 @@ Never extract an image from the slides. It cannot be re-themed and it is the lec
 - `<Example added>` already shows the badge `เสริม — ไม่ได้อยู่ในสไลด์`. Do not repeat that
   inside the box. Say what the slides left out — that is the reason the box exists — and let
   the badge say the rest.
+- Do not describe what the deck contains. `เปิดคาบมาด้วยรายชื่อภัยเก้าอย่าง` and `สองข้อนี้อยู่ใต้
+  หัวเรื่อง X` contain no `สไลด์`, so the delete-the-word test above passes them, and they are
+  still a person reading a PDF out loud. The wider test: could someone who has never seen the
+  deck write this sentence? If it only means something because a document exists, it is about
+  the document. Rewrite it to be about the subject.
+  Grep for these when a page is done. Each is usually the visible end of a sentence that
+  narrates the deck: `กำกับไว้` `เขียนกำกับ` `เปิดคาบมาด้วย` `เรียงแบบนี้` `อยู่ใต้หัวเรื่อง`
+  `ใต้รายการ` `ให้มาแค่` `ยกมาไว้` `ระบุไว้ว่า` `เขียนไว้เท่านั้น` `ตัวพิมพ์ใหญ่` `บรรทัดล่าง`
+  A hit is not automatically wrong — the four exceptions above still hold — but every hit needs
+  a reason.
+- A heading names what the section teaches, not what the slide it came from held. `รู้จักกันครบไหม`
+  was a question printed on a slide; `ภัยเก้าอย่างที่ต้องแยกให้ออก` is what the reader gets. Headings
+  are what people scan, so they carry the page's structure, not the deck's.
