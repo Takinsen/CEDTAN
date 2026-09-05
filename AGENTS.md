@@ -154,3 +154,21 @@ Never extract an image from the slides. It cannot be re-themed and it is the lec
 - `<Compare>` marks one side with a red cross and the other with a green check, and the legend
   teaches those marks. Use it only for a real wrong-way / right-way pair. Two quotes, two
   vendors, or two options of equal standing belong in `<Callout>` blocks instead.
+- Do not make the slides the subject of a sentence, and do not cite slide page numbers. The
+  reader cannot open the deck from this site, so `สไลด์หน้า 9 นิยาม X ไว้ว่า…` makes them carry
+  a reference they can never follow. Write `X คือ…` instead. The source callout at the top of
+  every page and the `credit` field already say where the material came from.
+  Test one sentence at a time: delete the word `สไลด์` from it. If the information is still
+  complete, the word had to go. If information is lost, the sentence is about the document
+  itself, and it stays. Four cases stay:
+  - the deck contradicts itself, and the page numbers let the reader check
+  - the deck asks a question and leaves it unanswered
+  - a fact about the document — its revision date, its year, a chapter number that does not
+    match its own schedule, which lecturer a session belongs to
+  - saying the deck does **not** cover something, right before you add your own material
+- Do not describe what a slide looks like. `ติดป้ายไว้ว่า Facts` and `ตัวใหญ่เต็มหน้า` are the
+  layout of a PDF the reader never sees. Keep the emphasis if it carries meaning, drop the
+  description of the type.
+- `<Example added>` already shows the badge `เสริม — ไม่ได้อยู่ในสไลด์`. Do not repeat that
+  inside the box. Say what the slides left out — that is the reason the box exists — and let
+  the badge say the rest.
