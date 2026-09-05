@@ -141,4 +141,7 @@ Never extract an image from the slides. It cannot be re-themed and it is the lec
   the step-through unless the content only makes sense inside that step.
 - Keep the steps in one `<StepThrough>` close to the same length. The card resizes to the
   step you pick, so a 30-line step next to a 3-line one makes the page move a long way.
+- Name a part divider `## ส่วนที่ N — หัวข้อ`. The progress line above the table of contents
+  counts those dividers and reads `ส่วนที่ 3 จาก 6`. A page with no divider falls back to
+  counting every `##`, which still works but reads `หัวข้อ 12 จาก 16`.
 - Comments in code: one line, saying what the block does.

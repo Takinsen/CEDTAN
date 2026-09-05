@@ -321,6 +321,19 @@ it is the precondition for the Legend Rule: a reader cannot learn the five marks
 that never names them. It stays visible rather than folded, because a legend nobody opens
 teaches nobody.
 
+### Reading progress
+
+The first thing in the table-of-contents column: one 12px muted line reading
+`ส่วนที่ 3 จาก 6` on the left and `45%` on the right, over a 2px ink rule on a hairline track,
+then the hairline that separates it from `On this page`.
+
+A lecture runs to 34,000px, and the table of contents alone tells a reader where they are but
+not how much is left. The counter uses the `ส่วนที่` dividers when a page has them and its
+top-level headings when it does not, so Lectures 1 and 2 get `หัวข้อ 12 จาก 16` instead. The
+rule is decoration — the line above it carries the same two numbers as text — and the whole
+block disappears with the table of contents below 1280px, where the mobile bar already shows a
+progress ring.
+
 ### Disclosure (Detail, Quiz)
 
 A native `<details>` with no JavaScript. The summary is muted 14px with the default marker;
@@ -350,6 +363,13 @@ card itself never overflows.
 A mark inside a diagram — a cross, a tick, an arrow — is drawn as a stroked path, not as a
 text glyph. A `✕` set at 9px and 45% opacity measured 2.71:1; the same cross as two 1.6px
 strokes at 75% measures 8.7:1 and keeps its weight at any zoom.
+
+A figure that is wider than its frame prints `เลื่อนรูปทางขวาเพื่อดูส่วนที่เหลือ` in muted 12px
+between the diagram and the caption. It is measured, not guessed, so it appears on the ten
+diagrams that overflow a 390px phone and on none of them at 1440px. The affordance is a line
+of text rather than an edge fade because the Flat-Forever Rule leaves no gradient to fade with,
+and because a cut diagram reads as a broken image until something says otherwise. It stays
+after the first scroll: a sentence that is still true is cheaper than state.
 
 ### Code Block
 

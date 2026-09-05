@@ -14,6 +14,7 @@ import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { gitConfig } from '@/lib/shared';
 import { Legend } from '@/components/lecture/legend';
+import { ReadingProgress } from '@/components/lecture/reading-progress';
 import { ReadingTools } from '@/components/lecture/reading-tools';
 
 export default async function Page(props: PageProps<'/[...slug]'>) {
@@ -34,12 +35,28 @@ export default async function Page(props: PageProps<'/[...slug]'>) {
   // <Recap> is a component, so it never reaches the heading-built toc — pin it there by hand
   const toc = [...page.data.toc, { title: 'สรุปท้ายคาบ', url: '#recap', depth: 2 }];
 
+  // count the ส่วนที่ dividers when a page has them, and every top-level heading when it does not
+  const tops = page.data.toc.filter((item) => item.depth === 2);
+  const parts = tops.filter((item) => item.url.startsWith('#ส่วนที่'));
+  const marks = parts.length > 0 ? parts : tops;
+
   // whether this page has any <Detail> fold, so the bulk toggle can hide itself when it has none
   const raw = page.absolutePath ? await readFile(page.absolutePath, 'utf8') : '';
   const hasFolds = /<Detail\b/.test(raw);
 
   return (
-    <DocsPage toc={toc} full={page.data.full}>
+    <DocsPage
+      toc={toc}
+      full={page.data.full}
+      tableOfContent={{
+        header: marks.length > 1 && (
+          <ReadingProgress
+            label={parts.length > 0 ? 'ส่วนที่' : 'หัวข้อ'}
+            ids={marks.map((item) => item.url.slice(1))}
+          />
+        ),
+      }}
+    >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
       {meta.length > 0 && <p className="text-sm text-fd-muted-foreground">{meta.join(' · ')}</p>}
