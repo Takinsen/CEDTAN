@@ -335,11 +335,21 @@ dark); the rest are muted on the secondary grey. Steps cross-fade with an 8px ri
 wrapped in `MotionConfig reducedMotion="user"` so the movement drops out for anyone who asked
 for less motion.
 
+The card takes the height of the step you pick and does not reserve the tallest one. Reserving
+was tried and measured: the spread inside a single step-through reaches 481px on Lecture 3, so
+a reserved card would stand half empty on every short step. The page moving is the smaller
+cost, and the fix belongs in the content — keep the steps in one step-through a similar
+length.
+
 ### Figure
 
 A 12px card wrapping one inline SVG, with the caption centred beneath in muted 14px and
 numbered `รูปที่ N:`. The SVG scrolls horizontally inside the card on a narrow screen; the
 card itself never overflows.
+
+A mark inside a diagram — a cross, a tick, an arrow — is drawn as a stroked path, not as a
+text glyph. A `✕` set at 9px and 45% opacity measured 2.71:1; the same cross as two 1.6px
+strokes at 75% measures 8.7:1 and keeps its weight at any zoom.
 
 ### Code Block
 
@@ -358,6 +368,10 @@ ink on a grey fill when active. Labels come from a page's `sidebarTitle`, not it
 **The Same Card Rule.** Every block is the same card. If two blocks need to look different,
 change the icon and its colour, not the frame.
 
+**The Ink Focus Rule.** Focus is always ink. The lecture controls draw a 2px outline at 2px
+offset; the framework's own ring takes the same ink through `--color-fd-ring`. Its default is
+neutral-400, which measures 2.31:1 against the 3:1 WCAG 1.4.11 asks of a focus indicator.
+
 **The Named Mark Rule.** A mark the reader has not been taught is decoration. Every lecture
 page carries the legend, and no block ships a colour that the legend does not name.
 
@@ -372,6 +386,8 @@ page carries the legend, and no block ships a colour that the legend does not na
 - **Do** fold long transcripts and reference tables into a `<Detail>` rather than cutting the topic.
 - **Do** check every new colour at 4.5:1 for text and 3:1 for an icon, in both themes, against
   the surface (`#f1f1f1` / `#191919`) rather than the page.
+- **Do** tab through a page after any control change and check the focus ring at 3:1 in both
+  themes; a framework default is not a checked value.
 - **Do** start MDX headings at `##` and stop at `####`.
 - **Do** end every page with `<Recap>`; the table of contents pins a `สรุปท้ายคาบ` entry that
   points at its `#recap` anchor whether or not the block is there.

@@ -35,15 +35,20 @@ export function SelfHealing() {
                   strokeOpacity={p === 'dead' ? 0.3 : 0.5}
                   strokeDasharray={p === 'dead' ? '3 2' : undefined}
                 />
-                <text
-                  x={x0 + 28 + pi * 42}
-                  y="77"
-                  textAnchor="middle"
-                  fontSize="9"
-                  opacity={p === 'dead' ? 0.45 : 1}
-                >
-                  {p === 'dead' ? '✕' : 'pod'}
-                </text>
+                {p === 'dead' ? (
+                  <path
+                    d={`M${x0 + 23 + pi * 42} 69l10 10M${x0 + 33 + pi * 42} 69l-10 10`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeOpacity="0.75"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                ) : (
+                  <text x={x0 + 28 + pi * 42} y="77" textAnchor="middle" fontSize="9">
+                    pod
+                  </text>
+                )}
               </g>
             ))}
             <text x={x0 + 68} y="128" textAnchor="middle" fontSize="9.5" opacity="0.78">

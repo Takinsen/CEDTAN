@@ -139,4 +139,6 @@ Never extract an image from the slides. It cannot be re-themed and it is the lec
 - A `<Detail>` placed inside a `<StepThrough>` step is only in the DOM while that step is
   selected, so `เปิดกล่องที่พับไว้ทั้งหมด` and find-in-page cannot reach it. Keep folds outside
   the step-through unless the content only makes sense inside that step.
+- Keep the steps in one `<StepThrough>` close to the same length. The card resizes to the
+  step you pick, so a 30-line step next to a 3-line one makes the page move a long way.
 - Comments in code: one line, saying what the block does.

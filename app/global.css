@@ -64,3 +64,9 @@ body {
 #nd-docs-layout {
   --fd-layout-width: 100%;
 }
+
+/* the framework rings chrome controls in neutral-400, which is 2.31:1 in light mode — focus is ink */
+:root,
+.dark {
+  --color-fd-ring: var(--color-fd-primary);
+}

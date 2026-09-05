@@ -27,6 +27,7 @@ export function StepThrough({ children }: { children: ReactNode }) {
             key={i}
             type="button"
             onClick={() => setIndex(i)}
+            aria-pressed={i === index}
             className={cn(
               'rounded-full px-3 py-1 text-sm transition-colors',
               i === index
