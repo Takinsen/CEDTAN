@@ -23,6 +23,14 @@ export const courses: Course[] = [
     description:
       'software-defined servers, networks และ storage, containers และ service orchestration, cloud และ edge computing, infrastructure as code',
   },
+  {
+    slug: '2110413-csy',
+    code: '2110413',
+    name: 'Computer Security',
+    nameTh: 'ความมั่นคงของคอมพิวเตอร์',
+    description:
+      'หลักการของความมั่นคง, การเข้ารหัสลับแบบกุญแจสมมาตรและกุญแจสาธารณะ, การย่อยสาร, การพิสูจน์ตัวจริง, การควบคุมการเข้าถึง, ความมั่นคงของวิสาหกิจและของเครือข่าย',
+  },
 ];
 
 // lecture pages of a course in lecture order, not counting its index page

@@ -149,3 +149,8 @@ Never extract an image from the slides. It cannot be re-themed and it is the lec
   `strokeOpacity="0.5"`. The card scales the drawing up by about 1.28x, so 11 units lands near
   14px; anything smaller loses Thai tone marks, and a fainter stroke drops under 3:1.
 - Give a two-line label inside a small box 15 units between baselines. 12 collides.
+- A `>` blockquote already prints an opening quote mark of its own. Do not type `"` around
+  the first line, or the page shows two.
+- `<Compare>` marks one side with a red cross and the other with a green check, and the legend
+  teaches those marks. Use it only for a real wrong-way / right-way pair. Two quotes, two
+  vendors, or two options of equal standing belong in `<Callout>` blocks instead.
