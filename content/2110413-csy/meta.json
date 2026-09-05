@@ -2,5 +2,10 @@
   "title": "2110413 CSY",
   "description": "Computer Security",
   "root": true,
-  "pages": ["index", "lecture-2", "lecture-3"]
+  "pages": [
+    "index",
+    "lecture-1",
+    "lecture-2",
+    "lecture-3"
+  ]
 }
