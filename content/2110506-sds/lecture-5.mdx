@@ -18,6 +18,8 @@ import { RollingUpdate } from '@/components/figures/2110506-sds/rolling-update';
 import { PodCommunication } from '@/components/figures/2110506-sds/pod-communication';
 import { IngressRouting } from '@/components/figures/2110506-sds/ingress-routing';
 import { WorkloadObjects } from '@/components/figures/2110506-sds/workload-objects';
+import { KubectlRequestPath } from '@/components/figures/2110506-sds/kubectl-request-path';
+import { ManifestObjectLifecycle } from '@/components/figures/2110506-sds/manifest-object-lifecycle';
 
 <KeyIdea>
 Kubernetes เปลี่ยนวิธีสั่งงานจาก "ทำ ก ทำ ข ทำ ค" เป็น "ฉันอยากได้ 3 สำเนา" แล้วมันรับหน้าที่ทำให้เป็นจริงและ **คอยรักษาให้เป็นแบบนั้นตลอดเวลา** — เครื่องพัง pod ตาย มันสร้างใหม่ให้เองโดยไม่ต้องมีคนสั่ง
@@ -401,6 +403,10 @@ kubectl <command> <args>
 นี่คือความหมายของคำว่า *software-defined* ที่วิชานี้พูดถึงมาตั้งแต่คาบแรก — ระบบเปิดให้โปรแกรมสั่งได้ ไม่ใช่แค่ให้คนกด
 </KeyIdea>
 
+<Figure number={6} caption="kubectl เป็น client ส่วน API server เป็นประตูเดียวที่ตรวจคำสั่งก่อนอ่านหรือเปลี่ยนสถานะใน etcd">
+  <KubectlRequestPath />
+</Figure>
+
 #### ค้นหาว่ามีอะไรให้ใช้บ้าง
 
 สองคำสั่งนี้ทำให้ไม่ต้องเปิดเอกสารบ่อย
@@ -585,6 +591,10 @@ spec:
 | `kind: Pod` | จะสร้างของชนิดอะไร |
 | `metadata:` | ชื่อ ป้าย และข้อมูลระบุตัวตน |
 | `spec:` | สถานะที่ต้องการ — เนื้อหาจริงอยู่ตรงนี้ |
+
+<Figure number={7} caption="apply เปลี่ยนไฟล์ให้เป็น object แล้ว control loop รับช่วงดูแลสถานะจริงต่อ">
+  <ManifestObjectLifecycle />
+</Figure>
 
 <StepThrough>
 <Step title="apply">
@@ -1100,7 +1110,7 @@ deployment.apps "kuard" deleted
 
 และเลือกว่า pod ตัวไหนอยู่ในกลุ่ม ด้วย **LabelSelector**
 
-<Figure number={6} caption="Service เลือก pod ด้วยป้าย ไม่ใช่ด้วยรายชื่อ — pod จะเกิดหรือตายก็ไม่ต้องแก้อะไร">
+<Figure number={8} caption="Service เลือก pod ด้วยป้าย ไม่ใช่ด้วยรายชื่อ — pod จะเกิดหรือตายก็ไม่ต้องแก้อะไร">
   <ServiceSelector />
 </Figure>
 
@@ -1181,7 +1191,7 @@ Session Affinity:  None
 
 ### Rollout — เปลี่ยนรุ่นโดยไม่ล่ม
 
-<Figure number={7} caption="ทยอยเปลี่ยนทีละตัว โดยยังมี pod พร้อมรับงานตลอดเวลา">
+<Figure number={9} caption="ทยอยเปลี่ยนทีละตัว โดยยังมี pod พร้อมรับงานตลอดเวลา">
   <RollingUpdate />
 </Figure>
 
@@ -1258,7 +1268,7 @@ kubectl rollout undo deployment/kuard
 
 ### container คุยกันยังไง
 
-<Figure number={8} caption="ใน pod เดียวกันใช้ localhost ได้ ข้าม pod ต้องผ่านชื่อ Service">
+<Figure number={10} caption="ใน pod เดียวกันใช้ localhost ได้ ข้าม pod ต้องผ่านชื่อ Service">
   <PodCommunication />
 </Figure>
 
@@ -1386,7 +1396,7 @@ kubectl apply -f kuard-ingress.yml
 
 #### สองแบบของการแยกทาง
 
-<Figure number={9} caption="แยกตาม path กับแยกตามชื่อโฮสต์ — ทั้งคู่ใช้ที่อยู่สาธารณะเดียวกัน">
+<Figure number={11} caption="แยกตาม path กับแยกตามชื่อโฮสต์ — ทั้งคู่ใช้ที่อยู่สาธารณะเดียวกัน">
   <IngressRouting />
 </Figure>
 
@@ -1459,7 +1469,7 @@ secret.code.lives=30
 
 ### Object อื่นที่ควรรู้จักชื่อ
 
-<Figure number={10} caption="ห้าชนิดของ workload — ทั้งหมดสร้าง pod เหมือนกัน ต่างกันที่กติกา">
+<Figure number={12} caption="ห้าชนิดของ workload — ทั้งหมดสร้าง pod เหมือนกัน ต่างกันที่กติกา">
   <WorkloadObjects />
 </Figure>
 
