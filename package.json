@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "check": "next typegen && tsc --noEmit && eslint . && next build"
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON components/lecture/motion-values.test.mjs",
+    "check": "next typegen && tsc --noEmit && eslint . && pnpm test && next build"
   },
   "dependencies": {
     "cnfast": "^0.1.0",

@@ -3,6 +3,7 @@
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { Children, isValidElement, useState, type ReactElement, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { stepPanelVariants, type StepDirection } from './motion-values';
 
 export function Step({ children }: { title: string; children: ReactNode }) {
   return <>{children}</>;
@@ -15,9 +16,16 @@ export function StepThrough({ children }: { children: ReactNode }) {
       isValidElement(child),
   );
   const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState<StepDirection>(1);
   const current = steps[index];
 
   if (!current) return null;
+
+  function selectStep(next: number) {
+    if (next === index) return;
+    setDirection(next > index ? 1 : -1);
+    setIndex(next);
+  }
 
   return (
     <div className="my-6 rounded-xl border border-fd-border bg-fd-card p-4">
@@ -26,7 +34,7 @@ export function StepThrough({ children }: { children: ReactNode }) {
           <button
             key={i}
             type="button"
-            onClick={() => setIndex(i)}
+            onClick={() => selectStep(i)}
             aria-pressed={i === index}
             className={cn(
               'rounded-full px-3 py-1 text-sm transition-colors',
@@ -40,13 +48,15 @@ export function StepThrough({ children }: { children: ReactNode }) {
         ))}
       </div>
       <MotionConfig reducedMotion="user">
-        <AnimatePresence mode="wait">
+        <AnimatePresence custom={direction} initial={false} mode="wait">
           <motion.div
             key={index}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.18 }}
+            custom={direction}
+            variants={stepPanelVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             className="[&>:first-child]:mt-0 [&>:last-child]:mb-0"
           >
             {current}

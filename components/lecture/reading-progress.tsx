@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { progressScale } from './motion-values';
 
 // how far down the page the reader is, and which section that lands in
 export function ReadingProgress({ label, ids }: { label: string; ids: string[] }) {
@@ -41,7 +42,10 @@ export function ReadingProgress({ label, ids }: { label: string; ids: string[] }
       </p>
       {/* the line above already reads out the section and the percent, so the rule is decoration */}
       <div aria-hidden className="h-0.5 w-full bg-fd-border">
-        <div className="h-full bg-fd-primary" style={{ width: `${percent}%` }} />
+        <div
+          className="h-full w-full origin-left bg-fd-primary transition-transform duration-150 ease-out motion-reduce:transition-none"
+          style={{ transform: `scaleX(${progressScale(percent)})` }}
+        />
       </div>
     </div>
   );

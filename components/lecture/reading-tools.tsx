@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUp, ChevronsDown, ChevronsDownUp, ListChecks } from 'lucide-react';
+import { ArrowUp, ChevronsDown, ListChecks } from 'lucide-react';
 import { createContext, use, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
@@ -33,11 +33,13 @@ export function ReadingToolsProvider({
 
 const ROW =
   'inline-flex items-center gap-2 rounded-lg border border-fd-border bg-fd-secondary/50 px-3 py-1.5 text-sm ' +
-  'transition-colors hover:bg-fd-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-primary';
+  'transition-[color,background-color,transform] duration-150 ease-out hover:bg-fd-accent active:scale-[0.98] motion-reduce:transition-colors motion-reduce:active:scale-100 ' +
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-primary';
 
 const RAIL =
   'inline-flex w-full items-center gap-1.5 rounded-lg -mx-2 px-2 py-1.5 text-left text-sm text-fd-muted-foreground ' +
-  'transition-colors hover:bg-fd-accent hover:text-fd-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-primary';
+  'transition-[color,background-color,transform] duration-150 ease-out hover:bg-fd-accent hover:text-fd-foreground active:scale-[0.98] ' +
+  'motion-reduce:transition-colors motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-primary';
 
 // jump to the recap and open every fold, for a reader who came to scan rather than read
 export function ReadingTools({ variant = 'row' }: { variant?: 'row' | 'rail' }) {
@@ -47,7 +49,6 @@ export function ReadingTools({ variant = 'row' }: { variant?: 'row' | 'rail' }) 
   const { hasFolds, open, toggleAll } = tools;
   const rail = variant === 'rail';
   const style = rail ? RAIL : ROW;
-  const Fold = open ? ChevronsDownUp : ChevronsDown;
 
   function toTop() {
     const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -62,7 +63,12 @@ export function ReadingTools({ variant = 'row' }: { variant?: 'row' | 'rail' }) 
       </a>
       {hasFolds && (
         <button type="button" onClick={toggleAll} aria-pressed={open} className={style}>
-          <Fold className="size-4 shrink-0" />
+          <ChevronsDown
+            className={cn(
+              'size-4 shrink-0 transition-transform duration-150 ease-out motion-reduce:transition-none',
+              open && 'rotate-180',
+            )}
+          />
           {open ? 'ปิดกล่องที่พับไว้' : 'เปิดกล่องที่พับไว้ทั้งหมด'}
         </button>
       )}

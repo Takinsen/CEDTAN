@@ -22,8 +22,8 @@ Open http://localhost:3000
 pnpm check
 ```
 
-Runs `next typegen`, `tsc --noEmit`, `eslint .`, and `next build`. This is the only test
-suite. There are no unit tests: the repo holds content and presentation, not logic.
+Runs `next typegen`, `tsc --noEmit`, `eslint .`, the focused interaction unit tests, and
+`next build`. This is the complete automated test suite for the repo.
 
 ## Structure
 
