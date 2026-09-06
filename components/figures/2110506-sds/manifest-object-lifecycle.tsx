@@ -76,7 +76,7 @@ export function ManifestObjectLifecycle() {
       <text x="544" y="172" textAnchor="end" fontSize="11" opacity="0.72">
         สร้าง / แก้ / ลบ
       </text>
-      <text x="326" y="216" textAnchor="end" fontSize="11" opacity="0.72">
+      <text x="306" y="216" textAnchor="end" fontSize="11" opacity="0.72">
         รายงาน actual state กลับ
       </text>
       <text x="81" y="178" textAnchor="middle" fontSize="11" opacity="0.72">
