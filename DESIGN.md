@@ -110,6 +110,9 @@ meaning was added by someone who read the slides and decided what mattered. A co
 in the margin says *this is the idea to remember*, *this is the trap*, *this is the worked
 example*. Learn the five marks once and you can skim any page in the site.
 
+Every rule below holds on every page except the landing hero, which is a recorded exception
+(Landing Hero, and ADR 0002).
+
 The system therefore invests almost nothing in surface and almost everything in structure.
 There are no shadows, no gradients, no illustrations that are not diagrams, and exactly two
 fonts. What it does spend is precision: a strict four-level heading outline, a fixed rhythm
@@ -221,8 +224,9 @@ column is capped at 900px and centred inside whatever is left, so the reading me
 constant while the window grows. The table of contents disappears below 1280px and the sidebar
 becomes a drawer below 768px.
 
-The landing page is a single 768px column: heading, one-paragraph lead, one section per
-course, then the disclaimer. No sidebar, no table of contents.
+The landing page opens with a full-screen course hero (see Landing Hero below), then a
+1024px column holding the lecture directory and the disclaimer. No sidebar, no table of
+contents.
 
 Vertical rhythm is a small fixed set: 24px between blocks and paragraphs, 48px above a part
 divider, 16px of padding inside every block, 10px inside a table cell. Sections on the landing
@@ -403,6 +407,33 @@ surface — the theme's defaults do not.
 Course switcher, then one entry per page, each on one line. Entries are muted 14px at rest and
 ink on a grey fill when active. Labels come from a page's `sidebarTitle`, not its full title:
 `ภาพรวมวิชา`, `1 · Software-Defined Systems`, `5 · Kubernetes`.
+
+### Landing Hero
+
+The one place the system bends, recorded in `docs/adr/0002-landing-page-is-the-design-exception.md`.
+Its job is to show what the site covers before it lists anything, so it is allowed the things a
+lecture page is not.
+
+- **Ground:** `#0b0b0c` in both themes, with type in `#f3f3f3`. The course covers are dark
+  photographs, so the hero ignores the reader's theme.
+- **Cover:** full bleed behind the whole hero at 80% brightness, from
+  `public/images/courses/<slug>-cover-4k.webp`. A solid black fade covers the top 8% and the
+  bottom 10%, and a dark radial pool sits behind the course name. The incoming cover eases back
+  from a 1.08 zoom over 16s. A course with no cover shows its code set huge at 5% white.
+- **Type:** the course name in 700 at up to 96px with a three-layer text shadow, its code in
+  Red Hat Mono above it, the Thai name and lecture count below. The name links to the course
+  overview; `ดูทุกคาบ ↓` is a solid light pill that scrolls to the course in the directory.
+- **Motion:** a strip of course chips runs left along the foot and a strip of lecture titles
+  runs right beneath it. The chip crossing the centre tick lights up and picks the course shown.
+  Both stop while the hero is hovered or focused, when the pause button is pressed, and under
+  `prefers-reduced-motion`; hovering or tabbing to a chip shows that course.
+
+### Lecture Directory
+
+Under the hero, one hairline row per course: code, name and Thai name, lecture count, and a
+chevron. A row opens to a `ภาพรวมวิชา →` link and the lectures in two columns. Every course is
+folded on arrival except the one this browser opened last, which also carries a `เปิดล่าสุด`
+pill. The choice lives in `localStorage` under `cedtan:last-course`.
 
 ### Named Rules
 

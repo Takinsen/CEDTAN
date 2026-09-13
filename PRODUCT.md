@@ -38,7 +38,9 @@ Plain, patient, honest.
 ## Anti-references
 
 - **Marketing docs sites.** No hero, no gradient, no "get started in 30 seconds". Nobody
-  is being sold anything here.
+  is being sold anything here. The landing page is the one exception: it opens with a
+  full-screen course hero, because its job is to show what the site covers before it lists
+  anything. See `docs/adr/0002-landing-page-is-the-design-exception.md`.
 - **Slide-dump sites.** A wall of bullet points with no connective prose is the thing this
   site exists to replace.
 - **Cram-sheet sites.** Stripping a topic down to a keyword list loses the reason, which is

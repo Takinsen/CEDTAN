@@ -1,0 +1,76 @@
+/* the landing hero is dark in both themes because the course covers are dark; see ADR 0002 */
+
+/* solid black at the top and bottom, the cover clear through the middle */
+.home-hero-scrim {
+  background: linear-gradient(
+    180deg,
+    #0b0b0c 0%,
+    #0b0b0c 8%,
+    rgba(11, 11, 12, 0.75) 20%,
+    rgba(11, 11, 12, 0) 40%,
+    rgba(11, 11, 12, 0) 55%,
+    rgba(11, 11, 12, 0.8) 76%,
+    #0b0b0c 90%
+  );
+}
+
+/* a dark pool behind the centred course name */
+.home-hero-scrim::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 58% 44% at 50% 45%,
+    rgba(8, 8, 9, 0.78) 0%,
+    rgba(8, 8, 9, 0.5) 50%,
+    rgba(8, 8, 9, 0) 100%
+  );
+}
+
+/* lifts the type off a busy cover */
+.home-hero-copy {
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.8),
+    0 0 18px rgba(0, 0, 0, 0.7),
+    0 0 60px rgba(0, 0, 0, 0.75);
+}
+
+.home-fade-edges {
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+
+/* the cover that just came in eases back from a slight zoom */
+.home-cover[data-on] img {
+  animation: home-drift 16s ease-out both;
+}
+
+.home-rise {
+  animation: home-rise 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes home-drift {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes home-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-cover[data-on] img,
+  .home-rise {
+    animation: none;
+  }
+}
