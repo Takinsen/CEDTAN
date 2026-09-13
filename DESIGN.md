@@ -207,8 +207,8 @@ column without wrapping. There is no display face: hierarchy comes from size and
 
 ### Named Rules
 
-**The One H1 Rule.** The layout owns the `h1`. MDX starts at `##`. A `#` in content produces
-a second top-level heading and breaks the outline; the four levels available are enough.
+**The One H1 Rule.** The layout owns the `h1`. How content headings nest below it is set in
+`AGENTS.md`.
 
 **The Breathing Room Rule.** Body line-height never drops below 1.75 and headings never below
 1.4. Thai marks stack above and below the baseline; a tighter setting collides them.
@@ -264,16 +264,13 @@ markdown-copy button), and the step-through tabs are full pills.
 Borders are always 1px and always the hairline colour. Rules between table rows and above the
 landing-page footer use the same hairline, so a divider and a border never disagree.
 
-Diagrams are hand-written inline SVG on a 620-unit-wide viewBox, drawn with `currentColor`
-plus opacity — never a hard-coded hex, so a figure re-themes with the page.
-
 ### Named Rules
 
 **The One Radius Rule.** Containers are 12px, controls are 8px, tabs are pills. A fourth value
 means a mistake.
 
-**The currentColor Rule.** A diagram uses `currentColor` with `fillOpacity` / `strokeOpacity`
-for every stroke and fill. A hard-coded colour disappears in one of the two themes.
+**The currentColor Rule.** A diagram takes every colour from the page, so it re-themes with
+it. The drawing rules live in `docs/agents/figures.md`.
 
 ## Components
 
@@ -377,13 +374,8 @@ card itself never overflows.
 
 The SVG fills the card rather than sitting at its natural size — it carries a `min-width` for
 the mobile scroll and no `max-width`, so a 620-unit drawing renders 1.28x larger in a 792px
-card and every label grows with it.
-
-Nothing inside a diagram is set below **11 viewBox units**, which lands near 14px once the card
-scales it, and no stroke that defines a shape drops below **0.5 opacity**, which is where a
-`currentColor` line clears 3:1 on the card in both themes. Below those two floors Thai loses
-its tone marks and a box loses its edge. Two stacked lines inside one small box need 15 units
-between baselines; 12 collides.
+card and every label grows with it. The text-size, stroke and spacing floors that follow from
+that scale live in `docs/agents/figures.md`.
 
 A mark inside a diagram — a cross, a tick, an arrow — is drawn as a stroked path, not as a
 text glyph. A `✕` set at 9px and 45% opacity measured 2.71:1; the same cross as two 1.6px
@@ -454,17 +446,12 @@ page carries the legend, and no block ships a colour that the legend does not na
 - **Do** carry meaning with the icon colour and the label, and leave the card neutral.
 - **Do** cap the reading column at 900px and let the window grow around it.
 - **Do** use the surface tint plus a 1px hairline whenever something must separate from the page.
-- **Do** draw diagrams with `currentColor` and opacity, sized to a 620-unit viewBox.
 - **Do** fold long transcripts and reference tables into a `<Detail>` rather than cutting the topic.
 - **Do** check every new colour at 4.5:1 for text and 3:1 for an icon, in both themes, against
   the surface (`#f1f1f1` / `#191919`) rather than the page.
 - **Do** tab through a page after any control change and check the focus ring at 3:1 in both
   themes, and check that the focused control actually paints — a ring at 16:1 on an element the
   framework holds at `opacity: 0` is still an invisible focus.
-- **Do** keep diagram text at 11 viewBox units or more and shape strokes at 0.5 opacity or more.
-- **Do** start MDX headings at `##` and stop at `####`.
-- **Do** end every page with `<Recap>`; the table of contents pins a `สรุปท้ายคาบ` entry that
-  points at its `#recap` anchor whether or not the block is there.
 
 ### Don't:
 

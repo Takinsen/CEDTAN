@@ -30,6 +30,9 @@ The repo is public. Two things never enter it:
 
 ## Steps
 
+A deck from a course that has no entry in `lib/courses.ts` needs the course listed first:
+follow `docs/agents/courses.md`, then come back here.
+
 1. Confirm the PDF is at `data/<COURSE-CODE>/Lecture-N.pdf`.
 2. Read every page of the PDF. Try the Read tool first, at most 20 pages per call, so a
    60-page deck is three calls. On a machine without `poppler-utils` it fails to render —

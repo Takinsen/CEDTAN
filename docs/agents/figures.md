@@ -16,8 +16,6 @@ import { LayeredStack } from '@/components/figures/2110506-sds/layered-stack';
 </Figure>
 ```
 
-Draw every figure yourself. A slide image is the lecturer's work and cannot be re-themed.
-
 ## Theme
 
 Paint with `stroke="currentColor"` and `fill="currentColor"`, or a Fumadocs theme variable, and
