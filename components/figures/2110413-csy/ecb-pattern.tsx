@@ -1,92 +1,82 @@
-// identical plaintext blocks stay identical under ECB, and stop being identical once a chain is added
+// each block goes through E on its own, so repeated input blocks come out as repeated output blocks
 export function EcbPattern() {
-  const blocks = ['A', 'A', 'B', 'A', 'B'];
-  const ecb = ['7F', '7F', 'C2', '7F', 'C2'];
-  const cbc = ['7F', '31', '9D', '4E', 'A8'];
-  const x = (i: number) => 158 + i * 84;
+  const cx = [145, 275, 405, 535];
+  const plain = ['1010', '1010', '0011', '1010'];
+  const out = ['0100', '0100', '1011', '0100'];
 
   return (
     <svg
-      viewBox="0 0 620 262"
+      viewBox="0 0 620 248"
       role="img"
-      aria-label="ข้อความต้นฉบับห้าบล็อกที่มีบล็อกซ้ำกัน เมื่อเข้ารหัสแบบ ECB บล็อกที่เหมือนกันได้ผลลัพธ์เหมือนกัน ลายเดิมจึงยังอยู่ ส่วนแบบ CBC ที่เอาผลของบล็อกก่อนหน้ามาผสม ได้ผลลัพธ์ต่างกันหมด"
+      aria-label="ต้นฉบับสี่ก้อน 1010 1010 0011 1010 แต่ละก้อนเข้า E แยกกัน ได้ผลลัพธ์ 0100 0100 1011 0100 ก้อนที่เข้าเหมือนกันจึงออกมาเหมือนกัน"
       className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       <text x="310" y="22" textAnchor="middle" fontSize="11" opacity="0.8">
-        บล็อกเดิมซ้ำที่ไหน ลายก็โผล่ที่นั่น
+        ก้อนเดิมกับกุญแจเดิม ออกมาเป็นค่าเดิมทุกครั้ง
       </text>
 
-      <text x="16" y="62" fontSize="11" fontWeight="600">
+      <text x="16" y="76" fontSize="11" opacity="0.8">
         ต้นฉบับ
       </text>
-      {blocks.map((b, i) => (
-        <g key={`p-${i}`}>
-          <rect x={x(i)} y={44} width="64" height="26" rx="5" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.55" />
-          <text x={x(i) + 32} y={62} textAnchor="middle" fontSize="11">
-            {b}
-          </text>
-        </g>
-      ))}
+      <text x="16" y="126" fontSize="11" opacity="0.8">
+        เข้ารหัส
+      </text>
+      <text x="16" y="176" fontSize="11" opacity="0.8">
+        ผลลัพธ์
+      </text>
 
-      <text x="16" y="122" fontSize="11" fontWeight="600">
-        ECB
-      </text>
-      <text x="16" y="143" fontSize="11" opacity="0.8">
-        ไม่มี IV
-      </text>
-      <text x="16" y="164" fontSize="11" opacity="0.8">
-        ไม่ต่อกัน
-      </text>
-      {ecb.map((c, i) => (
-        <g key={`e-${i}`}>
+      {cx.map((x, i) => (
+        <g key={x}>
+          <text x={x} y={48} textAnchor="middle" fontSize="11" opacity="0.8">
+            ก้อน {i + 1}
+          </text>
           <rect
-            x={x(i)}
-            y={104}
-            width="64"
+            x={x - 36}
+            y={58}
+            width="72"
             height="26"
             rx="5"
-            fillOpacity={c === '7F' ? 0.2 : 0.08}
+            fillOpacity={plain[i] === '1010' ? 0.2 : 0.06}
             stroke="currentColor"
             strokeOpacity="0.55"
           />
-          <text x={x(i) + 32} y={122} textAnchor="middle" fontSize="11">
-            {c}
+          <text x={x} y={76} textAnchor="middle" fontSize="11">
+            {plain[i]}
           </text>
+          <rect x={x - 36} y={108} width="72" height="26" rx="5" fillOpacity="0.14" stroke="currentColor" strokeOpacity="0.55" />
+          <text x={x} y={126} textAnchor="middle" fontSize="11" fontWeight="600">
+            E
+          </text>
+          <rect
+            x={x - 36}
+            y={158}
+            width="72"
+            height="26"
+            rx="5"
+            fillOpacity={out[i] === '0100' ? 0.2 : 0.06}
+            stroke="currentColor"
+            strokeOpacity="0.55"
+          />
+          <text x={x} y={176} textAnchor="middle" fontSize="11">
+            {out[i]}
+          </text>
+          <g stroke="currentColor" strokeOpacity="0.55" strokeWidth="1.4" fill="none" markerEnd="url(#ep-arrow)">
+            <line x1={x} y1="86" x2={x} y2="105" />
+            <line x1={x} y1="136" x2={x} y2="155" />
+          </g>
         </g>
       ))}
-      <text x="158" y="152" fontSize="11" opacity="0.85">
-        ช่องที่ 1, 2 และ 4 ได้ค่าเดียวกัน เพราะต้นฉบับเหมือนกัน
-      </text>
 
-      <text x="16" y="204" fontSize="11" fontWeight="600">
-        CBC
+      <text x="310" y="214" textAnchor="middle" fontSize="11" fontWeight="600">
+        ก้อน 1, 2 และ 4 เข้า 1010 เหมือนกัน จึงออก 0100 เหมือนกัน
       </text>
-      <text x="16" y="225" fontSize="11" opacity="0.8">
-        มี IV
-      </text>
-      <text x="16" y="246" fontSize="11" opacity="0.8">
-        ต่อกันเป็นลูกโซ่
-      </text>
-      {cbc.map((c, i) => (
-        <g key={`c-${i}`}>
-          <rect x={x(i)} y={186} width="64" height="26" rx="5" fillOpacity="0.12" stroke="currentColor" strokeOpacity="0.55" />
-          <text x={x(i) + 32} y={204} textAnchor="middle" fontSize="11">
-            {c}
-          </text>
-        </g>
-      ))}
-      <g stroke="currentColor" strokeOpacity="0.55" strokeWidth="1.4" fill="none" markerEnd="url(#ep-arrow)">
-        {[0, 1, 2, 3].map((i) => (
-          <path key={`k-${i}`} d={`M ${x(i) + 32} 214 L ${x(i) + 32} 226 L ${x(i + 1) + 32} 226 L ${x(i + 1) + 32} 216`} />
-        ))}
-      </g>
-      <text x="158" y="252" fontSize="11" opacity="0.85">
-        ผลของบล็อกก่อนหน้าถูกผสมเข้าไปก่อน ค่าที่ออกมาจึงไม่ซ้ำกัน
+      <text x="310" y="236" textAnchor="middle" fontSize="11" opacity="0.78">
+        ไม่มีอะไรเปลี่ยนระหว่างก้อน ลายของต้นฉบับจึงหลุดออกมาครบ
       </text>
 
       <defs>
-        <marker id="ep-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <marker id="ep-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" fillOpacity="0.6" />
         </marker>
       </defs>

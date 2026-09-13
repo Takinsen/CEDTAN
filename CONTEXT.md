@@ -52,3 +52,12 @@ page's source callout and its `credit` field.
 
 A topic the deck names but never explains, which the page also names but never explains,
 because the page was written by walking the deck. A defect, not a faithful reproduction.
+
+## Image-carried slide
+
+A slide whose teaching lives in a picture: a wiring diagram, a screenshot, a before-and-after
+image. Its extracted text is a title and one line, so a coverage list built from text ticks it
+off while the mechanism is gone. The page cannot reuse the picture, so it must explain the
+mechanism in prose, an example, or its own figure.
+
+The most common source of an [inherited gap](#inherited-gap) that nobody notices.
