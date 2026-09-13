@@ -2,7 +2,7 @@
 export function ProtectionRings() {
   return (
     <svg
-      viewBox="0 0 620 262"
+      viewBox="0 0 620 226"
       role="img"
       aria-label="วงแหวนสี่ชั้นซ้อนกัน ชั้นในสุดคือ ring 0 ของ kernel ชั้นนอกสุดคือ ring 3 ของโปรแกรมผู้ใช้ ชั้นในอ่านชั้นนอกได้ตรง ๆ แต่ชั้นนอกเข้าชั้นในได้ทางเดียวคือผ่าน system call"
       className="mx-auto h-auto w-full min-w-[590px]"
@@ -58,9 +58,6 @@ export function ProtectionRings() {
         ring 0 คือ kernel ส่วน ring 3 คือโปรแกรมของผู้ใช้
       </text>
 
-      <text x="310" y="250" textAnchor="middle" fontSize="11" opacity="0.78">
-        Intel x86 มีสี่วง แต่ระบบปฏิบัติการส่วนใหญ่ใช้แค่ 0 กับ 3
-      </text>
 
       <defs>
         <marker id="pr-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">

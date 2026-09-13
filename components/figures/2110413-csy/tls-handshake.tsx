@@ -8,7 +8,7 @@ export function TlsHandshake() {
 
   return (
     <svg
-      viewBox="0 0 620 276"
+      viewBox="0 0 620 246"
       role="img"
       aria-label="ไคลเอนต์ขอหน้าเว็บ เซิร์ฟเวอร์ส่งกุญแจสาธารณะและใบรับรองกลับมา ไคลเอนต์เลือกอัลกอริทึมและสุ่มกุญแจสมมาตรแล้วส่งกลับโดยล็อกด้วยกุญแจสาธารณะของเซิร์ฟเวอร์ จากนั้นทั้งสองฝั่งรับส่งข้อมูลด้วยกุญแจสมมาตรดอกนั้น"
       className="mx-auto h-auto w-full min-w-[590px]"
@@ -50,12 +50,6 @@ export function TlsHandshake() {
         4. รับส่งข้อมูลจริง ล็อกด้วยกุญแจสมมาตรดอกนั้น
       </text>
 
-      <text x="16" y="248" fontSize="11" opacity="0.85">
-        ไคลเอนต์เลือกเองว่าจะใช้ stream หรือ block cipher ตัวไหน
-      </text>
-      <text x="16" y="268" fontSize="11" opacity="0.78">
-        มีแต่เซิร์ฟเวอร์ที่ถือ priv จึงมีแค่สองฝั่งนี้ที่รู้กุญแจสมมาตร — ได้ความเร็วของสมมาตร บวกความง่ายในการแจกจ่ายของกุญแจสาธารณะ
-      </text>
 
       <defs>
         <marker id="tls-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">

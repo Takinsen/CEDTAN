@@ -2,7 +2,7 @@
 export function DigitalSignature() {
   return (
     <svg
-      viewBox="0 0 620 310"
+      viewBox="0 0 620 294"
       role="img"
       aria-label="ฝั่งผู้ส่งย่อยข้อความด้วย hash แล้วล็อกค่าย่อยด้วยกุญแจส่วนตัวได้ลายเซ็น ส่งข้อความธรรมดาไปพร้อมลายเซ็น ฝั่งผู้รับย่อยข้อความเองแล้วเปิดลายเซ็นด้วยกุญแจสาธารณะ จากนั้นเทียบค่าทั้งสอง"
       className="mx-auto h-auto w-full min-w-[590px]"
@@ -84,9 +84,6 @@ export function DigitalSignature() {
 
       <text x="310" y="282" textAnchor="middle" fontSize="11" fontWeight="600">
         ตรงกัน แปลว่าข้อความไม่ถูกแก้ และผู้ส่งเป็นคนเซ็นจริง
-      </text>
-      <text x="310" y="302" textAnchor="middle" fontSize="11" opacity="0.78">
-        ตัวข้อความไม่ได้ถูกปิดบัง ใครดักอ่านก็อ่านออก
       </text>
 
       <defs>
