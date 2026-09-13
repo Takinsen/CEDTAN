@@ -35,6 +35,53 @@
     0 0 60px rgba(0, 0, 0, 0.75);
 }
 
+/* the hero's exit, driven by --exit from 0 at the top to 1 once it has scrolled away */
+.home-hero-copy {
+  opacity: calc(1 - var(--exit, 0) * 1.7);
+  translate: 0 calc(var(--exit, 0) * -72px);
+}
+
+.home-hero-strips {
+  opacity: calc(1 - var(--exit, 0) * 2.2);
+}
+
+.home-hero-dim {
+  background: #050506;
+  opacity: calc(var(--exit, 0) * 0.55);
+}
+
+.home-hero[data-copy-gone] .home-hero-copy,
+.home-hero[data-strips-gone] .home-hero-strips {
+  visibility: hidden;
+}
+
+/* a directory row unfolds instead of snapping open */
+.home-course {
+  interpolate-size: allow-keywords;
+}
+
+.home-course::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition:
+    block-size 420ms cubic-bezier(0.3, 0.7, 0.2, 1),
+    content-visibility 420ms allow-discrete;
+}
+
+.home-course[open]::details-content {
+  block-size: auto;
+}
+
+/* the row a glide lands on flashes the surface tint, then fades back */
+.home-course > summary {
+  transition: background-color 1.4s ease-out;
+}
+
+.home-course[data-arrive] > summary {
+  background-color: var(--color-fd-card);
+  transition: none;
+}
+
 .home-fade-edges {
   mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
 }
@@ -72,5 +119,10 @@
   .home-cover[data-on] img,
   .home-rise {
     animation: none;
+  }
+
+  .home-course::details-content,
+  .home-course > summary {
+    transition: none;
   }
 }

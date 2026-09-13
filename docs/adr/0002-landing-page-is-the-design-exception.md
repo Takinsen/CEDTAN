@@ -41,8 +41,11 @@ On the landing hero only, these are allowed:
 - a course cover image, the one picture on the site that is not a diagram
 - gradients over the cover, and a text shadow on the type set over it
 - hard-coded dark colours, because the covers are dark whatever the reader's theme
-- continuous motion, which stops on hover, on focus, with the pause button, and for
-  `prefers-reduced-motion`
+- continuous motion, which stops on keyboard focus, with the pause button, and for
+  `prefers-reduced-motion`. It first stopped on hover too; the owner dropped that, so a
+  pointer resting on the hero no longer freezes it
+- an exit tied to scroll position: the copy and strips fade and the cover dims as the page
+  leaves the hero, and a chip or `ดูทุกคาบ` glides the window down instead of jumping
 
 Every lecture page, and the directory and footer under the hero, keep every rule in
 `DESIGN.md` unchanged.

@@ -67,10 +67,10 @@ export function CourseDirectory({ courses }: { courses: DirectoryCourse[] }) {
               key={course.slug}
               id={`course-${course.slug}`}
               onToggle={(event) => remember(event.currentTarget, course.slug)}
-              className="group scroll-mt-20 border-b border-fd-border"
+              className="home-course group scroll-mt-20 border-b border-fd-border"
             >
               <summary
-                className={`${ROW} cursor-pointer list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-primary [&::-webkit-details-marker]:hidden`}
+                className={`${ROW} -mx-2 cursor-pointer px-2 list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-primary [&::-webkit-details-marker]:hidden`}
               >
                 <CourseHeading course={course} />
                 <span className="text-sm tabular-nums text-fd-muted-foreground">{course.lectures.length} คาบ</span>

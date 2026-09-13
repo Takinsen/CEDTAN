@@ -412,18 +412,27 @@ lecture page is not.
   `public/images/courses/<slug>-cover-4k.webp`. A solid black fade covers the top 8% and the
   bottom 10%, and a dark radial pool sits behind the course name. The incoming cover eases back
   from a 1.08 zoom over 16s. A course with no cover shows its code set huge at 5% white.
-- **Type:** the course name in 700 at up to 96px with a three-layer text shadow, its code in
-  Red Hat Mono above it, the Thai name and lecture count below. The name links to the course
-  overview; `ดูทุกคาบ ↓` is a solid light pill that scrolls to the course in the directory.
+- **Type:** the course name in 700 at up to 96px with a three-layer text shadow, above it one
+  Red Hat Mono line with the code and the lecture count (`2110506 · 5 คาบ`), the Thai name
+  below. The name links to the course overview; `ดูทุกคาบ ↓` is a solid light pill, alone and
+  centred under the name.
 - **Motion:** a strip of course chips runs left along the foot and a strip of lecture titles
   runs right beneath it. The chip crossing the centre tick lights up and picks the course shown.
-  Both stop while the hero is hovered or focused, when the pause button is pressed, and under
-  `prefers-reduced-motion`; hovering or tabbing to a chip shows that course.
+  Hovering does not stop them, and a hovered chip only brightens; the chip at the tick still
+  picks. They stop when the pause button is pressed, while a chip holds keyboard focus (tabbing
+  to a chip shows that course), and under `prefers-reduced-motion`.
+- **Glide:** a chip or `ดูทุกคาบ` scrolls the window to the course in 900ms, ease-in-out cubic,
+  never stopping short of the hero's foot, so no band of hero stays under the nav. It drops the glide the moment the reader wheels, touches or presses a key. The row then
+  unfolds and its summary flashes the surface tint, fading over 1.4s. The exit is tied to scroll
+  position, not to the button: across the hero's height the copy lifts 72px and fades, the
+  strips fade faster, and a black layer dims the cover to 55%. Faded parts turn `hidden`, so
+  nothing invisible can be clicked or tabbed to. Reduced motion jumps with none of it.
 
 ### Lecture Directory
 
 Under the hero, one hairline row per course: code, name and Thai name, lecture count, and a
-chevron. A row opens to a `ภาพรวมวิชา →` link and the lectures in two columns. Every course is
+chevron. A row opens to a `ภาพรวมวิชา →` link and the lectures in two columns, unfolding over
+420ms where the browser can animate `::details-content` and at once where it cannot. Every course is
 folded on arrival except the one this browser opened last, which also carries a `เปิดล่าสุด`
 pill. The choice lives in `localStorage` under `cedtan:last-course`.
 
