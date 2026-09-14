@@ -178,6 +178,17 @@ Continuous Delivery กับ Continuous Deployment ย่อว่า CD ทั
 | <Term en="SRE" th="Site Reliability Engineering วิศวกรรมความน่าเชื่อถือของระบบ" /> | ทีม product ส่งมอบตาม **standards** ให้ทีม SRE ซึ่งทำ deploy, monitor และ operate ด้วย SRE tooling | วัดความน่าเชื่อถือด้วยเป้าบริการที่เป็นตัวเลข |
 | <Term en="Platform Engineering" th="ทีมที่สร้างเครื่องมือกลางให้ทีมอื่นหยิบใช้เอง" /> (PE) | ทีม product ใช้ **platform tooling** ที่ครอบ build, test, release, deploy, monitor และ operate บน unified infrastructure | ทีม product ทำเองได้ผ่านทางที่ platform เตรียมไว้ (self-service) |
 
+<Example added title="เป้าบริการที่เป็นตัวเลขหน้าตาเป็นยังไง">
+สไลด์บอกแค่ว่า SRE ใช้ measurable service objectives โดยไม่มีตัวเลขตัวอย่าง
+
+SRE ไม่ตั้งเป้าว่า "ระบบต้องไม่ล่ม" ซึ่งวัดไม่ได้และทำไม่ได้จริง แต่ตั้งเป็นตัวเลข เช่น **ใช้งานได้ 99.9% ใน 30 วัน** คือล่มได้ไม่เกิน
+
+- 30 × 24 × 60 × 0.001 = **43.2 นาทีต่อ 30 วัน**
+- ถ้านับทั้งปีที่ 99.9% เท่ากัน = **8.76 ชั่วโมง**
+
+เวลาที่ล่มได้นี้เป็นโควตาที่ชั่งความเร็วกับความเสถียรด้วยตัวเลขเดียวกัน ใช้หมดเร็วเมื่อไหร่ทีมต้องชะลอการปล่อยของใหม่
+</Example>
+
 องค์กรที่ทำ platform engineering คู่กับทีม SRE (คอลัมน์ขวาของรูป 4) แบ่งงานกันแบบนี้
 
 - ทีม product แต่ละทีมเหลือแค่ PM (plan), Dev (code) และ Test บางทีมไม่มีคนทดสอบแยก ให้ Dev ทดสอบเอง
@@ -185,17 +196,6 @@ Continuous Delivery กับ Continuous Deployment ย่อว่า CD ทั
 - ทุกทีมใช้ platform tooling ชุดเดียวกัน บน unified infrastructure ชุดเดียว
 
 สามแบบนี้จึงซ้อนกันได้ ไม่ต้องเลือกแบบเดียว
-
-<Example added title="เป้าบริการที่เป็นตัวเลขหน้าตาเป็นยังไง">
-สไลด์บอกแค่ว่า SRE ใช้ measurable service objectives โดยไม่มีตัวเลขตัวอย่าง
-
-SRE ไม่ตั้งเป้าว่า "ระบบต้องไม่ล่ม" เพราะวัดไม่ได้และทำไม่ได้จริง แต่ตั้งเป็นตัวเลข เช่น **ใช้งานได้ 99.9% ใน 30 วัน** ตัวเลขนี้แปลว่าล่มได้ไม่เกิน
-
-- 30 × 24 × 60 × 0.001 = **43.2 นาทีต่อ 30 วัน**
-- ถ้านับทั้งปีที่ 99.9% เท่ากัน = **8.76 ชั่วโมง**
-
-เวลาที่ล่มได้นี้เป็นโควตา ถ้าใช้หมดเร็ว ทีมรู้ทันทีว่าต้องชะลอการปล่อยของใหม่ ความเร็วกับความเสถียรจึงถูกชั่งด้วยตัวเลขเดียวกัน
-</Example>
 
 <Quiz question="ทีมหนึ่งตั้งระบบให้ทุก commit ที่ผ่านการทดสอบขึ้น testing environment เอง แต่ต้องมีหัวหน้ากดปุ่มก่อนขึ้น production ทีมนี้ทำ Continuous Delivery หรือ Continuous Deployment">
 **Continuous Delivery** เพราะเส้นอัตโนมัติหยุดที่ Release ของพร้อมปล่อยเสมอ แต่ขั้น Deploy ยังรอคนตัดสินใจ
@@ -763,7 +763,28 @@ module คือฟังก์ชัน variable คือพารามิเ
 </Analogy>
 
 <Example added title="module เดียวเรียกสองครั้ง พร้อม validation และค่าลับ">
-สไลด์บอกความสามารถของ variable และ module เป็นข้อ ๆ แต่ไม่มีโค้ดตัวอย่าง ตัวอย่างนี้สร้างชื่อเซิร์ฟเวอร์สองเครื่องด้วย module เดียว ใช้ `terraform_data` ซึ่งเป็น resource ที่มากับ Terraform เอง จึงรันได้โดยไม่ต้องมีบัญชีคลาวด์
+สไลด์บอกความสามารถของ variable และ module เป็นข้อ ๆ แต่ไม่มีโค้ดตัวอย่าง ตัวอย่างนี้ใช้ `terraform_data` (resource ที่มากับ Terraform เอง ไม่ต้องมีบัญชีคลาวด์) เรียก module `./modules/server` สองครั้งเป็น `web` กับ `db` ให้ `local.prefix` เติม `sds-` หน้าทุกชื่อ และส่งรหัสผ่านผ่านตัวแปรสภาพแวดล้อม `TF_VAR_db_password=s3cret` แทนการเขียนลงไฟล์ (ตัวแปรที่ขึ้นต้นด้วย `TF_VAR_` กลายเป็นค่าของ variable ชื่อเดียวกัน)
+
+```text
+$ terraform apply
+...
+Outputs:
+
+db_password = <sensitive>
+hosts = [
+  "sds-pacific",
+  "sds-arctic",
+]
+
+$ terraform plan -var 'web_name='
+Error: Invalid value for variable
+web_name cannot be empty.
+```
+
+output ที่ใส่ `sensitive = true` ขึ้นแค่ `<sensitive>` และ validation หยุดชื่อว่างตั้งแต่ขั้น plan ยังไม่มีอะไรถูกสร้าง
+
+<Detail label="ไฟล์และผลทั้งหมด">
+ใช้ `terraform_data` ซึ่งเป็น resource ที่มากับ Terraform เอง จึงรันได้โดยไม่ต้องมีบัญชีคลาวด์
 
 **module** ที่ `modules/server/main.tf`
 
@@ -832,7 +853,7 @@ Initializing modules...
 - web in modules/server
 ```
 
-ส่งรหัสผ่านผ่านตัวแปรสภาพแวดล้อม `TF_VAR_db_password=s3cret` แทนการเขียนลงไฟล์ ตัวแปรสภาพแวดล้อมที่ขึ้นต้นด้วย `TF_VAR_` จะกลายเป็นค่าของ variable ชื่อเดียวกัน แล้ว apply
+apply
 
 ```text
   # module.db.terraform_data.this will be created
@@ -849,11 +870,7 @@ hosts = [
 ]
 ```
 
-- module เดียวถูกเรียกสองครั้ง ได้ resource สองชิ้นที่อยู่คนละที่ คือ `module.web.terraform_data.this` กับ `module.db.terraform_data.this`
-- `local.prefix` เติม `sds-` ให้ทุกชื่อ
-- output ที่ใส่ `sensitive = true` ขึ้นแค่ `<sensitive>`
-
-ลองส่งชื่อว่างด้วย `terraform plan -var 'web_name='`
+ส่งชื่อว่าง
 
 ```text
 Planning failed. Terraform encountered an error while generating this plan.
@@ -867,8 +884,7 @@ web_name cannot be empty.
 
 This was checked by the validation rule at main.tf:6,3-13.
 ```
-
-validation หยุดตั้งแต่ขั้น plan ยังไม่มีอะไรถูกสร้าง
+</Detail>
 </Example>
 
 <Pitfall title="sensitive ซ่อนแค่บนหน้าจอ">
@@ -899,9 +915,26 @@ $ grep -n s3cret terraform.tfstate
 <Term en="Provisioner" th="block ที่สั่งรันสคริปต์ตอนสร้างหรือลบ resource" /> เป็น block แยก ไม่ใช่ meta-argument และควรใช้ **เป็นทางสุดท้าย** เพราะ Terraform ไม่รู้ว่าสคริปต์จะทำอะไร จึงใส่ผลของมันลงแผนไม่ได้ และ `plan` ก็บอกไม่ได้ว่าจะเกิดอะไร
 
 <Example added title="depends_on กับ provider ในไฟล์จริง">
-สไลด์บอกหน้าที่ของ `depends_on` และ `provider` เป็นข้อ ๆ โดยไม่มีตัวอย่าง ส่วนแรกใช้ `terraform_data` ส่วนที่สองใช้ provider `docker` จาก Hello World
+สไลด์บอกหน้าที่ของ `depends_on` และ `provider` เป็นข้อ ๆ โดยไม่มีตัวอย่าง ในตัวอย่างแรก เซิร์ฟเวอร์ pacific (`terraform_data.web`) ต้องสร้างหลังกฎ firewall แต่ไม่ได้อ้างถึงค่าอะไรของ firewall Terraform จึงไม่รู้ว่าสองชิ้นเกี่ยวกัน และเริ่มสร้างพร้อมกัน ตัวอย่างของ `provider` อยู่ในกล่องข้างล่าง
 
-**`depends_on`** — เซิร์ฟเวอร์ pacific ต้องสร้างหลังกฎ firewall ที่เปิดพอร์ต 8000 แต่ block ของเซิร์ฟเวอร์ไม่ได้อ้างถึงค่าอะไรของ firewall เลย Terraform จึงไม่รู้ว่าสองชิ้นเกี่ยวกัน
+<Compare>
+<Wrong title="ไม่ใส่ depends_on">
+```text
+terraform_data.firewall: Creating...
+terraform_data.web: Creating...
+```
+</Wrong>
+<Right title="ใส่ depends_on">
+```text
+terraform_data.firewall: Creating...
+terraform_data.firewall: Creation complete after 0s [id=8b4b4fcd-b2ca-a265-eebf-e2e0fcf7ef7a]
+terraform_data.web: Creating...
+```
+</Right>
+</Compare>
+
+<Detail label="ไฟล์และผลทั้งหมด">
+**`depends_on`** — ใช้ `terraform_data` กฎ firewall เปิดพอร์ต 8000
 
 ```hcl
 resource "terraform_data" "firewall" {
@@ -914,8 +947,8 @@ resource "terraform_data" "web" {
 }
 ```
 
-<Compare>
-<Wrong title="ไม่ใส่ depends_on">
+ไม่ใส่ `depends_on`
+
 ```text
 terraform_data.firewall: Creating...
 terraform_data.web: Creating...
@@ -923,19 +956,14 @@ terraform_data.firewall: Creation complete after 0s [id=141b9e7f-16f3-7cc3-08c2-
 terraform_data.web: Creation complete after 0s [id=28d999f2-ed1f-7c17-82fa-eb553cbb79ff]
 ```
 
-สองชิ้นเริ่มสร้างพร้อมกัน เซิร์ฟเวอร์อาจขึ้นก่อนพอร์ตเปิด
-</Wrong>
-<Right title="ใส่ depends_on">
+ใส่ `depends_on`
+
 ```text
 terraform_data.firewall: Creating...
 terraform_data.firewall: Creation complete after 0s [id=8b4b4fcd-b2ca-a265-eebf-e2e0fcf7ef7a]
 terraform_data.web: Creating...
 terraform_data.web: Creation complete after 0s [id=ee36e01a-30df-3163-adbe-6c3b27436433]
 ```
-
-web เริ่มสร้างหลัง firewall เสร็จ
-</Right>
-</Compare>
 
 ลำดับนี้มาจากเส้นที่ `depends_on` เพิ่มเข้าไปในกราฟของ Terraform คำสั่ง `terraform graph` พิมพ์กราฟนั้นออกมา ถ้าไม่ใส่ `depends_on` บรรทัดที่มีลูกศร `->` จะหายไป
 
@@ -950,7 +978,7 @@ digraph G {
 }
 ```
 
-**`provider`** — ดึง image nginx ทั้งบนเครื่องตัวเองและบนเครื่อง arctic ผ่าน SSH ในไฟล์เดียว ต่อจาก block `terraform` ของ Hello World ให้ประกาศ provider `docker` สองชุด ชุดที่สองมีชื่อเรียกใน `alias` แล้ว resource เลือกชุดนั้นด้วย `provider = docker.arctic` ส่วน resource ที่ไม่ระบุใช้ชุดที่ไม่มี alias
+**`provider`** — ดึง image nginx ทั้งบนเครื่องตัวเองและบนเครื่อง arctic ผ่าน SSH ในไฟล์เดียว ต่อจาก block `terraform` ของ Hello World resource ที่ไม่ระบุ `provider` ใช้ชุดที่ไม่มี alias
 
 ```hcl
 provider "docker" {}
@@ -977,7 +1005,7 @@ $ terraform validate
 Success! The configuration is valid.
 ```
 
-ถ้าพิมพ์ชื่อผิดเป็น `provider = docker.atlantic` ซึ่งไม่ได้ประกาศไว้ Terraform ฟ้องทันที
+พิมพ์ชื่อผิดเป็น `provider = docker.atlantic`
 
 ```text
 $ terraform validate
@@ -985,12 +1013,27 @@ Error: Provider configuration not present
 ...
 provider["registry.terraform.io/kreuzwerker/docker"].atlantic is required,
 ```
+</Detail>
 </Example>
 
 `count` กับ `for_each` ดูเหมือนทำงานเดียวกัน แต่ต่างกันมากตอนรายการเปลี่ยน
 
 <Example added title="count กับ for_each ตอนเครื่องกลางรายการหายไป">
-สไลด์บอกแค่ว่า `count` ใช้จำนวนเต็มและ `for_each` ใช้ map หรือ set ไม่ได้บอกว่าควรเลือกตัวไหนเมื่อไหร่ ตัวอย่างนี้สร้างชื่อเครื่อง pacific, arctic และ atlantic ด้วยทั้งสองวิธีพร้อมกัน
+สไลด์บอกแค่ว่า `count` ใช้จำนวนเต็มและ `for_each` ใช้ map หรือ set ไม่ได้บอกว่าควรเลือกตัวไหนเมื่อไหร่ ตัวอย่างนี้สร้าง pacific, arctic และ atlantic ด้วยทั้งสองวิธี ซึ่ง `count` ตั้งชื่อตาม**ลำดับ** `[0]`, `[1]`, `[2]` ส่วน `for_each` ตั้งชื่อตาม**ค่า** เช่น `["arctic"]` แล้วเอา arctic ออกจากกลางรายการ
+
+```text
+$ terraform plan -var='instance_set=["pacific","atlantic"]'
+  # terraform_data.by_count[1] will be updated in-place
+      ~ input  = "sds-arctic" -> "sds-atlantic"
+  # terraform_data.by_count[2] will be destroyed
+  # terraform_data.by_each["arctic"] will be destroyed
+Plan: 0 to add, 1 to change, 2 to destroy.
+```
+
+`count` แก้ `[1]` จาก arctic เป็น atlantic และลบ `[2]` ทั้งที่ atlantic ไม่ได้เปลี่ยนอะไร ซึ่งบนเครื่องจริงการแก้ชื่อมักหมายถึงลบแล้วสร้างใหม่ ส่วน `for_each` ลบ `["arctic"]` ชิ้นเดียว
+
+<Detail label="ไฟล์และผลทั้งหมด">
+ไฟล์ใน repository ของวิชาที่สร้าง VM สามเครื่องบน Google Cloud ก็ใช้ `for_each = toset(var.instance_set)` กับชื่อสามชื่อนี้
 
 ```hcl
 variable "instance_set" {
@@ -1017,7 +1060,7 @@ output "names" {
 }
 ```
 
-apply แล้วดูใน state ว่าแต่ละชิ้นถูกเรียกด้วยชื่ออะไร
+apply แล้ว state เรียกแต่ละชิ้นด้วยชื่อนี้
 
 ```text
 $ terraform state list
@@ -1029,43 +1072,14 @@ terraform_data.by_each["atlantic"]
 terraform_data.by_each["pacific"]
 ```
 
-- `count` ตั้งชื่อตาม **ลำดับ** `[0]`, `[1]`, `[2]`
-- `for_each` ตั้งชื่อตาม **ค่า** เช่น `["arctic"]`
-
 รัน plan ซ้ำโดยไม่แก้อะไร
 
 ```text
 No changes. Your infrastructure matches the configuration.
 ```
 
-ตอนนี้เอา arctic ออกจากกลางรายการ
+plan ตอนเอา arctic ออก ทั้งหมด
 
-```text
-$ terraform plan -var='instance_set=["pacific","atlantic"]'
-
-  # terraform_data.by_count[1] will be updated in-place
-      ~ input  = "sds-arctic" -> "sds-atlantic"
-
-  # terraform_data.by_count[2] will be destroyed
-  # (because index [2] is out of range for count)
-
-  # terraform_data.by_each["arctic"] will be destroyed
-  # (because key ["arctic"] is not in for_each map)
-
-Plan: 0 to add, 1 to change, 2 to destroy.
-```
-
-| วิธี | ผลเมื่อ arctic หายไป |
-| --- | --- |
-| `count` | `[1]` ที่เคยเป็น arctic ถูก **แก้เป็น atlantic** และ `[2]` ที่เป็น atlantic อยู่แล้ว **ถูกลบ** — แตะสองชิ้นทั้งที่ atlantic ไม่ได้เปลี่ยนอะไร |
-| `for_each` | ลบ `["arctic"]` ชิ้นเดียว ที่เหลือไม่ถูกแตะ |
-
-ถ้าเป็นเครื่องจริง การแก้ชื่อเครื่องมักหมายถึงลบแล้วสร้างใหม่ atlantic จะถูกทำลายโดยไม่มีเหตุผล **ของที่มีตัวตนเฉพาะ เช่นเครื่องที่มีชื่อ ให้ใช้ `for_each`** ส่วน `count` เหมาะกับของที่ทุกชิ้นเหมือนกันและสลับกันได้
-
-ไฟล์ใน repository ของวิชาที่สร้าง VM สามเครื่องบน Google Cloud ก็ใช้ `for_each = toset(var.instance_set)` กับชื่อสามชื่อนี้
-</Example>
-
-<Detail label="ผลของ plan ตอนเอา arctic ออก ทั้งหมด">
 ```text
 $ terraform plan -var='instance_set=["pacific","atlantic"]'
 terraform_data.by_each["pacific"]: Refreshing state... [id=fe29d928-8a00-71a9-ae31-e9d67fec2868]
@@ -1117,6 +1131,9 @@ Note: You didn't use the -out option to save this plan, so Terraform can't
 guarantee to take exactly these actions if you run "terraform apply" now.
 ```
 </Detail>
+</Example>
+
+**ของที่มีตัวตนเฉพาะ เช่นเครื่องที่มีชื่อ ให้ใช้ `for_each`** ส่วน `count` เหมาะกับของที่ทุกชิ้นเหมือนกันและสลับกันได้
 
 <Quiz question="กลับไปที่รายการเดิมสามชื่อ แล้วเพิ่ม baltic ไว้หน้าสุด count กับ for_each จะแตะกี่ชิ้น">
 - **`count`** แก้ 3 ชิ้นและสร้างเพิ่ม 1 — `[0]` pacific เป็น baltic, `[1]` arctic เป็น pacific, `[2]` atlantic เป็น arctic แล้วสร้าง `[3]` เป็น atlantic
@@ -1387,10 +1404,10 @@ Galaxy มี role และ collection ที่ชุมชนทำไว้�
 
 #### ปักรุ่นของ collection
 
-ถ้าอยากให้รันซ้ำแล้วได้ผลเหมือนเดิม ให้ **ปักรุ่นของ collection ไว้ใน `requirements.yml`** — เหตุผลเดียวกับที่ Terraform มี `.terraform.lock.hcl`
+ถ้าอยากให้ทุกคนและทุกรอบที่รันได้ collection รุ่นเดียวกัน ให้ **ปักรุ่นของ collection ไว้ใน `requirements.yml`** — เหตุผลเดียวกับที่ Terraform มี `.terraform.lock.hcl`
 
-<Example added title="ปักรุ่นของ kubernetes.core">
-สไลด์บอกให้ปักรุ่นใน `requirements.yml` แต่ไม่ได้แสดงหน้าตาไฟล์ ตัวอย่างนี้ปัก `kubernetes.core` ไว้ที่รุ่น 5.0.0 แล้วติดตั้งด้วย ansible-core 2.21.4
+<Example added title="requirements.yml ที่ปักรุ่นไว้">
+สไลด์ไม่ได้แสดงหน้าตาไฟล์ ไฟล์ที่ปัก `kubernetes.core` ไว้ที่รุ่น 5.0.0 เป็นแบบนี้
 
 ```yaml
 ---
@@ -1399,20 +1416,7 @@ collections:
     version: 5.0.0
 ```
 
-```text
-$ ansible-galaxy collection install -r requirements.yml -p ./collections
-...
-kubernetes.core:5.0.0 was installed successfully
-
-$ ansible-galaxy collection list -p ./collections
-Collection      Version
---------------- -------
-kubernetes.core 5.0.0
-```
-
-- `-r` อ่านรายการ collection จากไฟล์ ส่วน `-p` บอกโฟลเดอร์ที่จะติดตั้ง
-- ถึง Galaxy จะออกรุ่นใหม่ ใครรันไฟล์นี้ก็ยังได้ 5.0.0 เหมือนกัน
-- ไฟล์นี้ commit ไว้คู่กับ playbook
+ติดตั้งตามไฟล์ด้วย `ansible-galaxy collection install -r requirements.yml` แล้ว commit ไฟล์นี้ไว้คู่กับ playbook ใครรันก็ได้ 5.0.0 เหมือนกันแม้ Galaxy จะออกรุ่นใหม่
 </Example>
 
 ### Playbook — เขียนสภาพที่ต้องการลงไฟล์
@@ -1504,9 +1508,30 @@ atlantic                   : ok=3    changed=0    unreachable=0    failed=0    s
 นี่คือเหตุผลที่รัน playbook ได้บ่อยเท่าที่ต้องการ ครั้งแรกทำให้เครื่องเข้าที่ ครั้งต่อ ๆ ไปคือการตรวจว่ายังเข้าที่อยู่ `No changes.` ของ `terraform plan` ในส่วนที่ 3 คือคุณสมบัติเดียวกัน
 
 <Example added title="module ที่ idempotent กับคำสั่ง shell ที่ไม่ใช่">
-สไลด์แสดงรอบสองที่ `changed=0` แต่ไม่ได้แสดงว่าถ้าเลือก module ผิดจะเกิดอะไร ตัวอย่างนี้เพิ่มบรรทัด `listen 8000;` ลงไฟล์ตั้งค่าสองรอบ รันบนเครื่องตัวเองด้วย inventory ที่ตั้ง `ansible_connection: local`
+สไลด์แสดงรอบสองที่ `changed=0` แต่ไม่ได้แสดงว่าถ้าเลือก module ผิดจะเกิดอะไร ตัวอย่างนี้สั่งเพิ่มบรรทัด `listen 8000;` ลงไฟล์สองรอบบนเครื่องตัวเอง ซึ่ง inventory ตั้งชื่อว่า `my_notebook` ผลของรอบสองเป็นแบบนี้
 
-**ต่อท้ายไฟล์ด้วย `shell`**
+```text
+$ ansible all -m ansible.builtin.shell -a "echo 'listen 8000;' >> site_shell.cfg"
+my_notebook | CHANGED | rc=0 >>
+$ cat site_shell.cfg
+listen 8000;
+listen 8000;
+
+$ ansible all -m ansible.builtin.lineinfile -a "path=site_line.cfg line='listen 8000;' create=true"
+my_notebook | SUCCESS => {
+    "changed": false,
+    ...
+}
+$ cat site_line.cfg
+listen 8000;
+```
+
+`shell` ทำตามคำสั่งทุกครั้งจึงต่อบรรทัดซ้ำ ส่วน <Term en="lineinfile" th="module ที่ทำให้ไฟล์มีบรรทัดที่กำหนด โดยไม่เพิ่มซ้ำ" /> บอกสภาพปลายทางว่า "ต้องมีบรรทัดนี้" รอบสองจึงไม่ทำอะไร
+
+<Detail label="ผลทั้งสองรอบ">
+inventory ตั้ง `ansible_connection: local` จึงรันบนเครื่องตัวเอง
+
+**`shell`**
 
 ```text
 $ ansible all -m ansible.builtin.shell -a "echo 'listen 8000;' >> site_shell.cfg"
@@ -1520,7 +1545,7 @@ listen 8000;
 listen 8000;
 ```
 
-**ใช้ `lineinfile`**
+**`lineinfile`**
 
 ```text
 $ ansible all -m ansible.builtin.lineinfile -a "path=site_line.cfg line='listen 8000;' create=true"
@@ -1540,11 +1565,10 @@ my_notebook | SUCCESS => {
 $ cat site_line.cfg
 listen 8000;
 ```
-
-`shell` ทำตามคำสั่งทุกครั้ง ไฟล์จึงมีบรรทัดซ้ำเพิ่มขึ้นทุกรอบที่รัน ส่วน `lineinfile` บอกสภาพปลายทางว่า "ต้องมีบรรทัดนี้" รอบสองเห็นว่ามีแล้วจึงไม่ทำอะไร
+</Detail>
+</Example>
 
 **ถ้าต้องใช้ `command` หรือ `shell` ให้คิดเสมอว่ารันซ้ำแล้วจะเกิดอะไร**
-</Example>
 
 ### Playbook ที่ใช้งานจริงมากขึ้น
 
@@ -1628,10 +1652,30 @@ nginx ฟังพอร์ต 80 และเสิร์ฟไฟล์จา�
 </Pitfall>
 
 <Example added title="รีสตาร์ตเฉพาะตอนไฟล์ตั้งค่าเปลี่ยน ด้วย handler">
-สไลด์ไม่ได้พูดถึงวิธีแก้ task 7 วิธีที่ Ansible เตรียมไว้คือ <Term en="Handler" th="task ที่รันเฉพาะเมื่อมี task อื่นแจ้งมาและ task นั้นเปลี่ยนของจริง" /> — task ที่รันเฉพาะเมื่อ task อื่น `notify` มา **และ task นั้น changed**
+สไลด์ไม่ได้พูดถึงวิธีแก้ task 7 ซึ่ง Ansible มี <Term en="Handler" th="task ที่รันเฉพาะเมื่อมี task อื่นแจ้งมาและ task นั้นเปลี่ยนของจริง" /> ไว้ทำ — task ที่รันเฉพาะเมื่อ task อื่น `notify` มา **และ task นั้น changed** ตัวอย่างนี้ให้ task `copy` ใส่ `notify: restart nginx` และรันบนเครื่องตัวเอง โดยใช้ `debug` แทนการรีสตาร์ต nginx จริง
 
-ตัวอย่างนี้รันบนเครื่องตัวเอง ใช้ `debug` แทนการรีสตาร์ต nginx จริง
+**รอบแรก**
 
+```text
+TASK [copy the nginx config file] **********************************************
+changed: [my_notebook]
+RUNNING HANDLER [restart nginx] ************************************************
+ok: [my_notebook] => {
+    "msg": "nginx restarts here"
+}
+```
+
+**รอบสอง**
+
+```text
+TASK [copy the nginx config file] **********************************************
+ok: [my_notebook]
+my_notebook                : ok=1    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+รอบแรกไฟล์ยังไม่มีอยู่ `copy` จึง changed และ handler ทำงาน รอบสองไฟล์ตรงแล้ว handler ไม่ถูกเรียกเลย
+
+<Detail label="playbook และผลทั้งหมด">
 ```yaml
 ---
 - hosts: all
@@ -1648,7 +1692,7 @@ nginx ฟังพอร์ต 80 และเสิร์ฟไฟล์จา�
         msg: "nginx restarts here"
 ```
 
-**รอบแรก** ไฟล์ยังไม่มี task จึง changed และ handler ทำงาน
+**รอบแรก**
 
 ```text
 TASK [copy the nginx config file] **********************************************
@@ -1663,7 +1707,7 @@ PLAY RECAP *********************************************************************
 my_notebook                : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
-**รอบสอง** ไฟล์เหมือนเดิม handler ไม่ถูกเรียกเลย
+**รอบสอง**
 
 ```text
 TASK [copy the nginx config file] **********************************************
@@ -1672,6 +1716,7 @@ ok: [my_notebook]
 PLAY RECAP *********************************************************************
 my_notebook                : ok=1    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
+</Detail>
 </Example>
 
 ### Variable, loop และ when
@@ -1727,8 +1772,22 @@ playbook มีเครื่องมือสำหรับเรื่อ�
   when: item.active == true
 ```
 
-<Example added title="variable ทั้งสามรูป loop when และ register ในการรันจริง">
-สไลด์มีโค้ดของ loop และ when แต่ไม่มีผลลัพธ์ และไม่มีโค้ดของ variable กับ register เลย playbook นี้รวมทั้งหมด รันบนเครื่องตัวเอง สร้างโฟลเดอร์ใต้ `./home` แทน `/home`
+<Example added title="ผลของ loop, when และ register ในการรันจริง">
+สไลด์มีโค้ดของ loop และ when แต่ไม่มีผลลัพธ์ และไม่มีโค้ดของ variable กับ register ผลนี้มาจาก playbook ในกล่อง "playbook และผลทั้งหมด" ด้านล่างที่รวมทั้งหมด รันบนเครื่องตัวเอง และสร้างโฟลเดอร์ใต้ `./home` แทน `/home`
+
+```text
+TASK [Create directories only for active users] ********************************
+changed: [my_notebook] => (item={'name': 'clara', 'active': True})
+skipping: [my_notebook] => (item={'name': 'david', 'active': False})
+changed: [my_notebook] => (item={'name': 'emma', 'active': True})
+
+my_notebook                : ok=5    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+`when` ข้าม david รอบเดียว และ recap ขึ้น `changed=1` ทั้งที่สร้างสองโฟลเดอร์ เพราะ recap นับเป็น **task** ไม่ใช่นับรอบของ loop
+
+<Detail label="playbook และผลทั้งหมด">
+`web_port` เป็นค่าเดี่ยว `packages` เป็น list และ `site` เป็น dictionary ส่วน `register` เก็บผลของ task `stat` ไว้ใน `clara_dir` แล้ว task ถัดไปอ่าน `clara_dir.stat.isdir` ได้ `true`
 
 ```yaml
 ---
@@ -1765,48 +1824,8 @@ playbook มีเครื่องมือสำหรับเรื่อ�
         var: clara_dir.stat.isdir
 ```
 
-`web_port` เป็นค่าเดี่ยว `packages` เป็น list และ `site` เป็น dictionary
+**รอบแรก**
 
-**รอบแรก** — บรรทัดที่ตัดสินผล
-
-```text
-ok: [my_notebook] => {
-    "msg": "static_site listens on 8000"
-}
-
-ok: [my_notebook] => (item=curl) => {
-    "msg": "install curl"
-}
-
-TASK [Create directories only for active users] ********************************
-changed: [my_notebook] => (item={'name': 'clara', 'active': True})
-skipping: [my_notebook] => (item={'name': 'david', 'active': False})
-changed: [my_notebook] => (item={'name': 'emma', 'active': True})
-
-ok: [my_notebook] => {
-    "clara_dir.stat.isdir": true
-}
-
-PLAY RECAP *********************************************************************
-my_notebook                : ok=5    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-```
-
-- `when` ข้าม david รอบเดียว clara กับ emma ได้โฟลเดอร์
-- `register` เก็บผลของ `stat` ไว้ใน `clara_dir` แล้ว task ถัดไปอ่าน `clara_dir.stat.isdir` ได้ `true`
-- สร้างโฟลเดอร์สองอันแต่ recap ขึ้น `changed=1` เพราะ recap นับเป็น **task** ไม่ใช่นับรอบของ loop
-
-**รอบสอง** โฟลเดอร์มีอยู่แล้ว
-
-```text
-ok: [my_notebook] => (item={'name': 'clara', 'active': True})
-skipping: [my_notebook] => (item={'name': 'david', 'active': False})
-ok: [my_notebook] => (item={'name': 'emma', 'active': True})
-
-my_notebook                : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-```
-</Example>
-
-<Detail label="ผลของ playbook รอบแรกทั้งหมด">
 ```text
 PLAY [all] *********************************************************************
 
@@ -1842,7 +1861,18 @@ ok: [my_notebook] => {
 PLAY RECAP *********************************************************************
 my_notebook                : ok=5    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
+
+**รอบสอง** โฟลเดอร์มีอยู่แล้ว clara กับ emma ขึ้น `ok` แทน `changed`
+
+```text
+ok: [my_notebook] => (item={'name': 'clara', 'active': True})
+skipping: [my_notebook] => (item={'name': 'david', 'active': False})
+ok: [my_notebook] => (item={'name': 'emma', 'active': True})
+
+my_notebook                : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
 </Detail>
+</Example>
 
 ---
 
@@ -1942,23 +1972,13 @@ output "nat_ip" {
 - **pipeline รันงานเป็นชุด** จนสภาพของระบบที่รันจริงตรงกับที่เขียนใน git
 
 <Example added title="เพิ่มเครื่อง baltic ด้วย commit เดียว">
-สไลด์แสดงภาพรวมของ GitOps โดยไม่มีตัวอย่าง ตัวอย่างนี้เก็บ `instance_set` กับ `for_each` จากส่วนที่ 3 ไว้ใน git แล้วรันขั้นแรกที่ pipeline จะรันด้วยมือ โดยใช้ `terraform_data` แทนเครื่องจริง
-
-การเพิ่มเครื่องไม่ได้เริ่มที่การสร้างเครื่อง แต่เริ่มที่ commit ที่แก้ไฟล์บรรทัดเดียว
+สไลด์แสดงภาพรวมของ GitOps โดยไม่มีตัวอย่าง ตัวอย่างนี้เก็บ `instance_set` กับ `for_each` จากส่วนที่ 3 ไว้ใน git แล้วรัน `plan` และ `apply` ด้วยมือแทน pipeline โดยใช้ `terraform_data` แทนเครื่องจริง
 
 ```text
-$ git log --oneline
-225d635 Add baltic web server
-046778b Create three web servers
-
 $ git diff HEAD~1 -- main.tf
 -  default = ["pacific", "arctic", "atlantic"]
 +  default = ["pacific", "arctic", "atlantic", "baltic"]
-```
 
-commit นี้สั่งให้ pipeline ทำงาน ขั้นแรกคือ plan แล้ว apply
-
-```text
 $ terraform plan
   # terraform_data.server["baltic"] will be created
 Plan: 1 to add, 0 to change, 0 to destroy.
@@ -1970,11 +1990,15 @@ $ terraform plan
 No changes. Your infrastructure matches the configuration.
 ```
 
-- plan แตะแค่ baltic เพราะ `for_each` ผูกของแต่ละชิ้นกับชื่อ
-- `-auto-approve` ข้ามการพิมพ์ `yes` เพราะใน pipeline ไม่มีคนนั่งพิมพ์ คนตรวจการเปลี่ยนตอน review commit แทน
-- plan รอบถัดไปได้ `No changes.` ระบบตรงกับ commit ล่าสุดแล้ว ขั้นต่อไปของ pipeline คือรัน playbook กับ baltic โดยใช้ inventory ที่อ่านจาก state
+`-auto-approve` ข้ามการพิมพ์ `yes` เพราะใน pipeline ไม่มีคนพิมพ์ คนตรวจการเปลี่ยนตอน review commit แทน
 
 <Detail label="ไฟล์และผลทั้งหมด">
+```text
+$ git log --oneline
+225d635 Add baltic web server
+046778b Create three web servers
+```
+
 `main.tf` หลัง commit ล่าสุด
 
 ```hcl
@@ -2039,6 +2063,8 @@ No changes. Your infrastructure matches the configuration.
 ```
 </Detail>
 </Example>
+
+plan รอบถัดไปได้ `No changes.` ระบบจึงตรงกับ commit ล่าสุด ขั้นต่อไปของ pipeline คือรัน playbook กับ baltic โดยใช้ inventory ที่อ่านจาก state ตามหัวข้อส่งต่อจาก Terraform ไป Ansible ข้างบน
 
 <KeyIdea>
 ใน GitOps ไม่มีใครแก้ระบบจริงตรง ๆ ทุกการเปลี่ยนเริ่มที่ commit ประวัติของ git จึงเป็นประวัติของระบบทั้งระบบ

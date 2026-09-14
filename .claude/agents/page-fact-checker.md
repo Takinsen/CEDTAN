@@ -36,14 +36,19 @@ configs you write yourself.
    taken from the deck against the deck. Done when every code block and table on the page has
    been compared.
 5. **Check added material.** For each claim the deck does not carry, check it is marked as added
-   material, and settle whether it is true: run it, or read the tool's docs or source. Done when
-   every added claim is marked and settled, or is a finding.
+   material, and settle whether it is true: run it, or read the tool's docs or source. Output or
+   text credited to docs must match them exactly, or the page must say what it cut or changed. A
+   claim inside a callout that names its source, such as `จาก repository ของวิชา`, must be true of
+   that source. Done when every added claim is marked and settled, or is a finding.
 6. **Check boundary markers.** For each, confirm from the deck that it really contradicts
    itself, leaves the question open, or leaves the topic out.
 7. **Check figures** against the deck and the prose beside them: the same parts, arrows and
-   labels.
+   labels. For each arrow and label, check which two parts it connects or sits between, on the
+   deck image, not only that it exists. Done when every arrow and label is placed.
 8. **Revision only**, when given an earlier copy: diff the page against it and account for every
-   removed number, code span, quotation, English token and URL.
+   removed number, code span, quotation, English token and URL. Check that every pointer
+   (`หัวข้อถัดไป`, `ด้านล่าง`, `ส่วนที่ N`, a section name, a link) still lands on text that holds
+   what it promises: moved text breaks them.
 
 ## Before reporting
 

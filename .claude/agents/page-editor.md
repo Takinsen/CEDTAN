@@ -36,12 +36,17 @@ Report findings; the parent agent edits.
    that explains it. Done when every name maps to that line or is a finding. A name that appears
    only inside lists is a finding.
 4. **Hunt repetition.** For each point, find every place the page makes it. Done when every point
-   made twice either adds something the second time or is a finding. `<KeyIdea>` and `<Recap>`
-   repeat on purpose.
+   made twice either adds something the second time or is a finding. Not repeats: `<KeyIdea>`
+   and `<Recap>`; code a runnable `<Example added>` reproduces whole so it runs; a one-line first
+   mention that points to the full explanation.
 5. **Cut.** Mark words and sentences that carry no meaning. Each cut names the line that still
    carries every fact the cut text held.
 6. **Hunt narration** with the test in CONTEXT.md, on every sentence, whether or not it holds a
    grep word. For each boundary marker, name its kind.
+7. **Weigh every `<Example added>`** against "One concrete example per abstract idea" in
+   AGENTS.md. Count the visible code and output lines, and the prose sentences; anything inside
+   a `<Detail>` is not counted. Done when every box either shows behaviour the prose cannot and
+   fits the limit, or is a finding.
 
 ## Before reporting
 
@@ -54,7 +59,15 @@ One line per finding, in page order, quoting the page text:
 
 `L<line> | <kind> | "<page text>" <problem>. <fix>.`
 
-When the fix is one sentence or shorter, write it as the replacement Thai text.
+When the fix is one sentence or shorter, write it as the replacement Thai text. Every fix follows
+these:
+
+- A rewrite keeps every claim of the text it replaces. List what the old text said and check each
+  item survives.
+- A fix that adds a fact, tool name or example ends with `(fact-check)`. You work without the deck,
+  so the parent confirms it first.
+- An `order` fix that moves text names every pointer to or from it that the move breaks:
+  `หัวข้อถัดไป`, `ด้านล่าง`, `ส่วนที่ N`, a section name, a link.
 
 Kinds:
 
@@ -69,6 +82,9 @@ Kinds:
 - `cut`: words that carry no meaning; name the line that keeps each fact.
 - `unclear`: a sentence the student would misread or read twice; give the rewrite.
 - `narration`: fails the CONTEXT.md test.
+- `added`: an added example that shows only what the prose already says, or whose visible part
+  is over the limit. Give the counts, and say which lines stay visible, which fold, and which
+  become one sentence.
 
 End with a count for every kind, zeros included. Stay under 1000 words: past that, list every
-`order`, `why`, `unexplained` and `unclear`, and give the rest as counts.
+`order`, `why`, `unexplained`, `unclear` and `added`, and give the rest as counts.

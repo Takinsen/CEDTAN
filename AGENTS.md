@@ -77,9 +77,18 @@ Every one of these is a blocker, not a preference.
   makes the reader memorise words that mean nothing yet. Mention a term only once the page
   has introduced it.
 - **One concrete example per abstract idea.** Real input and real output, computed with a
-  script or a tool rather than by hand. If the slides give no example, write one in
-  `<Example added>`. Its badge already says `เสริม — ไม่ได้อยู่ในสไลด์`; inside the box, say
-  what the slides left out.
+  script or a tool rather than by hand. Slide material comes first: it is what the exam draws
+  on, and every added line costs reading stamina. When the slides give no example, add one
+  only if it shows behaviour the prose cannot, such as a surprising result, an error, or two
+  ways that differ.
+  - **Passes but runs long:** give its result in one prose sentence with the real numbers, and
+    fold the full run into a `<Detail>`.
+  - **Shows only syntax the prose already explains:** leave it out.
+  - **Slides give code but no output:** put the deciding output lines under that code. Do not
+    repeat the code in a new box.
+  - **Added in `<Example added>`:** its badge already says `เสริม — ไม่ได้อยู่ในสไลด์`. Inside
+    the box, say what the slides left out. The visible part holds at most 15 lines of code and
+    output together, and at most 3 sentences of prose. Everything else goes in a `<Detail>`.
 - **Keep one running example.** Build later examples from material the reader has already seen
   on the page — the same message, the same table. When the real thing works on a different
   representation (bytes instead of letters), make the switch its own step, and show both
