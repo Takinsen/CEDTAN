@@ -54,7 +54,7 @@ DevOps คือการทำทางจากโค้ดไปถึงเ�
 <Callout type="info" title="ตัวอย่างที่ใช้ตลอดหน้า">
 เว็บ **nginx** บนเซิร์ฟเวอร์สามเครื่องชื่อ **pacific**, **arctic** และ **atlantic**
 
-- Terraform เริ่มจากรัน nginx หนึ่งตัวใน Docker บนเครื่องตัวเอง แล้วสร้างของตามชื่อเครื่องทั้งสาม
+- Terraform เริ่มจากรัน nginx หนึ่งตัวใน Docker บนเครื่องตัวเอง แล้วสร้าง resource ชื่อ pacific, arctic และ atlantic หลายชิ้นจาก block เดียว
 - Ansible ลง nginx และวางเว็บลงบน pacific กับ atlantic ซึ่งอยู่ในกลุ่ม `webservers`
 </Callout>
 
@@ -89,7 +89,7 @@ DevOps คือการทำทางจากโค้ดไปถึงเ�
 - **ให้ทุกคนในวงจรมีส่วนร่วมตลอด** ไม่ใช่ส่งงานต่อกันเป็นทอด ๆ
 - **ทำทุกขั้นที่จำเป็นให้อัตโนมัติ มากที่สุดและเร็วที่สุดเท่าที่ทำได้**
 
-ข้อสุดท้ายคือจุดที่วิชานี้เข้ามา ถ้าเครื่องยังต้องตั้งด้วยมือ ขั้น deploy ก็อัตโนมัติไม่ได้ **ระบบที่สั่งโครงสร้างพื้นฐานด้วยซอฟต์แวร์ได้ (ส่วนที่ 2) จึงเป็นตัวที่ทำให้การ integrate, deliver และ deploy ไหลต่อกันได้**
+ข้อสุดท้ายคือจุดที่วิชานี้เข้ามา ถ้าเครื่องยังต้องตั้งด้วยมือ ขั้น deploy ก็อัตโนมัติไม่ได้ **ระบบที่สั่งโครงสร้างพื้นฐานด้วยซอฟต์แวร์ได้ (ส่วนที่ 2) จึงเป็นตัวที่ทำให้ขั้นตั้งแต่รวมโค้ด ส่งมอบ จนขึ้นเครื่องจริงไหลต่อกันได้**
 
 หลักการสี่ข้อของ DevOps และประโยชน์ของมันอยู่ใน [คาบ 1](/2110506-sds/lecture-1)
 
@@ -124,7 +124,7 @@ DevOps คือการทำทางจากโค้ดไปถึงเ�
   <DeliverySpans />
 </Figure>
 
-เจ็ดขั้นในรูปแบ่งตาม environment — Code กับ Build อยู่ใน development, Integrate Test และ Release อยู่ใน testing, Deploy กับ Operate อยู่ใน production
+รูปนี้ใช้เจ็ดขั้นจากแปดขั้นในตารางข้างบน ตัด Plan กับ Monitor ออก และเพิ่ม **Integrate** ขั้นรวมโค้ดของทุกคนเข้าด้วยกันก่อนทดสอบ แล้วแบ่งตาม environment — Code กับ Build อยู่ใน development, Integrate, Test และ Release อยู่ใน test, Deploy กับ Operate อยู่ใน production
 
 ชื่อที่ได้ยินบ่อยห้าชื่อคือความยาวของเส้นอัตโนมัติ
 
@@ -165,7 +165,7 @@ Continuous Delivery กับ Continuous Deployment ย่อว่า CD ทั
 ### ทีมแบ่งงานกันสามแบบ
 
 <Why>
-เครื่องมือครบแล้วยังไม่พอ ต้องตกลงด้วยว่าใครเป็นคน deploy และใครตื่นมาแก้ตอนระบบล่ม คำตอบที่ใช้กันจริงมีสามแบบ และทั้งสามแบบทำได้ก็เพราะโครงสร้างพื้นฐานกลายเป็นโค้ดแล้ว
+เครื่องมือครบแล้วยังไม่พอ ต้องตกลงด้วยว่าใครเป็นคน deploy และใครตื่นมาแก้ตอนระบบล่ม คำตอบที่ใช้กันจริงมีสามแบบ และทั้งสามแบบพึ่งการที่โครงสร้างพื้นฐานกลายเป็นโค้ด (ส่วนที่ 2) ซึ่งทีมหนึ่งเขียนไว้แล้วอีกทีมหยิบไปรันซ้ำได้
 </Why>
 
 <Figure number={4} caption="ต่างกันที่ว่างาน deploy และดูแลระบบอยู่กับใคร">
@@ -178,7 +178,7 @@ Continuous Delivery กับ Continuous Deployment ย่อว่า CD ทั
 | <Term en="SRE" th="Site Reliability Engineering วิศวกรรมความน่าเชื่อถือของระบบ" /> | ทีม product ส่งมอบตาม **standards** ให้ทีม SRE ซึ่งทำ deploy, monitor และ operate ด้วย SRE tooling | วัดความน่าเชื่อถือด้วยเป้าบริการที่เป็นตัวเลข |
 | <Term en="Platform Engineering" th="ทีมที่สร้างเครื่องมือกลางให้ทีมอื่นหยิบใช้เอง" /> (PE) | ทีม product ใช้ **platform tooling** ที่ครอบ build, test, release, deploy, monitor และ operate บน unified infrastructure | ทีม product ทำเองได้ผ่านทางที่ platform เตรียมไว้ (self-service) |
 
-ในองค์กรที่ทำ platform engineering งานแบ่งกันแบบนี้
+องค์กรที่ทำ platform engineering คู่กับทีม SRE (คอลัมน์ขวาของรูป 4) แบ่งงานกันแบบนี้
 
 - ทีม product แต่ละทีมเหลือแค่ PM (plan), Dev (code) และ Test บางทีมไม่มีคนทดสอบแยก ให้ Dev ทดสอบเอง
 - งาน deploy, monitor และ response ตอนเกิดเหตุ ไปอยู่กับทีม SRE
@@ -242,16 +242,16 @@ SRE ไม่ตั้งเป้าว่า "ระบบต้องไม�
   <IacWorkflow />
 </Figure>
 
-IaC ครอบห้าด้าน คือ infrastructure automation, configuration management, version control, automated testing และ deployment automation เส้นทางของโค้ดเป็นแบบนี้
+IaC ครอบงานห้าด้าน แต่ละด้านอยู่ในเส้นทางของโค้ดแบบนี้
 
-- นักพัฒนา **เขียน** infrastructure code
-- โค้ดถูกเก็บใน **version control** และผ่าน **testing**
-- **automation API หรือ server** เอาโค้ดไป deploy และจัดการเครื่อง ทั้งบนคลาวด์และบนเครื่องขององค์กรเอง (<Term en="on-premises" th="เครื่องที่องค์กรตั้งไว้เอง ไม่ได้เช่าคลาวด์" />)
+- นักพัฒนา **เขียน** infrastructure code ทั้งส่วนที่สร้างเครื่อง (**infrastructure automation**) และส่วนที่ตั้งค่าบนเครื่อง (**configuration management**)
+- โค้ดถูกเก็บใน **version control** และผ่าน **automated testing**
+- **automation API หรือ server** เช่น Terraform หรือ Ansible ที่รันใน pipeline เอาโค้ดไป deploy และจัดการเครื่อง (**deployment automation**) ทั้งบนคลาวด์และบนเครื่องขององค์กรเอง (<Term en="on-premises" th="เครื่องที่องค์กรตั้งไว้เอง ไม่ได้เช่าคลาวด์" />)
 
-สถานะที่ต้องการไปถึงเครื่องปลายทางได้สองทาง
+โค้ดไปถึง automation server ได้สองทาง
 
-- **Push** — ฝั่งกลางส่งคำสั่งไปที่เครื่องปลายทางตอนที่เราสั่ง Ansible ในส่วนที่ 4 ทำงานแบบนี้
-- **Pull** — ฝั่งปลายทางคอยดึงสถานะที่ต้องการมาเทียบกับตัวเองเป็นระยะ คล้าย control loop ของ Kubernetes
+- **Push** — ฝั่งที่ถือโค้ดส่งโค้ดไปให้ server ตอนที่เราสั่ง
+- **Pull** — server คอยดึงโค้ดรุ่นล่าสุดมาเทียบกับที่ใช้อยู่เป็นระยะ คล้าย control loop ของ Kubernetes
 
 ### เครื่องมือ IaC ห้ากลุ่ม
 
@@ -316,7 +316,18 @@ Terraform แก้สองปัญหานั้นด้วยการแ�
 provider หนึ่งตัวมีของสองแบบให้ใช้
 
 - <Term en="Resource" th="ของที่ Terraform สร้างและดูแลเอง" /> — ของที่ Terraform สร้าง แก้ และลบ เช่น VM, virtual network หรือ container
-- <Term en="Data source" th="ข้อมูลที่ Terraform อ่านมาใช้ โดยไม่ได้ดูแลของชิ้นนั้น" /> — ข้อมูลที่อ่านมาใช้อย่างเดียว มีตัวอย่างเต็มในหัวข้อ data source
+- <Term en="Data source" th="ข้อมูลที่ Terraform อ่านมาใช้ โดยไม่ได้ดูแลของชิ้นนั้น" /> — ข้อมูลที่อ่านมาใช้อย่างเดียว มีตัวอย่างเต็มในหัวข้อ variable, local, output
+
+ชื่อ resource และ data source ที่ใช้ได้ รวมถึง argument ของแต่ละตัว ถูกกำหนดไว้ใน **เอกสารของ provider** ตัวอย่าง provider ที่ใช้กันบ่อย
+
+| Provider | ทำอะไร | Resources | Data sources |
+| --- | --- | --- | --- |
+| `kreuzwerker/docker` | ใช้ Docker API จัดการ container และ image | `docker_container`, `docker_image`, `docker_network`, `docker_compose` | `docker_containers`, `docker_image`, `docker_logs`, `docker_network` |
+| `hashicorp/aws` | ดูแลวงจรชีวิตของทรัพยากร AWS เช่น EC2 (VM) และ S3 (ที่เก็บไฟล์) | `aws_instance`, `aws_ami`, `aws_s3_bucket`, `aws_network_acl` | `aws_instance`, `aws_ami`, `aws_s3_buckets`, `aws_s3_objects` |
+| `hashicorp/kubernetes` | จัดการทรัพยากรที่ Kubernetes รองรับ | `kubernetes_deployment`, `kubernetes_service` | `kubernetes_pod`, `kubernetes_nodes`, `kubernetes_service` |
+| `integrations/github` | จัดการของบน GitHub ทั้งแบบล็อกอินและไม่ล็อกอิน | `github_repository`, `github_branch`, `github_issue` | `github_repository`, `github_branch` |
+
+ชื่อเดียวกันเป็นได้ทั้งสองแบบ เช่น `aws_ami` เป็น resource เมื่อเราสร้าง image เอง และเป็น data source เมื่ออ่าน image ที่คนอื่นสร้างไว้
 
 ### เขียนไฟล์ Terraform
 
@@ -658,17 +669,6 @@ Terraform will perform the following actions:
 
 data source อ่านข้อมูลจาก API ของ provider **โดยไม่ได้ดูแลของชิ้นนั้น** Terraform ไม่สร้าง ไม่แก้ และไม่ลบมัน แค่ถามค่าปัจจุบันมาใช้ ตัวอย่างเต็มอยู่ในหัวข้อถัดไป
 
-ชื่อ resource และ data source ที่ใช้ได้ รวมถึง argument ของแต่ละตัว ถูกกำหนดไว้ใน **เอกสารของ provider** ตัวอย่าง provider ที่ใช้กันบ่อย
-
-| Provider | ทำอะไร | Resources | Data sources |
-| --- | --- | --- | --- |
-| `kreuzwerker/docker` | ใช้ Docker API จัดการ container และ image | `docker_container`, `docker_image`, `docker_network`, `docker_compose` | `docker_containers`, `docker_image`, `docker_logs`, `docker_network` |
-| `hashicorp/aws` | ดูแลวงจรชีวิตของทรัพยากร AWS เช่น EC2 และ S3 | `aws_instance`, `aws_ami`, `aws_s3_bucket`, `aws_network_acl` | `aws_instance`, `aws_ami`, `aws_s3_buckets`, `aws_s3_objects` |
-| `hashicorp/kubernetes` | จัดการทรัพยากรที่ Kubernetes รองรับ | `kubernetes_deployment`, `kubernetes_service` | `kubernetes_pod`, `kubernetes_nodes`, `kubernetes_service` |
-| `integrations/github` | จัดการของบน GitHub ทั้งแบบล็อกอินและไม่ล็อกอิน | `github_repository`, `github_branch`, `github_issue` | `github_repository`, `github_branch` |
-
-ชื่อเดียวกันเป็นได้ทั้งสองแบบ เช่น `aws_ami` เป็น resource เมื่อเราสร้าง image เอง และเป็น data source เมื่ออ่าน image ที่คนอื่นสร้างไว้
-
 ### ทำให้ไฟล์ใช้ซ้ำได้: variable, local, output
 
 <Why>
@@ -756,7 +756,7 @@ output "instance_public_ip" {
 <Term en="Module" th="โฟลเดอร์ของไฟล์ Terraform ที่เรียกใช้ซ้ำได้" /> คือโฟลเดอร์ของไฟล์ Terraform ที่มี **interface สำหรับใช้ซ้ำ** — variable คือช่องรับค่าเข้า output คือค่าที่ส่งออก
 
 - โฟลเดอร์ที่เรารันคำสั่งอยู่คือ <Term en="Root module" th="module ของโฟลเดอร์ที่รันคำสั่ง" />
-- root module เรียก <Term en="Child module" th="module ที่ถูกเรียกจาก module อื่น" /> ได้ ทั้งจากโฟลเดอร์ในเครื่องและจาก registry
+- root module เรียก <Term en="Child module" th="module ที่ถูกเรียกจาก module อื่น" /> ได้ ทั้งจากโฟลเดอร์ในเครื่องและจาก registry (คลังกลางที่แชร์ module)
 
 <Analogy>
 module คือฟังก์ชัน variable คือพารามิเตอร์ output คือค่าที่ return และ block `module` หนึ่งอันคือการเรียกฟังก์ชันหนึ่งครั้ง
@@ -832,7 +832,7 @@ Initializing modules...
 - web in modules/server
 ```
 
-ส่งรหัสผ่านผ่านตัวแปรสภาพแวดล้อม `TF_VAR_db_password=s3cret` แทนการเขียนลงไฟล์ แล้ว apply
+ส่งรหัสผ่านผ่านตัวแปรสภาพแวดล้อม `TF_VAR_db_password=s3cret` แทนการเขียนลงไฟล์ ตัวแปรสภาพแวดล้อมที่ขึ้นต้นด้วย `TF_VAR_` จะกลายเป็นค่าของ variable ชื่อเดียวกัน แล้ว apply
 
 ```text
   # module.db.terraform_data.this will be created
@@ -896,7 +896,7 @@ $ grep -n s3cret terraform.tfstate
 - `provider` — เลือกการตั้งค่า provider ที่ไม่ใช่ตัวหลัก เช่น region ที่สอง
 - `lifecycle` — ปรับพฤติกรรมตอนสร้าง แทนที่ และลบ `postcondition` ในตัวอย่าง AWS ก็อยู่ใน block นี้
 
-<Term en="Provisioner" th="block ที่สั่งรันสคริปต์ตอนสร้างหรือลบ resource" /> เป็น block แยก ไม่ใช่ meta-argument และควรใช้ **เป็นทางสุดท้าย** เพราะมันรันสคริปต์ที่ Terraform ใส่ลงแผนไม่ได้ `plan` จึงบอกไม่ได้ว่าจะเกิดอะไร
+<Term en="Provisioner" th="block ที่สั่งรันสคริปต์ตอนสร้างหรือลบ resource" /> เป็น block แยก ไม่ใช่ meta-argument และควรใช้ **เป็นทางสุดท้าย** เพราะ Terraform ไม่รู้ว่าสคริปต์จะทำอะไร จึงใส่ผลของมันลงแผนไม่ได้ และ `plan` ก็บอกไม่ได้ว่าจะเกิดอะไร
 
 <Example added title="depends_on กับ provider ในไฟล์จริง">
 สไลด์บอกหน้าที่ของ `depends_on` และ `provider` เป็นข้อ ๆ โดยไม่มีตัวอย่าง ส่วนแรกใช้ `terraform_data` ส่วนที่สองใช้ provider `docker` จาก Hello World
@@ -1171,7 +1171,7 @@ Ansible ใช้ทำ deployment และ provisioning ได้ด้วย 
 | **ไม่ต้องติดตั้งอะไรบนเครื่องปลายทาง** | ขอแค่มี Python และเปิด SSH |
 | **จัดการได้หลายร้อยเครื่อง** | ฮาร์ดแวร์หลากหลาย ตั้งแต่เซิร์ฟเวอร์ถึง Raspberry Pi ซึ่งเป็นคอมพิวเตอร์บอร์ดเล็กขนาดบัตรเครดิต |
 | **แชร์ง่าย** | module, plugin, library, <Term en="Role" th="ชุดงานตั้งค่าที่แพ็กไว้ใช้ซ้ำ" /> และ playbook แชร์กันผ่านคลังกลางชื่อ <Term en="Ansible Galaxy" th="คลังกลางที่คนแชร์ส่วนเสริมของ Ansible" /> |
-| **หน้าตาเหมือนกันทุก OS** | งานแบบเดียวกันเขียนแบบเดียวกันข้าม OS |
+| **หน้าตาเหมือนกันทุก OS** | task เขียนเป็น YAML รูปแบบเดียวกันไม่ว่าเครื่องปลายทางเป็น OS ไหน แม้ module บางตัว เช่นตัวลง package จะแยกตาม OS |
 | **Push-based และ master-less** | control node ส่งงานไปหาเครื่องตอนที่เราสั่ง ไม่มีเซิร์ฟเวอร์กลางที่ต้องรันค้างไว้ |
 
 ข้อสุดท้ายต่างจาก Chef และ Puppet ที่อยู่กลุ่มเดียวกัน ซึ่งในการติดตั้งแบบดั้งเดิมต้องลง agent บนทุกเครื่องให้คอยดึงงานจากเซิร์ฟเวอร์กลาง
@@ -1232,7 +1232,7 @@ webservers:
 ### สั่งทีละคำสั่ง: ad-hoc command
 
 <Why>
-ก่อนเขียนไฟล์ยาว ๆ มักอยากถามคำถามสั้น ๆ กับทุกเครื่องก่อน เช่น "ทุกเครื่องต่อได้ไหม" หรือ "รีบูตสองเครื่องนี้ที" <Term en="Ad-hoc command" th="คำสั่ง Ansible บรรทัดเดียวที่รันครั้งเดียวจบ" /> คือคำสั่งบรรทัดเดียวสำหรับงานแบบนี้
+ก่อนเขียนไฟล์ยาว ๆ มักอยากถามคำถามสั้น ๆ กับทุกเครื่องก่อน เช่น "ทุกเครื่องต่อได้ไหม" หรือ "รีบูตสองเครื่องนี้ที" <Term en="Ad-hoc command" th="คำสั่ง Ansible บรรทัดเดียวที่รันครั้งเดียวจบ" /> คือคำสั่งบรรทัดเดียวสำหรับงานแบบนี้ คนละเรื่องกับ ad hoc scripts ในส่วนที่ 2
 </Why>
 
 ```text
@@ -1283,6 +1283,8 @@ hello
 
 #### งานที่ต้องใช้สิทธิ์ root
 
+<Term en="Become" th="การยกสิทธิ์ขึ้นเป็นผู้ใช้อื่น ปกติคือ root" /> คือชื่อที่ Ansible ใช้เรียกการยกสิทธิ์ ปกติทำผ่าน `sudo`
+
 <Compare>
 <Wrong title="ไม่ยกสิทธิ์">
 ```text
@@ -1308,13 +1310,13 @@ arctic | CHANGED | rc=0 >>
 </Right>
 </Compare>
 
-<Term en="Become" th="การยกสิทธิ์ขึ้นเป็นผู้ใช้อื่น ปกติคือ root" /> คือชื่อที่ Ansible ใช้เรียกการยกสิทธิ์ ปกติทำผ่าน `sudo` ส่วน `--limit arctic,atlantic` เลือกหลายเครื่องโดยคั่นด้วยจุลภาค
+`--limit arctic,atlantic` เลือกหลายเครื่องโดยคั่นด้วยจุลภาค
 
 ### Module และ collection
 
 #### module ที่มากับทุกการติดตั้ง
 
-module ที่มากับ Ansible ทุกชุดอยู่ในกลุ่ม `ansible.builtin` ครอบงานพื้นฐานห้าด้าน
+module ที่มากับ Ansible ทุกชุดอยู่ในกลุ่มชื่อ `ansible.builtin` (ชื่อนี้มีที่มาในหัวข้อชื่อเต็มด้านล่าง) ครอบงานพื้นฐานห้าด้าน
 
 | ด้าน | module |
 | --- | --- |
@@ -1381,7 +1383,7 @@ Galaxy มี role และ collection ที่ชุมชนทำไว้�
 | **control node** | `ansible-galaxy collection install kubernetes.core` | ให้ Ansible รู้จัก module ใน collection นี้ |
 | **managed node** | `pip install kubernetes` | module รันบนเครื่องปลายทาง และใช้ Python package นี้คุยกับ Kubernetes API |
 
-`kubernetes.core` เดิมชื่อ `community.kubernetes` ใช้จัดการแอปบน Kubernetes และ OpenShift รวมถึงสร้างและดูแลตัวคลัสเตอร์ ต้องใช้ Ansible ตั้งแต่ 2.15.0 ขึ้นไป module หลักของมันคือ `kubernetes.core.k8s` ที่เจอในหัวข้อ FQCN
+`kubernetes.core` เดิมชื่อ `community.kubernetes` ใช้จัดการแอปบน Kubernetes และ OpenShift (Kubernetes ฉบับของ Red Hat) รวมถึงสร้างและดูแลตัวคลัสเตอร์ ต้องใช้ `ansible-core` ตั้งแต่ 2.15.0 ขึ้นไป — เลขรุ่นแบบ 2.x ทั้งสองจุดในหัวข้อนี้เป็นของ `ansible-core` ส่วนแพ็กเกจ `ansible` นับรุ่นเป็น 8, 9, 10 module หลักของมันคือ `kubernetes.core.k8s` ที่เจอในหัวข้อ FQCN
 
 #### ปักรุ่นของ collection
 
@@ -1410,7 +1412,7 @@ kubernetes.core 5.0.0
 
 - `-r` อ่านรายการ collection จากไฟล์ ส่วน `-p` บอกโฟลเดอร์ที่จะติดตั้ง
 - ถึง Galaxy จะออกรุ่นใหม่ ใครรันไฟล์นี้ก็ยังได้ 5.0.0 เหมือนกัน
-- ไฟล์นี้ commit ไว้คู่กับ playbook แบบเดียวกับ `.terraform.lock.hcl`
+- ไฟล์นี้ commit ไว้คู่กับ playbook
 </Example>
 
 ### Playbook — เขียนสภาพที่ต้องการลงไฟล์
@@ -1419,7 +1421,7 @@ kubernetes.core 5.0.0
 ad-hoc command ใช้ครั้งเดียวแล้วหาย ถ้าการตั้งเว็บเซิร์ฟเวอร์ต้องทำห้าขั้น คนต่อไปต้องจำให้ได้ว่าพิมพ์อะไรไปบ้าง ซึ่งคือปัญหาเดิมของการทำมือ
 </Why>
 
-playbook คือระบบ configuration management และ deployment หลายเครื่องที่ **ทำซ้ำได้ ใช้ซ้ำได้ และเรียบง่าย** ขั้นตอนการตั้งค่าและการสั่งงานถูกประกาศเป็น YAML
+playbook เขียนการตั้งค่าและการ deploy หลายเครื่องไว้เป็นไฟล์ YAML ที่ **ทำซ้ำได้ ใช้ซ้ำได้ และเรียบง่าย** ในไฟล์ประกาศทั้งการตั้งค่าและลำดับขั้นของการสั่งงานข้ามเครื่อง
 
 `nginx_install.yaml`
 
@@ -1598,7 +1600,7 @@ listen 8000;
 | 7 | restart nginx | `service` กับ `state: restarted` | รีสตาร์ต nginx ให้อ่านการตั้งค่าใหม่ |
 
 - ไฟล์นี้ใส่ `become: yes` **ทีละ task** แทนการใส่ทั้ง play task 6 ไม่มี `become` เพราะคัดลอกลงบ้านของผู้ใช้ที่ SSH เข้าไปเอง
-- task 4 และ 5 ใช้โครงสร้างของ nginx บน Debian และ Ubuntu ซึ่ง nginx อ่านไฟล์ใน `sites-enabled/` และ `sites-enabled/default` เป็นลิงก์ไปที่ `sites-available/default` อยู่แล้ว เมื่อ `sites-available/default` กลายเป็นลิงก์ไปที่ `static_site.cfg` nginx จึงอ่านการตั้งค่าใหม่ผ่านลิงก์สองชั้น
+- task 4 และ 5 ใช้โครงสร้างของ nginx บน Debian และ Ubuntu nginx อ่านไฟล์ใน `sites-enabled/` และ `sites-enabled/default` เป็นลิงก์อยู่แล้ว หลัง task 5 nginx จึงอ่านการตั้งค่าใหม่ผ่านลิงก์สองชั้น `sites-enabled/default` → `sites-available/default` → `static_site.cfg`
 - `src` ที่ลงท้ายด้วย `/` แปลว่าคัดลอกของข้างในโฟลเดอร์ ไม่ใช่ตัวโฟลเดอร์
 
 <Detail label="ไฟล์ static_site.cfg ที่ task 3 คัดลอก">
@@ -1886,13 +1888,22 @@ backend_config:
   key: terraform/state
 ```
 
-ไฟล์นี้ชี้ไปที่ state ที่เก็บใน S3 bucket พอสั่ง `ansible-inventory -i aws.terraform_state.yml --graph` ก็ได้รายชื่อ host จากเครื่องใน state ทุกครั้งที่ Terraform สร้างหรือลบเครื่อง inventory ก็เปลี่ยนตามโดยไม่มีใครต้องแก้ไฟล์
+ไฟล์นี้ชี้ไปที่ state ที่เก็บใน S3 bucket ทุกครั้งที่ Terraform สร้างหรือลบเครื่อง inventory ก็เปลี่ยนตามโดยไม่มีใครต้องแก้ไฟล์ `ansible-inventory --graph` พิมพ์ inventory ที่ได้เป็นต้นไม้ของกลุ่มและ host ผลข้างล่างย่อจากตัวอย่างในเอกสารของ plugin ซึ่งรันกับ state ที่มี `aws_instance` ชื่อ `test` หนึ่งเครื่องและใส่ `--vars` ด้วย ที่นี่ตัดตัวแปรออกให้เหลือเท่าที่ `--graph` อย่างเดียวพิมพ์ และเปลี่ยนชื่อไฟล์เป็นของหน้านี้ (ยังไม่ได้รันจริง เพราะต้องมีบัญชี AWS)
+
+```text
+$ ansible-inventory -i aws.terraform_state.yml --graph
+@all:
+|--@ungrouped:
+|  |--aws_instance_test
+```
+
+ชื่อ host มาจากชนิดกับชื่อของ resource ใส่ `--vars` เพิ่มจะเห็น attribute อย่าง `public_ip` เป็นตัวแปรของ host นั้น
 
 <Callout type="info" title="จาก repository ของวิชา">
 ไฟล์ Terraform ที่สร้าง VM สามเครื่อง pacific, arctic และ atlantic บน Google Cloud เตรียมสองอย่างไว้ให้ Ansible
 
 - สั่งลง `python3` ตอนเครื่องบูต เพราะ managed node ต้องมี Python
-- ส่ง IP ของทุกเครื่องออกมาเป็น output รูป map จากชื่อเครื่องไปเป็น IP
+- ส่ง IP สาธารณะของทุกเครื่อง (`nat_ip` ในภาษาของ Google Cloud) ออกมาเป็น output รูป map จากชื่อเครื่องไปเป็น IP ให้คนคัดลอกไปใส่ inventory เอง ซึ่งคือขั้นทำมือที่ inventory plugin ข้างบนตัดออก
 
 ```hcl
 output "nat_ip" {
@@ -1907,7 +1918,7 @@ output "nat_ip" {
 
 `kubectl` จัดการ deployment, pod และ service ได้ครบ แต่การ deploy แอปในงานจริงมักซับซ้อนกว่านั้น
 
-- **มีหลาย deployment ต้องขึ้นพร้อมกัน** Kubernetes ประกาศหลาย object ในไฟล์ YAML เดียวได้ แต่นั่นช่วยแค่ส่วนที่อยู่ในคลัสเตอร์
+- **มีหลาย deployment ต้องขึ้นพร้อมกัน** Kubernetes ประกาศหลาย object ในไฟล์ YAML เดียวได้ แต่ไม่ได้คุมว่าตัวไหนต้องพร้อมก่อนตัวไหน
 - **ต้องตั้งค่าอุปกรณ์ network ใหม่** เช่น firewall และ router
 - **อาจต้องรีสตาร์ต host หรือเซิร์ฟเวอร์**
 - **ต้องรันชุดทดสอบจากเซิร์ฟเวอร์หรือ client เครื่องอื่น**

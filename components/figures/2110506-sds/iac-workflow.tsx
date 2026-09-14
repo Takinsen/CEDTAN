@@ -12,7 +12,7 @@ export function IacWorkflow() {
     <svg
       viewBox="0 0 620 285"
       role="img"
-      aria-label="Infrastructure as Code มีห้าด้าน คือ infrastructure automation, configuration management, version control, automated testing และ deployment automation นักพัฒนาเขียน infrastructure code ที่เก็บใน version control และผ่าน testing แล้ว automation API หรือ server นำไป deploy และจัดการเครื่องทั้งบนคลาวด์และ on-premises ด้วยวิธี push หรือ pull"
+      aria-label="Infrastructure as Code มีห้าด้าน คือ infrastructure automation, configuration management, version control, automated testing และ deployment automation นักพัฒนาเขียน infrastructure code ที่เก็บใน version control และผ่าน testing โค้ดไปถึง automation API หรือ server ด้วยวิธี push หรือ pull แล้ว server นำไป deploy และจัดการเครื่องทั้งบนคลาวด์และ on-premises"
       className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
@@ -81,7 +81,7 @@ export function IacWorkflow() {
       <text x="127" y="144" textAnchor="middle" fontSize="11" opacity="0.8">
         write
       </text>
-      <text x="490" y="160" textAnchor="middle" fontSize="11" fontWeight="600" opacity="0.85">
+      <text x="310" y="144" textAnchor="middle" fontSize="11" fontWeight="600" opacity="0.85">
         push / pull
       </text>
       <text x="552" y="132" textAnchor="middle" fontSize="11" opacity="0.76">
