@@ -1,0 +1,2108 @@
+---
+title: "Lecture 6 — DevOps and Infrastructure as Code"
+description: "ทำยังไงให้โค้ดที่เขียนเสร็จไปถึงเครื่องจริงได้เร็วและได้ผลเหมือนเดิมทุกครั้ง — DevOps วางเส้นทาง ส่วน Terraform กับ Ansible เขียนเครื่องและการตั้งค่าให้เป็นโค้ด"
+sidebarTitle: "6 · DevOps & IaC"
+lecture: 6
+source: "data/2110506-SDS/Lecture-6.pdf"
+credit: "เรียบเรียงจากสไลด์ Lecture 6 ของ ผศ.ดร.ณัฐวุฒิ หนูไพโรจน์"
+readingMinutes: 65
+---
+
+import { DevopsHandoff } from '@/components/figures/2110506-sds/devops-handoff';
+import { DevopsLifecycle } from '@/components/figures/2110506-sds/devops-lifecycle';
+import { DeliverySpans } from '@/components/figures/2110506-sds/delivery-spans';
+import { TeamModels } from '@/components/figures/2110506-sds/team-models';
+import { IacWorkflow } from '@/components/figures/2110506-sds/iac-workflow';
+import { ProvisionConfigureLayers } from '@/components/figures/2110506-sds/provision-configure-layers';
+import { TerraformArchitecture } from '@/components/figures/2110506-sds/terraform-architecture';
+import { TerraformLifecycle } from '@/components/figures/2110506-sds/terraform-lifecycle';
+import { AnsibleArchitecture } from '@/components/figures/2110506-sds/ansible-architecture';
+import { TerraformAnsibleHandoff } from '@/components/figures/2110506-sds/terraform-ansible-handoff';
+import { GitopsFlow } from '@/components/figures/2110506-sds/gitops-flow';
+
+<KeyIdea>
+DevOps คือการทำทางจากโค้ดไปถึงเครื่องจริงให้อัตโนมัติทุกช่วง และช่วงที่ยากที่สุดคือตัวเครื่องเอง
+
+ทางแก้คือเขียนเครื่องและการตั้งค่าเป็นไฟล์ที่ commit ย้อนกลับ และรันซ้ำได้ — **Terraform สร้างเครื่อง ส่วน Ansible ตั้งค่าเครื่องที่สร้างแล้ว**
+</KeyIdea>
+
+<Callout type="info" title="ข้อมูลในหน้านี้มาจากไหน">
+เนื้อหามาจากสไลด์ Lecture 6 ทั้ง 66 หน้า ไฟล์ Terraform, playbook ของ Ansible และผลลัพธ์บนหน้าจอของตัวอย่าง nginx ยกมาจากสไลด์ ส่วนตัวอย่างที่ติดป้าย "เสริม" เขียนขึ้นใหม่และรันจริงบน Terraform v1.16.2 กับ ansible-core 2.21.4
+
+โค้ดตัวอย่างของคาบอยู่ใน repository `https://github.com/natawutn/sds-iac.git`
+
+คาบนี้เป็นของ **ผศ.ดร.ณัฐวุฒิ หนูไพโรจน์** ตารางเรียนตั้งหัวข้อสัปดาห์นี้ว่า `*-Ops` ซึ่งรวม MLOps และ AIOps แต่สไลด์ชุดนี้ไม่ได้พูดถึงสองเรื่องนั้น มีแค่ DevOps กับ Infrastructure as Code
+</Callout>
+
+## คาบนี้จะพาไปไหน
+
+[คาบ 5](/2110506-sds/lecture-5) จบที่ Kubernetes ซึ่งดูแล container บนหลายเครื่องให้เอง แต่ยังเหลือสองคำถามที่ Kubernetes ไม่ได้ตอบ
+
+- **เครื่องพวกนั้นมาจากไหน** ใครสร้าง VM ต่อ network และเปิด firewall ให้
+- **เครื่องพวกนั้นพร้อมใช้ได้ยังไง** ใครลงโปรแกรม แก้ไฟล์ตั้งค่า และเปิด service
+
+ถ้าคำตอบคือ "มีคนทำมือ" ทุกอย่างที่ Kubernetes ทำให้อัตโนมัติจะไปติดอยู่ที่คนคนนั้น คาบนี้ตอบว่าจะเอาคนออกจากทางนี้ยังไง
+
+| คำถาม | ส่วนที่ตอบ |
+| --- | --- |
+| ทำไมโค้ดที่เขียนเสร็จแล้วยังไม่ถึงผู้ใช้ | ส่วนที่ 1 — DevOps |
+| จะเขียนเครื่องให้เป็นโค้ดได้ยังไง | ส่วนที่ 2 — Infrastructure as Code |
+| สร้างเครื่องจากไฟล์ | ส่วนที่ 3 — Terraform |
+| ตั้งค่าเครื่องที่มีอยู่แล้ว | ส่วนที่ 4 — Ansible |
+| ต่อทั้งหมดเข้าด้วยกัน | ส่วนที่ 5 — Terraform, Ansible และ GitOps |
+
+<Callout type="info" title="ตัวอย่างที่ใช้ตลอดหน้า">
+เว็บ **nginx** บนเซิร์ฟเวอร์สามเครื่องชื่อ **pacific**, **arctic** และ **atlantic**
+
+- Terraform เริ่มจากรัน nginx หนึ่งตัวใน Docker บนเครื่องตัวเอง แล้วสร้างของตามชื่อเครื่องทั้งสาม
+- Ansible ลง nginx และวางเว็บลงบน pacific กับ atlantic ซึ่งอยู่ในกลุ่ม `webservers`
+</Callout>
+
+---
+
+## ส่วนที่ 1 — DevOps: ทำไมโค้ดเสร็จแล้วยังไม่ถึงผู้ใช้
+
+### Agile เร็วแค่ครึ่งทาง
+
+<Why>
+ทีมที่ทำงานแบบ <Term en="Agile" th="การพัฒนาเป็นรอบสั้น ๆ แล้วเอาไปให้ผู้ใช้ดูทุกรอบ" /> คุยกับผู้ใช้เป็นรอบสั้น ๆ ได้ดีมาก แต่ทุกรอบจบที่เครื่องของนักพัฒนา การเอาของขึ้นเครื่องจริงยังเป็นงานของอีกทีมหนึ่ง
+</Why>
+
+<Figure number={1} caption="รอบบนหมุนเร็ว แต่รอบล่างติดตรง deploy">
+  <DevopsHandoff />
+</Figure>
+
+รอบบนมีสี่จังหวะ
+
+1. ผู้ใช้บอก **requirements**
+2. นักพัฒนา **เขียนโค้ดและทดสอบ**
+3. นักพัฒนาส่ง **prototype** ให้ผู้ใช้ลอง
+4. ผู้ใช้ส่ง **feedback** กลับมา แล้ววนรอบใหม่
+
+รอบล่างคือจุดที่พัง นักพัฒนาส่ง product ที่ออกรุ่นแล้วให้ <Term en="Operator" th="ผู้ดูแลระบบที่รันอยู่จริง" /> แต่ operator deploy ไม่ขึ้น เพราะเครื่องจริงไม่เหมือนเครื่องที่นักพัฒนาใช้ทดสอบ และไม่มีใครในรอบบนคิดเรื่องเครื่องจริงมาก่อน
+
+### DevOps ตั้งเป้าอะไร
+
+<Term en="DevOps" th="การรวมงานพัฒนากับงานดูแลระบบเข้าด้วยกัน" /> ตั้งเป้าให้ <Term en="SDLC" th="Software Development Life Cycle วงจรชีวิตของซอฟต์แวร์ ตั้งแต่คิดจนเลิกใช้" /> สั้นลง โดยส่งของได้ต่อเนื่องและคุณภาพยังสูง วิธีมีสามข้อ
+
+- **คิดเรื่องสถาปัตยกรรมตอน deploy ตั้งแต่ต้น** ไม่รอให้โค้ดเสร็จแล้วค่อยถามว่าจะขึ้นเครื่องไหน
+- **ให้ทุกคนในวงจรมีส่วนร่วมตลอด** ไม่ใช่ส่งงานต่อกันเป็นทอด ๆ
+- **ทำทุกขั้นที่จำเป็นให้อัตโนมัติ มากที่สุดและเร็วที่สุดเท่าที่ทำได้**
+
+ข้อสุดท้ายคือจุดที่วิชานี้เข้ามา ถ้าเครื่องยังต้องตั้งด้วยมือ ขั้น deploy ก็อัตโนมัติไม่ได้ **ระบบที่สั่งโครงสร้างพื้นฐานด้วยซอฟต์แวร์ได้ (ส่วนที่ 2) จึงเป็นตัวที่ทำให้การ integrate, deliver และ deploy ไหลต่อกันได้**
+
+หลักการสี่ข้อของ DevOps และประโยชน์ของมันอยู่ใน [คาบ 1](/2110506-sds/lecture-1)
+
+### วงจรของ DevOps
+
+ของชิ้นเดียวกันวิ่งผ่านเครื่องสามชุด แต่ละชุดเรียกว่า <Term en="Environment" th="ชุดเครื่องและการตั้งค่าที่แยกไว้สำหรับงานหนึ่ง" /> คือ **development** ของนักพัฒนา **test** สำหรับทดสอบ และ **production** ที่ผู้ใช้ใช้จริง
+
+<Figure number={2} caption="ครึ่งซ้ายคืองานพัฒนา ครึ่งขวาคืองานดูแลระบบ เส้นไขว้ตรงกลางคือจุดที่สองฝั่งส่งงานให้กัน">
+  <DevopsLifecycle />
+</Figure>
+
+วงจรนี้มีแปดขั้นและวนไม่จบ
+
+| ขั้น | ทำอะไร | environment |
+| --- | --- | --- |
+| **Plan** | ตัดสินใจว่ารอบนี้ทำอะไร | — |
+| **Code** | เขียนโค้ด | development |
+| **Build** | ประกอบโค้ดเป็นของที่รันได้ | development |
+| **Test** | ทดสอบ | test |
+| **Release** | ออกรุ่นที่พร้อมขึ้นจริง | จุดส่งต่อจาก test ไป production |
+| **Deploy** | เอาขึ้นเครื่องจริง | production |
+| **Operate** | ดูแลระบบที่รันอยู่ | production |
+| **Monitor** | วัดว่าระบบเป็นยังไง แล้วส่งผลกลับไปให้ Plan รอบถัดไป | production |
+
+<Pitfall title="สาม environment ต้องเหมือนกันจริง">
+ถ้า test กับ production ตั้งค่าไม่เหมือนกัน ผ่านใน test ก็ไม่ได้แปลว่าผ่านใน production วงจรนี้จะหมุนเร็วได้ก็ต่อเมื่อสร้างสาม environment จากคำสั่งชุดเดียวกัน ซึ่งคือเรื่องของส่วนที่ 2
+</Pitfall>
+
+### อัตโนมัติไปได้ไกลแค่ไหน
+
+<Figure number={3} caption="ทุกเส้นเริ่มที่ Code เหมือนกัน ต่างกันที่อัตโนมัติไปหยุดตรงไหน">
+  <DeliverySpans />
+</Figure>
+
+เจ็ดขั้นในรูปแบ่งตาม environment — Code กับ Build อยู่ใน development, Integrate Test และ Release อยู่ใน testing, Deploy กับ Operate อยู่ใน production
+
+ชื่อที่ได้ยินบ่อยห้าชื่อคือความยาวของเส้นอัตโนมัติ
+
+| ชื่อ | อัตโนมัติถึงขั้น | ความหมาย |
+| --- | --- | --- |
+| **Agile Development** | Build | เขียนและ build เป็นรอบเร็ว ๆ คุยกับผู้ใช้บ่อย |
+| <Term en="Continuous Integration" th="รวมโค้ดและทดสอบอัตโนมัติทุกครั้งที่ commit" /> (CI) | Test | commit บ่อย และทดสอบบ่อย |
+| <Term en="Continuous Delivery" th="ส่งของขึ้น environment ทดสอบอัตโนมัติ พร้อมปล่อยได้ทุกเมื่อ" /> | Release | ส่งถึง testing environment ให้ผู้ใช้ทำ <Term en="UAT" th="User Acceptance Testing ผู้ใช้ลองแล้วยืนยันว่ารับของได้" /> |
+| <Term en="Continuous Deployment" th="ส่งของถึง production อัตโนมัติโดยไม่มีคนกดอนุมัติ" /> | Deploy | ไปถึง production environment ทุกครั้ง |
+| **DevOps** | Operate | รวมการดูแลระบบหลังขึ้นจริงเข้ามาในวงด้วย |
+
+<Pitfall title="CD มีสองความหมาย">
+Continuous Delivery กับ Continuous Deployment ย่อว่า CD ทั้งคู่ ต่างกันที่ขั้นสุดท้ายขั้นเดียว
+
+- **Delivery** หยุดก่อน production ของพร้อมปล่อยเสมอ แต่มีคนตัดสินใจกดปล่อย
+- **Deployment** ไม่มีจุดหยุด ทุก commit ที่ผ่านการทดสอบขึ้น production เอง
+
+ถ้ามีคนพูดว่า "ทำ CI/CD แล้ว" ให้ถามต่อว่า CD หมายถึงแบบไหน
+</Pitfall>
+
+### เครื่องมือของแต่ละขั้น
+
+แต่ละขั้นมีงานที่ทำให้อัตโนมัติและเครื่องมือของมัน
+
+| ขั้น | งานที่ทำอัตโนมัติ | เครื่องมือ |
+| --- | --- | --- |
+| Code | commit source เข้า version control | git, GitHub |
+| Build, Integrate | สร้าง Docker image | Docker Hub |
+| Integrate, Test | automated testing | — |
+| Release, Deploy | automated deployment | **Terraform, Ansible** (ส่วนที่ 3 และ 4) |
+| Operate | monitor ระบบ | Prometheus |
+
+อีกสองชั้นครอบทุกขั้นไว้
+
+- **CI/CD workflow tools** ร้อยทุกขั้นเข้าเป็น <Term en="Pipeline" th="ลำดับขั้นอัตโนมัติที่พาโค้ดจาก commit ไปถึงเครื่องจริง" /> เส้นเดียว เช่น Jenkins และ GitHub Actions
+- **Infrastructure** ที่ทุกอย่างรันอยู่ข้างบน เช่น Docker และ Kubernetes จากคาบ 2 ถึง 5, VMware ที่แบ่งเครื่องจริงเป็น VM และ Linux ที่เป็น OS ของเซิร์ฟเวอร์ส่วนใหญ่
+
+### ทีมแบ่งงานกันสามแบบ
+
+<Why>
+เครื่องมือครบแล้วยังไม่พอ ต้องตกลงด้วยว่าใครเป็นคน deploy และใครตื่นมาแก้ตอนระบบล่ม คำตอบที่ใช้กันจริงมีสามแบบ และทั้งสามแบบทำได้ก็เพราะโครงสร้างพื้นฐานกลายเป็นโค้ดแล้ว
+</Why>
+
+<Figure number={4} caption="ต่างกันที่ว่างาน deploy และดูแลระบบอยู่กับใคร">
+  <TeamModels />
+</Figure>
+
+| แบบ | ใครดูแลระบบที่รันจริง | จุดเด่น |
+| --- | --- | --- |
+| **DevOps** (CI/CD pipeline) | ทีม product มีคนทำ Ops ครบ ทั้ง deploy, monitor และ operate | แนวปฏิบัติด้าน delivery และ operations ใช้ร่วมกันทั้งทีม |
+| <Term en="SRE" th="Site Reliability Engineering วิศวกรรมความน่าเชื่อถือของระบบ" /> | ทีม product ส่งมอบตาม **standards** ให้ทีม SRE ซึ่งทำ deploy, monitor และ operate ด้วย SRE tooling | วัดความน่าเชื่อถือด้วยเป้าบริการที่เป็นตัวเลข |
+| <Term en="Platform Engineering" th="ทีมที่สร้างเครื่องมือกลางให้ทีมอื่นหยิบใช้เอง" /> (PE) | ทีม product ใช้ **platform tooling** ที่ครอบ build, test, release, deploy, monitor และ operate บน unified infrastructure | ทีม product ทำเองได้ผ่านทางที่ platform เตรียมไว้ (self-service) |
+
+ในองค์กรที่ทำ platform engineering งานแบ่งกันแบบนี้
+
+- ทีม product แต่ละทีมเหลือแค่ PM (plan), Dev (code) และ Test บางทีมไม่มีคนทดสอบแยก ให้ Dev ทดสอบเอง
+- งาน deploy, monitor และ response ตอนเกิดเหตุ ไปอยู่กับทีม SRE
+- ทุกทีมใช้ platform tooling ชุดเดียวกัน บน unified infrastructure ชุดเดียว
+
+สามแบบนี้จึงซ้อนกันได้ ไม่ต้องเลือกแบบเดียว
+
+<Example added title="เป้าบริการที่เป็นตัวเลขหน้าตาเป็นยังไง">
+สไลด์บอกแค่ว่า SRE ใช้ measurable service objectives โดยไม่มีตัวเลขตัวอย่าง
+
+SRE ไม่ตั้งเป้าว่า "ระบบต้องไม่ล่ม" เพราะวัดไม่ได้และทำไม่ได้จริง แต่ตั้งเป็นตัวเลข เช่น **ใช้งานได้ 99.9% ใน 30 วัน** ตัวเลขนี้แปลว่าล่มได้ไม่เกิน
+
+- 30 × 24 × 60 × 0.001 = **43.2 นาทีต่อ 30 วัน**
+- ถ้านับทั้งปีที่ 99.9% เท่ากัน = **8.76 ชั่วโมง**
+
+เวลาที่ล่มได้นี้เป็นโควตา ถ้าใช้หมดเร็ว ทีมรู้ทันทีว่าต้องชะลอการปล่อยของใหม่ ความเร็วกับความเสถียรจึงถูกชั่งด้วยตัวเลขเดียวกัน
+</Example>
+
+<Quiz question="ทีมหนึ่งตั้งระบบให้ทุก commit ที่ผ่านการทดสอบขึ้น testing environment เอง แต่ต้องมีหัวหน้ากดปุ่มก่อนขึ้น production ทีมนี้ทำ Continuous Delivery หรือ Continuous Deployment">
+**Continuous Delivery** เพราะเส้นอัตโนมัติหยุดที่ Release ของพร้อมปล่อยเสมอ แต่ขั้น Deploy ยังรอคนตัดสินใจ
+
+ถ้าเอาปุ่มนั้นออกและให้ขึ้น production เองถึงจะเป็น Continuous Deployment
+</Quiz>
+
+---
+
+## ส่วนที่ 2 — Infrastructure as Code
+
+### ตั้งเครื่องด้วยมือพังตรงไหน
+
+<Why>
+สมมติต้องเตรียมเซิร์ฟเวอร์ pacific, arctic และ atlantic ให้ครบทั้ง development, test และ production รวมเก้าเครื่อง ถ้าทำมือ ต้องสร้างเครื่อง ลงโปรแกรม และแก้ไฟล์ตั้งค่าเก้ารอบ
+
+- **ไม่มีทางรู้ว่าเก้าเครื่องเหมือนกันจริง** ลืมแก้ไฟล์ไปหนึ่งบรรทัดบนเครื่องเดียว ก็ได้บั๊กที่เกิดแค่ใน production
+- **ย้อนกลับไม่ได้** ไม่มีบันทึกว่าเมื่อวานเครื่องตั้งค่าไว้ยังไง
+- **ทำซ้ำไม่ได้** เครื่องพังหนึ่งเครื่อง ต้องนึกให้ออกว่าเคยทำอะไรไปบ้าง
+
+ปัญหาเดียวกันนี้อยู่ใน quiz ของ [คาบ 1](/2110506-sds/lecture-1) ที่ถามว่าจะรู้ได้ยังไงว่าเซิร์ฟเวอร์ 200 เครื่องใช้ OpenSSL รุ่นไหน
+</Why>
+
+### Infrastructure as Code คืออะไร
+
+<Term en="Infrastructure" th="โครงสร้างพื้นฐาน" /> คือชุดทรัพยากรที่ทำงานร่วมกันเพื่อรันแอป ทั้ง hardware, software, network และ service
+
+<Term en="Infrastructure as Code" th="การเขียนโครงสร้างพื้นฐานเป็นโค้ด แทนการคลิกตั้งค่าทีละหน้าจอ" /> (IaC) คือการเขียน **สถานะที่ต้องการ** ของโครงสร้างพื้นฐานไว้ในไฟล์ที่เครื่องอ่านได้ แล้วให้เครื่องมือทำให้เป็นจริง
+
+พอโครงสร้างพื้นฐานกลายเป็นไฟล์ ก็จัดการด้วยวิธีเดียวกับโค้ดได้ทันที
+
+| วิธีของงานซอฟต์แวร์ | ใช้กับโครงสร้างพื้นฐานได้ว่า |
+| --- | --- |
+| **Version control** | ทุกการเปลี่ยนเครื่องมีคนเขียน มีวันที่ และมีเหตุผลอยู่ใน commit |
+| **Roll-back version** | ตั้งค่าใหม่แล้วพัง ย้อนไฟล์กลับไปรุ่นก่อนแล้วสั่งใหม่ |
+| **Automated testing** | ตรวจไฟล์ก่อนสร้างเครื่องจริง เหมือนรัน test ก่อน merge |
+| **Documentation** | ไฟล์คือเอกสารที่ไม่ล้าสมัย เพราะเครื่องสร้างจากไฟล์นั้นจริง |
+
+"สถานะที่ต้องการ" เป็นแนวคิดเดียวกับ desired state ของ Kubernetes ใน [คาบ 5](/2110506-sds/lecture-5) — IaC ขยายแนวคิดนี้จาก container ออกไปถึงตัวเครื่อง
+
+### IaC ทำงานยังไง
+
+<Figure number={5} caption="โค้ดของโครงสร้างพื้นฐานเดินทางเดียวกับโค้ดของแอป">
+  <IacWorkflow />
+</Figure>
+
+IaC ครอบห้าด้าน คือ infrastructure automation, configuration management, version control, automated testing และ deployment automation เส้นทางของโค้ดเป็นแบบนี้
+
+- นักพัฒนา **เขียน** infrastructure code
+- โค้ดถูกเก็บใน **version control** และผ่าน **testing**
+- **automation API หรือ server** เอาโค้ดไป deploy และจัดการเครื่อง ทั้งบนคลาวด์และบนเครื่องขององค์กรเอง (<Term en="on-premises" th="เครื่องที่องค์กรตั้งไว้เอง ไม่ได้เช่าคลาวด์" />)
+
+สถานะที่ต้องการไปถึงเครื่องปลายทางได้สองทาง
+
+- **Push** — ฝั่งกลางส่งคำสั่งไปที่เครื่องปลายทางตอนที่เราสั่ง Ansible ในส่วนที่ 4 ทำงานแบบนี้
+- **Pull** — ฝั่งปลายทางคอยดึงสถานะที่ต้องการมาเทียบกับตัวเองเป็นระยะ คล้าย control loop ของ Kubernetes
+
+### เครื่องมือ IaC ห้ากลุ่ม
+
+<Why>
+"ทำเครื่องให้พร้อมใช้" จริง ๆ เป็นงานหลายชิ้นที่เกิดคนละช่วงของอายุเครื่อง ตั้งแต่ก่อนเครื่องมีตัวตน จนถึงตอนที่รันอยู่ เครื่องมือแต่ละตัวถนัดคนละช่วง
+</Why>
+
+จุดเริ่มคือ **ad hoc scripts** — สคริปต์ติดตั้งและตั้งค่าที่ผู้ดูแลระบบเขียนเอง ใช้ได้ แต่ต้องคิดเองทุกเรื่อง เช่น รันซ้ำแล้วพังไหม อีกสี่กลุ่มเกิดมาเพื่อแทนสคริปต์พวกนี้ทีละช่วง
+
+| กลุ่ม | ทำอะไร | ทำตอนไหน | ตัวอย่าง |
+| --- | --- | --- | --- |
+| <Term en="Provisioning tools" th="เครื่องมือสร้างเครื่องและทรัพยากร" /> | สร้างเซิร์ฟเวอร์และทรัพยากรอื่นให้เป็นโครงสร้างพื้นฐานของแอป | ก่อนเครื่องมีตัวตน | Terraform, AWS CloudFormation, Pulumi |
+| <Term en="Server templating tools" th="เครื่องมือทำ image ของเครื่องไว้ล่วงหน้า" /> | สร้าง image ของเซิร์ฟเวอร์ | ก่อนเครื่องบูต | Docker, Vagrant, Packer |
+| <Term en="Configuration management tools" th="เครื่องมือแก้เครื่องที่รันอยู่ให้ตรงกับที่ต้องการ" /> | ลงโปรแกรม แก้ไฟล์ และเปลี่ยนระบบ | **หลังจากเครื่องขึ้นและรันอยู่แล้ว** | Ansible, Chef, Puppet |
+| <Term en="Orchestration tools" th="เครื่องมือสั่งของหลายชิ้นให้ทำงานเป็นหน่วยเดียว" /> | คุม container, VM หรือ pod หลายตัวให้ทำงานเป็นหน่วยเดียว | ตอนรัน | Docker Compose / Swarm, Kubernetes |
+
+สองกลุ่มเจอมาแล้ว — Docker ใน [คาบ 2](/2110506-sds/lecture-2) คือ server templating ส่วน orchestration คือ Compose ในคาบ 3 และ Kubernetes กับ Docker Swarm (ตัวคุม container หลายเครื่องของ Docker เอง) ใน [คาบ 5](/2110506-sds/lecture-5) คาบนี้เพิ่ม provisioning กับ configuration management
+
+เครื่องมือหลายกลุ่มใช้ร่วมกันได้ และในงานจริงก็มักใช้ร่วมกัน
+
+### Terraform กับ Ansible ทำงานคนละชั้น
+
+<Figure number={6} caption="Terraform ทำให้มีเครื่อง ส่วน Ansible ทำให้เครื่องพร้อมใช้">
+  <ProvisionConfigureLayers />
+</Figure>
+
+- **Terraform provision** ชั้นล่าง: network, load balancer, database, user, permission และตัวเซิร์ฟเวอร์
+- **Ansible configure** ชั้นบน: ลงแอปและตั้งค่าบนเซิร์ฟเวอร์ที่ Terraform สร้างไว้
+
+<Analogy>
+เหมือนสร้างคอนโด Terraform เป็นผู้รับเหมาที่เทฐานราก เดินท่อ เดินไฟ และก่อห้องให้ครบตามแบบ Ansible เป็นทีมตกแต่งที่เข้าไปในห้องที่มีอยู่แล้ว ติดแอร์ วางเฟอร์นิเจอร์ และตั้งค่าเครื่องใช้ให้เหมือนกันทุกห้อง
+
+สองทีมทำงานของอีกฝ่ายได้บ้าง แต่ช้าและเสี่ยงกว่าให้ทีมที่ถนัดทำ
+</Analogy>
+
+<KeyIdea>
+Provisioning ถามว่า **"มีเครื่องอะไรบ้าง"** ส่วน configuration management ถามว่า **"บนเครื่องมีอะไรบ้าง"**
+</KeyIdea>
+
+---
+
+## ส่วนที่ 3 — Terraform: สร้างโครงสร้างพื้นฐานจากไฟล์
+
+### Terraform ประกอบด้วยอะไร
+
+<Why>
+เครื่องมือ provisioning ต้องคุยกับผู้ให้บริการได้หลายเจ้า AWS, Google Cloud, Azure และ DigitalOcean ต่างมี API ของตัวเอง ถ้าตัวเครื่องมือต้องรู้จัก API ทุกเจ้า มันจะใหญ่ไม่มีที่สิ้นสุด
+
+และมันต้องจำให้ได้ว่าสร้างอะไรไปแล้วบ้าง ไม่อย่างนั้นสั่งซ้ำจะได้เครื่องซ้ำ
+</Why>
+
+<Figure number={7} caption="Core อ่านไฟล์และวางแผน provider คุยกับ API ของแต่ละเจ้า ส่วน state จำว่าสร้างอะไรไปแล้ว">
+  <TerraformArchitecture />
+</Figure>
+
+Terraform แก้สองปัญหานั้นด้วยการแยกเป็นสามชิ้น
+
+- **Terraform Core** อ่านไฟล์ `*.tf` ที่เราเขียน แล้ววางแผนว่าต้องทำอะไร ตัวนี้ไม่รู้จักผู้ให้บริการเจ้าไหนเลย
+- <Term en="Provider" th="ปลั๊กอินที่แปลงงานของ Terraform เป็นการเรียก API ของผู้ให้บริการเจ้าหนึ่ง" /> คือปลั๊กอินที่คุยกับ API ของผู้ให้บริการแทน Core ไฟล์ชุดเดียวใช้หลาย provider พร้อมกันได้
+- <Term en="State" th="ไฟล์ที่ Terraform จดว่าสร้างอะไรไปแล้ว" /> คือไฟล์ `*.tfstate` ที่ Core อ่านและเขียน เพื่อรู้ว่าของในไฟล์ตัวไหนมีอยู่จริงแล้ว
+
+provider หนึ่งตัวมีของสองแบบให้ใช้
+
+- <Term en="Resource" th="ของที่ Terraform สร้างและดูแลเอง" /> — ของที่ Terraform สร้าง แก้ และลบ เช่น VM, virtual network หรือ container
+- <Term en="Data source" th="ข้อมูลที่ Terraform อ่านมาใช้ โดยไม่ได้ดูแลของชิ้นนั้น" /> — ข้อมูลที่อ่านมาใช้อย่างเดียว มีตัวอย่างเต็มในหัวข้อ data source
+
+### เขียนไฟล์ Terraform
+
+ไฟล์ Terraform เขียนด้วย **Terraform Configuration Language** ใช้ประกาศ resource และวิธีจัดการมัน ทุกอย่างเป็น <Term en="Block" th="หน่วยหนึ่งของไฟล์ Terraform มีชนิด ป้ายชื่อ และเนื้อในวงเล็บปีกกา" /> ที่มีรูปแบบเดียว
+
+```hcl
+<BLOCK TYPE> "<BLOCK LABEL>" "<BLOCK LABEL>" {
+  # Block body
+  <IDENTIFIER> = <EXPRESSION> # Argument
+}
+```
+
+ตัวอย่างจริงหนึ่ง block
+
+```hcl
+resource "docker_image" "nginx" {
+  name         = "nginx:latest"
+  keep_locally = false
+}
+```
+
+| ส่วน | ในตัวอย่าง | ความหมาย |
+| --- | --- | --- |
+| block type | `resource` | block นี้สร้างของ |
+| label แรก | `"docker_image"` | **ชนิด** ของ resource ซึ่ง provider กำหนด |
+| label ที่สอง | `"nginx"` | **ชื่อเรียกในไฟล์** ตั้งเอง ใช้อ้างถึง block นี้จากที่อื่น |
+| argument | `name = "nginx:latest"` | ค่าที่ส่งให้ resource |
+
+ชนิดกับชื่อรวมกันเป็นที่อยู่ของ resource คือ `docker_image.nginx` block อื่นอ้างถึงค่าของมันได้ด้วยที่อยู่นี้ เช่น `docker_image.nginx.image_id`
+
+**Terraform ใช้การอ้างถึงนี้หาลำดับการสร้างเอง** ถ้า container อ้างถึง image มันก็สร้าง image ก่อน กรณีที่ความเกี่ยวข้องไม่ได้ปรากฏเป็นการอ้างถึง ให้ประกาศเองด้วย `depends_on` ซึ่งอยู่ในหัวข้อ meta-argument
+
+### Hello World: nginx ใน Docker
+
+ไฟล์ `main.tf` นี้รัน nginx ใน Docker บนเครื่องตัวเอง ไม่ต้องมีบัญชีคลาวด์
+
+```hcl
+terraform {
+  required_providers {
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "~> 2.21.0"
+    }
+  }
+}
+
+provider "docker" {}
+
+resource "docker_image" "nginx" {
+  name         = "nginx:latest"
+  keep_locally = false
+}
+
+resource "docker_container" "nginx" {
+  image = docker_image.nginx.image_id
+  name  = "tutorial"
+  ports {
+    internal = 80
+    external = 8000
+  }
+}
+
+output "nginx_id" {
+  value = docker_container.nginx.id
+}
+
+output "nginx_ip_address" {
+  value = docker_container.nginx.network_data[0].ip_address
+}
+```
+
+<Callout type="warn" title="block output สองอันท้ายไฟล์">
+ไฟล์ `main.tf` ในสไลด์ไม่มี block `output` แต่ผลของ `terraform apply` ในสไลด์แสดง `nginx_id` กับ `nginx_ip_address` สอง block ท้ายไฟล์ด้านบนมาจากไฟล์เดียวกันใน repository ของวิชา ซึ่งตรงกับผลที่แสดง
+</Callout>
+
+| block | ทำอะไร |
+| --- | --- |
+| `terraform` → `required_providers` | ต้องใช้ provider `docker` จาก `kreuzwerker/docker` รุ่น `~> 2.21.0` คือ 2.21.x เท่านั้น ไม่ขยับไป 2.22 |
+| `provider "docker"` | ไม่ตั้งค่าอะไร จึงใช้ Docker บนเครื่องตัวเองตามค่าเริ่มต้น |
+| `resource "docker_image" "nginx"` | ดึง image `nginx:latest` ส่วน `keep_locally = false` คือตอน destroy ให้ลบ image ออกจากเครื่องด้วย |
+| `resource "docker_container" "nginx"` | สร้าง container ชื่อ `tutorial` จาก image ข้างบน ส่งพอร์ต 8000 ของเครื่องไปที่พอร์ต 80 ใน container — ผลเดียวกับ `docker run -p 8000:80` |
+| `output` สองอัน | พิมพ์ id และ IP ของ container ออกมาหลังสร้างเสร็จ |
+
+### วงจร init, plan, apply, destroy
+
+<Figure number={8} caption="สี่คำสั่งที่ใช้ทุกวัน — plan อ่าน state ส่วน apply และ destroy เขียน state">
+  <TerraformLifecycle />
+</Figure>
+
+#### `terraform init` — เตรียมโฟลเดอร์
+
+init อ่าน `required_providers` แล้วโหลด provider ที่ตรงเงื่อนไขมาไว้ในโฟลเดอร์
+
+```text
+- Finding kreuzwerker/docker versions matching "~> 2.21.0"...
+- Installing kreuzwerker/docker v2.21.0...
+- Installed kreuzwerker/docker v2.21.0 (self-signed, key ID BD080C4571C6104C)
+Terraform has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+```
+
+- เงื่อนไข `~> 2.21.0` ได้รุ่นจริง **v2.21.0**
+- provider ของ partner และชุมชนลงลายเซ็นโดยผู้พัฒนาเอง จึงขึ้นว่า self-signed
+- init สร้าง **`.terraform.lock.hcl`** ซึ่งจดรุ่น provider ที่เลือกไว้ **ไฟล์นี้ต้อง commit** ทุกคนที่รัน init ครั้งต่อไปจะได้ provider รุ่นเดียวกัน
+- ถ้าเปลี่ยน module (ชุดไฟล์ Terraform ที่เรียกใช้ซ้ำ มีในหัวข้อ module ด้านล่าง) หรือ backend (ที่เก็บ state) ต้องรัน init ใหม่ ถ้าลืม คำสั่งอื่นจะเตือนเอง
+
+<Detail label="ผลของ terraform init ทั้งหมด">
+```text
+$ terraform init
+Initializing the backend...
+Initializing provider plugins...
+- Finding kreuzwerker/docker versions matching "~> 2.21.0"...
+- Installing kreuzwerker/docker v2.21.0...
+- Installed kreuzwerker/docker v2.21.0 (self-signed, key ID BD080C4571C6104C)
+Partner and community providers are signed by their developers.
+If you'd like to know more about provider signing, you can read about it here:
+https://www.terraform.io/docs/cli/plugins/signing.html
+Terraform has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+```
+</Detail>
+
+#### `terraform plan` — ดูก่อนว่าจะเกิดอะไร
+
+plan เทียบไฟล์กับของจริงแล้วบอกว่าจะทำอะไร **โดยยังไม่แตะของจริง**
+
+```text
+indicated with the following symbols:
+  + create
+
+  # docker_container.nginx will be created
+  + resource "docker_container" "nginx" {
+      + id               = (known after apply)
+      + ip_address       = (known after apply)
+      + must_run         = true
+      + name             = "tutorial"
+```
+
+- `+` คือจะสร้าง ส่วนสัญลักษณ์ `~` (แก้ที่เดิม) และ `-` (ลบ) จะเจอในหัวข้อถัด ๆ ไป
+- ค่าที่เราเขียนเองรู้แล้ว เช่น `name = "tutorial"`
+- ค่าที่ต้องรอของจริงเกิดก่อนขึ้นว่า **`(known after apply)`** เช่น `id` และ `ip_address` เพราะ Docker เป็นคนแจก ไม่ใช่เรา
+
+<Detail label="ผลของ terraform plan ส่วนที่มี">
+```text
+$ terraform plan
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are
+indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # docker_container.nginx will be created
+  + resource "docker_container" "nginx" {
+      + attach           = false
+      + bridge           = (known after apply)
+      + command          = (known after apply)
+      + container_logs   = (known after apply)
+      + entrypoint       = (known after apply)
+      + env              = (known after apply)
+      + exit_code        = (known after apply)
+      + gateway          = (known after apply)
+      + hostname         = (known after apply)
+      + id               = (known after apply)
+      + image            = (known after apply)
+      + init             = (known after apply)
+      + ip_address       = (known after apply)
+      + ip_prefix_length = (known after apply)
+      + ipc_mode         = (known after apply)
+      + log_driver       = (known after apply)
+      + logs             = false
+      + must_run         = true
+      + name             = "tutorial"
+```
+</Detail>
+
+#### `terraform apply` — ทำจริง
+
+apply แสดงแผนเดิมอีกรอบ แล้วรอให้ยืนยัน
+
+```text
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
+docker_image.nginx: Creation complete after 18s [id=sha256:4b196525bd3cc6aa7a72ba63c6c2ae6d957b57edd603a7070c5e31f8e63c51f9nginx:latest]
+docker_container.nginx: Creation complete after 0s [id=0530ae24006f1606ced13da71ce2b1a9361d52990a059fda00ee8700bcb3e3d3]
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+nginx_ip_address = "172.17.0.2"
+```
+
+- **ต้องพิมพ์ `yes` เท่านั้น** พิมพ์อย่างอื่นถือว่ายกเลิก
+- image ถูกสร้างก่อน ใช้ 18 วินาทีเพราะต้องดาวน์โหลด แล้ว container ตามมา ลำดับนี้มาจาก `image = docker_image.nginx.image_id`
+- ค่าที่เคยเป็น `(known after apply)` ตอนนี้มีจริงแล้ว container ได้ IP `172.17.0.2`
+- Terraform จดทุกอย่างที่สร้างลง state
+
+<Detail label="ผลของ terraform apply ส่วนที่มี">
+```text
+$ terraform apply
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are
+indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # docker_container.nginx will be created
+  + resource "docker_container" "nginx" {
+      + attach           = false
+      + bridge           = (known after apply)
+      + command          = (known after apply)
+      + container_logs   = (known after apply)
+      + entrypoint       = (known after apply)
+      + env              = (known after apply)
+      + exit_code        = (known after apply)
+      + gateway          = (known after apply)
+      + hostname         = (known after apply)
+      + id               = (known after apply)
+      + image            = (known after apply)
+      + init             = (known after apply)
+      + ip_address       = (known after apply)
+      + ip_prefix_length = (known after apply)
+      + ipc_mode         = (known after apply)
+      + log_driver       = (known after apply)
+      + logs             = false
+      + must_run         = true
+      + name             = "tutorial"
+    }
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + nginx_id         = (known after apply)
+  + nginx_ip_address = (known after apply)
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
+docker_image.nginx: Creating...
+docker_image.nginx: Still creating... [10s elapsed]
+docker_image.nginx: Creation complete after 18s [id=sha256:4b196525bd3cc6aa7a72ba63c6c2ae6d957b57edd603a7070c5e31f8e63c51f9nginx:latest]
+docker_container.nginx: Creating...
+docker_container.nginx: Creation complete after 0s [id=0530ae24006f1606ced13da71ce2b1a9361d52990a059fda00ee8700bcb3e3d3]
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+nginx_id = "0530ae24006f1606ced13da71ce2b1a9361d52990a059fda00ee8700bcb3e3d3"
+nginx_ip_address = "172.17.0.2"
+```
+</Detail>
+
+#### `terraform destroy` — ลบทุกอย่างที่สร้างไว้
+
+```text
+docker_container.nginx: Refreshing state... [id=0530ae24006f1606ced13da71ce2b1a9361d52990a059fda00ee8700bcb3e3d3]
+
+  - destroy
+
+  # docker_container.nginx will be destroyed
+  - resource "docker_container" "nginx" {
+      - command           = [
+          - "nginx",
+          - "-g",
+          - "daemon off;",
+        ] -> null
+      - entrypoint        = [
+          - "/docker-entrypoint.sh",
+        ] -> null
+      - gateway           = "172.17.0.1" -> null
+```
+
+- **Refreshing state** — ก่อนวางแผนลบ Terraform ถามของจริงก่อนว่ายังตรงกับ state ไหม
+- `-` คือจะลบ และทุกค่าจะกลายเป็น `-> null`
+- ตอนนี้ทุกค่ารู้แล้ว เช่น container รันคำสั่ง `nginx -g "daemon off;"` ผ่าน `/docker-entrypoint.sh` และ gateway คือ `172.17.0.1`
+- destroy ลบเฉพาะของที่อยู่ใน state ของที่ใครสร้างด้วยมือไว้ข้าง ๆ ไม่โดนลบ
+
+<Detail label="ผลของ terraform destroy ส่วนที่มี">
+```text
+$ terraform destroy
+docker_image.nginx: Refreshing state... [id=sha256:4b196525bd3cc6aa7a72ba63c6c2ae6d957b57edd603a7070c5e31f8e63c51f9nginx:latest]
+docker_container.nginx: Refreshing state... [id=0530ae24006f1606ced13da71ce2b1a9361d52990a059fda00ee8700bcb3e3d3]
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are
+indicated with the following symbols:
+  - destroy
+
+Terraform will perform the following actions:
+
+  # docker_container.nginx will be destroyed
+  - resource "docker_container" "nginx" {
+      - attach            = false -> null
+      - command           = [
+          - "nginx",
+          - "-g",
+          - "daemon off;",
+        ] -> null
+      - cpu_shares        = 0 -> null
+      - dns               = [] -> null
+      - dns_opts          = [] -> null
+      - dns_search        = [] -> null
+      - entrypoint        = [
+          - "/docker-entrypoint.sh",
+        ] -> null
+      - env               = [] -> null
+      - gateway           = "172.17.0.1" -> null
+```
+</Detail>
+
+<KeyIdea>
+ไฟล์บอกว่า **อยากได้อะไร** state บอกว่า **สร้างอะไรไปแล้ว** และ plan คือผลต่างระหว่างไฟล์กับของจริงที่ state ชี้ไป
+</KeyIdea>
+
+### อ่านของที่มีอยู่แล้ว: data source
+
+<Why>
+จะสร้าง VM บน AWS ต้องระบุ <Term en="AMI" th="Amazon Machine Image ต้นแบบของ VM บน AWS" /> ID ของ image ที่ใช้ image ของ Ubuntu รุ่นล่าสุดได้ ID ใหม่ทุกครั้งที่มีการอัปเดต ถ้าเขียน ID ตายตัวลงไฟล์ ไม่นานก็ได้ image เก่า
+</Why>
+
+data source อ่านข้อมูลจาก API ของ provider **โดยไม่ได้ดูแลของชิ้นนั้น** Terraform ไม่สร้าง ไม่แก้ และไม่ลบมัน แค่ถามค่าปัจจุบันมาใช้ ตัวอย่างเต็มอยู่ในหัวข้อถัดไป
+
+ชื่อ resource และ data source ที่ใช้ได้ รวมถึง argument ของแต่ละตัว ถูกกำหนดไว้ใน **เอกสารของ provider** ตัวอย่าง provider ที่ใช้กันบ่อย
+
+| Provider | ทำอะไร | Resources | Data sources |
+| --- | --- | --- | --- |
+| `kreuzwerker/docker` | ใช้ Docker API จัดการ container และ image | `docker_container`, `docker_image`, `docker_network`, `docker_compose` | `docker_containers`, `docker_image`, `docker_logs`, `docker_network` |
+| `hashicorp/aws` | ดูแลวงจรชีวิตของทรัพยากร AWS เช่น EC2 และ S3 | `aws_instance`, `aws_ami`, `aws_s3_bucket`, `aws_network_acl` | `aws_instance`, `aws_ami`, `aws_s3_buckets`, `aws_s3_objects` |
+| `hashicorp/kubernetes` | จัดการทรัพยากรที่ Kubernetes รองรับ | `kubernetes_deployment`, `kubernetes_service` | `kubernetes_pod`, `kubernetes_nodes`, `kubernetes_service` |
+| `integrations/github` | จัดการของบน GitHub ทั้งแบบล็อกอินและไม่ล็อกอิน | `github_repository`, `github_branch`, `github_issue` | `github_repository`, `github_branch` |
+
+ชื่อเดียวกันเป็นได้ทั้งสองแบบ เช่น `aws_ami` เป็น resource เมื่อเราสร้าง image เอง และเป็น data source เมื่ออ่าน image ที่คนอื่นสร้างไว้
+
+### ทำให้ไฟล์ใช้ซ้ำได้: variable, local, output
+
+<Why>
+ไฟล์ Hello World เขียนชื่อ `tutorial` และพอร์ต `8000` ตายตัว ถ้าอยากใช้ไฟล์เดียวกันสร้างของ development กับ production ที่ชื่อต่างกัน ต้องก๊อปไฟล์ไปแก้ ซึ่งพาปัญหาของการทำมือกลับมา
+</Why>
+
+Terraform มีค่าสามแบบ
+
+| แบบ | ประกาศด้วย | อ้างถึงด้วย | ใช้ทำอะไร |
+| --- | --- | --- | --- |
+| <Term en="Input variable" th="ค่าที่คนเรียกใช้ไฟล์ส่งเข้ามา" /> | block `variable` | `var.ชื่อ` | ช่องรับค่าจากภายนอก ใส่ `type`, `description`, `validation` และ `sensitive` ได้ |
+| <Term en="Local value" th="ชื่อที่ตั้งให้ expression เพื่อใช้ภายในไฟล์" /> | block `locals` | `local.ชื่อ` | ตั้งชื่อให้ expression ที่ใช้ซ้ำภายใน |
+| <Term en="Output value" th="ค่าที่ไฟล์ส่งออกไปให้คนเรียกใช้" /> | block `output` | — | ส่งค่าออกไปให้ผู้ใช้ ระบบอัตโนมัติ หรือ module อื่นที่เรียกใช้ไฟล์นี้ (หัวข้อถัดไป) |
+
+ตัวอย่างนี้ใช้ variable, data source และ output ร่วมกันเพื่อสร้าง VM บน AWS
+
+```hcl
+provider "aws" {
+  region     = "us-east-1"
+  access_key = var.aws_access_key
+  secret_key = var.aws_secret_key
+}
+
+# 1. VARIABLE: Define the input parameter
+variable "component_name" {
+  type        = string
+  description = "The application name used for tagging and lookup"
+  default     = "nomad-server"
+}
+
+# 2. DATA SOURCE: Fetch information from AWS using the variable
+data "aws_ami" "latest_ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical (Ubuntu) owner ID
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  # An example of a lifecycle rule check inside a data block
+  lifecycle {
+    postcondition {
+      condition     = var.component_name != ""
+      error_message = "The component_name variable cannot be empty."
+    }
+  }
+}
+
+# 3. RESOURCE: Create a new EC2 instance using the data source AND the variable
+resource "aws_instance" "web" {
+  # References the output ID of the data source block
+  ami           = data.aws_ami.latest_ubuntu.id
+  instance_type = "t3.micro"
+
+  tags = {
+    # References the input variable via the "var." prefix
+    Component = var.component_name
+    Name      = "${var.component_name}-web-server"
+  }
+}
+
+output "instance_public_ip" {
+  value = aws_instance.web.public_ip
+}
+```
+
+- **variable** `component_name` มีค่าเริ่มต้น `"nomad-server"`
+- **data source** `aws_ami.latest_ubuntu` ค้น image ที่เจ้าของเป็น Canonical (owner ID `099720109477`) และชื่อตรงกับ Ubuntu 22.04 (jammy) แล้วเลือกตัวล่าสุดด้วย `most_recent = true`
+- block `lifecycle` ข้างในมี `postcondition` ตรวจหลังอ่านข้อมูลว่า `component_name` ไม่ว่าง ถ้าว่างให้หยุดพร้อมข้อความ error
+- **resource** `aws_instance.web` อ้าง data source ด้วยคำนำหน้า `data.` และอ้าง variable ด้วย `var.`
+- `"${var.component_name}-web-server"` แทนค่าตัวแปรลงกลางข้อความ ได้ `"nomad-server-web-server"` (ตรวจด้วย `terraform console`)
+- **output** `instance_public_ip` พิมพ์ IP สาธารณะของเครื่องหลัง apply
+
+<Callout type="warn" title="ตัวแปรสองตัวที่ไม่ได้ประกาศ">
+`var.aws_access_key` กับ `var.aws_secret_key` ถูกใช้ใน block `provider` แต่โค้ดตัวอย่างไม่มี block `variable` ของสองตัวนี้ ถ้ารันไฟล์นี้ตรง ๆ Terraform จะแจ้งว่าอ้างถึงตัวแปรที่ไม่ได้ประกาศ ต้องเพิ่ม block `variable` ของทั้งสองตัวเอง และควรใส่ `sensitive = true`
+</Callout>
+
+### แบ่งเป็นชิ้นที่ใช้ซ้ำได้: module
+
+<Why>
+ไฟล์ Hello World มี block `docker_image`, `docker_container` และ `output` ที่ต้องมาด้วยกันเสมอ ถ้าอีกโปรเจกต์หรืออีก environment อยากได้ชุดเดียวกัน การก๊อปทั้งชุดไปวางทำให้มีหลายสำเนา แก้บั๊กในสำเนาหนึ่งแล้วต้องตามแก้ทุกสำเนาเอง
+</Why>
+
+<Term en="Module" th="โฟลเดอร์ของไฟล์ Terraform ที่เรียกใช้ซ้ำได้" /> คือโฟลเดอร์ของไฟล์ Terraform ที่มี **interface สำหรับใช้ซ้ำ** — variable คือช่องรับค่าเข้า output คือค่าที่ส่งออก
+
+- โฟลเดอร์ที่เรารันคำสั่งอยู่คือ <Term en="Root module" th="module ของโฟลเดอร์ที่รันคำสั่ง" />
+- root module เรียก <Term en="Child module" th="module ที่ถูกเรียกจาก module อื่น" /> ได้ ทั้งจากโฟลเดอร์ในเครื่องและจาก registry
+
+<Analogy>
+module คือฟังก์ชัน variable คือพารามิเตอร์ output คือค่าที่ return และ block `module` หนึ่งอันคือการเรียกฟังก์ชันหนึ่งครั้ง
+</Analogy>
+
+<Example added title="module เดียวเรียกสองครั้ง พร้อม validation และค่าลับ">
+สไลด์บอกความสามารถของ variable และ module เป็นข้อ ๆ แต่ไม่มีโค้ดตัวอย่าง ตัวอย่างนี้สร้างชื่อเซิร์ฟเวอร์สองเครื่องด้วย module เดียว ใช้ `terraform_data` ซึ่งเป็น resource ที่มากับ Terraform เอง จึงรันได้โดยไม่ต้องมีบัญชีคลาวด์
+
+**module** ที่ `modules/server/main.tf`
+
+```hcl
+variable "name" {
+  type = string
+}
+
+resource "terraform_data" "this" {
+  input = var.name
+}
+
+output "hostname" {
+  value = terraform_data.this.output
+}
+```
+
+**root module** ที่ `main.tf`
+
+```hcl
+variable "web_name" {
+  type        = string
+  description = "Name of the web server"
+  default     = "pacific"
+
+  validation {
+    condition     = length(var.web_name) > 0
+    error_message = "web_name cannot be empty."
+  }
+}
+
+variable "db_password" {
+  type      = string
+  sensitive = true
+}
+
+locals {
+  prefix = "sds"
+}
+
+module "web" {
+  source = "./modules/server"
+  name   = "${local.prefix}-${var.web_name}"
+}
+
+module "db" {
+  source = "./modules/server"
+  name   = "${local.prefix}-arctic"
+}
+
+output "hosts" {
+  value = [module.web.hostname, module.db.hostname]
+}
+
+output "db_password" {
+  value     = var.db_password
+  sensitive = true
+}
+```
+
+init เจอ module ที่ถูกเรียกสองครั้ง
+
+```text
+Initializing modules...
+- db in modules/server
+- web in modules/server
+```
+
+ส่งรหัสผ่านผ่านตัวแปรสภาพแวดล้อม `TF_VAR_db_password=s3cret` แทนการเขียนลงไฟล์ แล้ว apply
+
+```text
+  # module.db.terraform_data.this will be created
+  # module.web.terraform_data.this will be created
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+db_password = <sensitive>
+hosts = [
+  "sds-pacific",
+  "sds-arctic",
+]
+```
+
+- module เดียวถูกเรียกสองครั้ง ได้ resource สองชิ้นที่อยู่คนละที่ คือ `module.web.terraform_data.this` กับ `module.db.terraform_data.this`
+- `local.prefix` เติม `sds-` ให้ทุกชื่อ
+- output ที่ใส่ `sensitive = true` ขึ้นแค่ `<sensitive>`
+
+ลองส่งชื่อว่างด้วย `terraform plan -var 'web_name='`
+
+```text
+Planning failed. Terraform encountered an error while generating this plan.
+
+Error: Invalid value for variable
+
+  on main.tf line 1:
+   1: variable "web_name" {
+
+web_name cannot be empty.
+
+This was checked by the validation rule at main.tf:6,3-13.
+```
+
+validation หยุดตั้งแต่ขั้น plan ยังไม่มีอะไรถูกสร้าง
+</Example>
+
+<Pitfall title="sensitive ซ่อนแค่บนหน้าจอ">
+`sensitive = true` ไม่ได้เข้ารหัสอะไรเลย ค้นคำว่า `s3cret` ในไฟล์ state ของตัวอย่างข้างบนแล้วเจอเป็นข้อความธรรมดา
+
+```text
+$ grep -n s3cret terraform.tfstate
+8:      "value": "s3cret",
+```
+
+ไฟล์ state จึงต้องเก็บแบบเดียวกับรหัสผ่าน ห้าม commit ขึ้น git และห้ามเขียนค่าลับ เช่น `access_key` ของ AWS ลงไฟล์ `.tf` ตรง ๆ
+</Pitfall>
+
+### สร้างหลายชิ้นจาก block เดียว: meta-argument
+
+<Why>
+ถ้าจะสร้างเซิร์ฟเวอร์ pacific, arctic และ atlantic ด้วย resource block ละเครื่อง จะได้สาม block ที่เหมือนกันทุกบรรทัดยกเว้นชื่อ และบางเรื่องไม่เกี่ยวกับชนิดของ resource เลย เช่น ชิ้นนี้ต้องสร้างหลังอีกชิ้น หรือชิ้นนี้ต้องไปสร้างบนอีกเครื่องหนึ่ง
+</Why>
+
+<Term en="Meta-argument" th="argument พิเศษที่ Terraform เข้าใจเอง ใช้ได้กับ resource ทุกชนิด" /> คือ argument ที่ใช้ได้กับ resource ทุกชนิด ไม่ขึ้นกับ provider
+
+- `depends_on` — ประกาศว่าต้องสร้างหลังของอีกชิ้น ในกรณีที่ Terraform อนุมานจากการอ้างถึงไม่ได้
+- `count` — สร้างหลายชิ้นตามจำนวนเต็ม
+- `for_each` — สร้างหลายชิ้นตาม map หรือ set
+- `provider` — เลือกการตั้งค่า provider ที่ไม่ใช่ตัวหลัก เช่น region ที่สอง
+- `lifecycle` — ปรับพฤติกรรมตอนสร้าง แทนที่ และลบ `postcondition` ในตัวอย่าง AWS ก็อยู่ใน block นี้
+
+<Term en="Provisioner" th="block ที่สั่งรันสคริปต์ตอนสร้างหรือลบ resource" /> เป็น block แยก ไม่ใช่ meta-argument และควรใช้ **เป็นทางสุดท้าย** เพราะมันรันสคริปต์ที่ Terraform ใส่ลงแผนไม่ได้ `plan` จึงบอกไม่ได้ว่าจะเกิดอะไร
+
+<Example added title="depends_on กับ provider ในไฟล์จริง">
+สไลด์บอกหน้าที่ของ `depends_on` และ `provider` เป็นข้อ ๆ โดยไม่มีตัวอย่าง ส่วนแรกใช้ `terraform_data` ส่วนที่สองใช้ provider `docker` จาก Hello World
+
+**`depends_on`** — เซิร์ฟเวอร์ pacific ต้องสร้างหลังกฎ firewall ที่เปิดพอร์ต 8000 แต่ block ของเซิร์ฟเวอร์ไม่ได้อ้างถึงค่าอะไรของ firewall เลย Terraform จึงไม่รู้ว่าสองชิ้นเกี่ยวกัน
+
+```hcl
+resource "terraform_data" "firewall" {
+  input = "allow-tcp-8000"
+}
+
+resource "terraform_data" "web" {
+  input      = "sds-pacific"
+  depends_on = [terraform_data.firewall]
+}
+```
+
+<Compare>
+<Wrong title="ไม่ใส่ depends_on">
+```text
+terraform_data.firewall: Creating...
+terraform_data.web: Creating...
+terraform_data.firewall: Creation complete after 0s [id=141b9e7f-16f3-7cc3-08c2-6f3ae50ebd47]
+terraform_data.web: Creation complete after 0s [id=28d999f2-ed1f-7c17-82fa-eb553cbb79ff]
+```
+
+สองชิ้นเริ่มสร้างพร้อมกัน เซิร์ฟเวอร์อาจขึ้นก่อนพอร์ตเปิด
+</Wrong>
+<Right title="ใส่ depends_on">
+```text
+terraform_data.firewall: Creating...
+terraform_data.firewall: Creation complete after 0s [id=8b4b4fcd-b2ca-a265-eebf-e2e0fcf7ef7a]
+terraform_data.web: Creating...
+terraform_data.web: Creation complete after 0s [id=ee36e01a-30df-3163-adbe-6c3b27436433]
+```
+
+web เริ่มสร้างหลัง firewall เสร็จ
+</Right>
+</Compare>
+
+ลำดับนี้มาจากเส้นที่ `depends_on` เพิ่มเข้าไปในกราฟของ Terraform คำสั่ง `terraform graph` พิมพ์กราฟนั้นออกมา ถ้าไม่ใส่ `depends_on` บรรทัดที่มีลูกศร `->` จะหายไป
+
+```text
+$ terraform graph
+digraph G {
+  rankdir = "RL";
+  node [shape = rect, fontname = "sans-serif"];
+  "terraform_data.firewall" [label="terraform_data.firewall"];
+  "terraform_data.web" [label="terraform_data.web"];
+  "terraform_data.web" -> "terraform_data.firewall";
+}
+```
+
+**`provider`** — ดึง image nginx ทั้งบนเครื่องตัวเองและบนเครื่อง arctic ผ่าน SSH ในไฟล์เดียว ต่อจาก block `terraform` ของ Hello World ให้ประกาศ provider `docker` สองชุด ชุดที่สองมีชื่อเรียกใน `alias` แล้ว resource เลือกชุดนั้นด้วย `provider = docker.arctic` ส่วน resource ที่ไม่ระบุใช้ชุดที่ไม่มี alias
+
+```hcl
+provider "docker" {}
+
+provider "docker" {
+  alias = "arctic"
+  host  = "ssh://ubuntu@35.240.143.207:22"
+}
+
+resource "docker_image" "nginx" {
+  name = "nginx:latest"
+}
+
+resource "docker_image" "nginx_arctic" {
+  provider = docker.arctic
+  name     = "nginx:latest"
+}
+```
+
+`terraform validate` ตรวจไฟล์โดยยังไม่ต่อไปหาเครื่องไหน
+
+```text
+$ terraform validate
+Success! The configuration is valid.
+```
+
+ถ้าพิมพ์ชื่อผิดเป็น `provider = docker.atlantic` ซึ่งไม่ได้ประกาศไว้ Terraform ฟ้องทันที
+
+```text
+$ terraform validate
+Error: Provider configuration not present
+...
+provider["registry.terraform.io/kreuzwerker/docker"].atlantic is required,
+```
+</Example>
+
+`count` กับ `for_each` ดูเหมือนทำงานเดียวกัน แต่ต่างกันมากตอนรายการเปลี่ยน
+
+<Example added title="count กับ for_each ตอนเครื่องกลางรายการหายไป">
+สไลด์บอกแค่ว่า `count` ใช้จำนวนเต็มและ `for_each` ใช้ map หรือ set ไม่ได้บอกว่าควรเลือกตัวไหนเมื่อไหร่ ตัวอย่างนี้สร้างชื่อเครื่อง pacific, arctic และ atlantic ด้วยทั้งสองวิธีพร้อมกัน
+
+```hcl
+variable "instance_set" {
+  type    = list(string)
+  default = ["pacific", "arctic", "atlantic"]
+}
+
+locals {
+  prefix = "sds"
+}
+
+resource "terraform_data" "by_count" {
+  count = length(var.instance_set)
+  input = "${local.prefix}-${var.instance_set[count.index]}"
+}
+
+resource "terraform_data" "by_each" {
+  for_each = toset(var.instance_set)
+  input    = "${local.prefix}-${each.value}"
+}
+
+output "names" {
+  value = { for k, s in terraform_data.by_each : k => s.output }
+}
+```
+
+apply แล้วดูใน state ว่าแต่ละชิ้นถูกเรียกด้วยชื่ออะไร
+
+```text
+$ terraform state list
+terraform_data.by_count[0]
+terraform_data.by_count[1]
+terraform_data.by_count[2]
+terraform_data.by_each["arctic"]
+terraform_data.by_each["atlantic"]
+terraform_data.by_each["pacific"]
+```
+
+- `count` ตั้งชื่อตาม **ลำดับ** `[0]`, `[1]`, `[2]`
+- `for_each` ตั้งชื่อตาม **ค่า** เช่น `["arctic"]`
+
+รัน plan ซ้ำโดยไม่แก้อะไร
+
+```text
+No changes. Your infrastructure matches the configuration.
+```
+
+ตอนนี้เอา arctic ออกจากกลางรายการ
+
+```text
+$ terraform plan -var='instance_set=["pacific","atlantic"]'
+
+  # terraform_data.by_count[1] will be updated in-place
+      ~ input  = "sds-arctic" -> "sds-atlantic"
+
+  # terraform_data.by_count[2] will be destroyed
+  # (because index [2] is out of range for count)
+
+  # terraform_data.by_each["arctic"] will be destroyed
+  # (because key ["arctic"] is not in for_each map)
+
+Plan: 0 to add, 1 to change, 2 to destroy.
+```
+
+| วิธี | ผลเมื่อ arctic หายไป |
+| --- | --- |
+| `count` | `[1]` ที่เคยเป็น arctic ถูก **แก้เป็น atlantic** และ `[2]` ที่เป็น atlantic อยู่แล้ว **ถูกลบ** — แตะสองชิ้นทั้งที่ atlantic ไม่ได้เปลี่ยนอะไร |
+| `for_each` | ลบ `["arctic"]` ชิ้นเดียว ที่เหลือไม่ถูกแตะ |
+
+ถ้าเป็นเครื่องจริง การแก้ชื่อเครื่องมักหมายถึงลบแล้วสร้างใหม่ atlantic จะถูกทำลายโดยไม่มีเหตุผล **ของที่มีตัวตนเฉพาะ เช่นเครื่องที่มีชื่อ ให้ใช้ `for_each`** ส่วน `count` เหมาะกับของที่ทุกชิ้นเหมือนกันและสลับกันได้
+
+ไฟล์ใน repository ของวิชาที่สร้าง VM สามเครื่องบน Google Cloud ก็ใช้ `for_each = toset(var.instance_set)` กับชื่อสามชื่อนี้
+</Example>
+
+<Detail label="ผลของ plan ตอนเอา arctic ออก ทั้งหมด">
+```text
+$ terraform plan -var='instance_set=["pacific","atlantic"]'
+terraform_data.by_each["pacific"]: Refreshing state... [id=fe29d928-8a00-71a9-ae31-e9d67fec2868]
+terraform_data.by_count[2]: Refreshing state... [id=dae09a5a-cc86-e4ae-e878-9bb52d59a81e]
+terraform_data.by_count[0]: Refreshing state... [id=059eb67b-bd5b-f2ad-5b4c-3e9574e80cab]
+terraform_data.by_each["arctic"]: Refreshing state... [id=3e4c9cf3-17e5-9e8b-5ff1-5ce042009130]
+terraform_data.by_count[1]: Refreshing state... [id=b0a5e607-df46-4b85-3c0b-b0fbbf322585]
+terraform_data.by_each["atlantic"]: Refreshing state... [id=697d4118-79d3-4171-f208-9344a32bf9ec]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  ~ update in-place
+  - destroy
+
+Terraform will perform the following actions:
+
+  # terraform_data.by_count[1] will be updated in-place
+  ~ resource "terraform_data" "by_count" {
+        id     = "b0a5e607-df46-4b85-3c0b-b0fbbf322585"
+      ~ input  = "sds-arctic" -> "sds-atlantic"
+      ~ output = "sds-arctic" -> (known after apply)
+    }
+
+  # terraform_data.by_count[2] will be destroyed
+  # (because index [2] is out of range for count)
+  - resource "terraform_data" "by_count" {
+      - id     = "dae09a5a-cc86-e4ae-e878-9bb52d59a81e" -> null
+      - input  = "sds-atlantic" -> null
+      - output = "sds-atlantic" -> null
+    }
+
+  # terraform_data.by_each["arctic"] will be destroyed
+  # (because key ["arctic"] is not in for_each map)
+  - resource "terraform_data" "by_each" {
+      - id     = "3e4c9cf3-17e5-9e8b-5ff1-5ce042009130" -> null
+      - input  = "sds-arctic" -> null
+      - output = "sds-arctic" -> null
+    }
+
+Plan: 0 to add, 1 to change, 2 to destroy.
+
+Changes to Outputs:
+  ~ names = {
+      - arctic   = "sds-arctic"
+        # (2 unchanged attributes hidden)
+    }
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.
+```
+</Detail>
+
+<Quiz question="กลับไปที่รายการเดิมสามชื่อ แล้วเพิ่ม baltic ไว้หน้าสุด count กับ for_each จะแตะกี่ชิ้น">
+- **`count`** แก้ 3 ชิ้นและสร้างเพิ่ม 1 — `[0]` pacific เป็น baltic, `[1]` arctic เป็น pacific, `[2]` atlantic เป็น arctic แล้วสร้าง `[3]` เป็น atlantic
+- **`for_each`** สร้าง `["baltic"]` ชิ้นเดียว
+
+plan ของทั้งสองรวมกันขึ้นว่า `Plan: 2 to add, 3 to change, 0 to destroy.` ของที่มีชื่อจึงไม่ควรใช้ `count` ไม่ว่าจะเพิ่มหรือลบกลางรายการ
+</Quiz>
+
+### Terraform กับ OpenTofu
+
+- เดือนสิงหาคม 2023 HashiCorp เปลี่ยนสัญญาอนุญาตของ Terraform รุ่นต่อ ๆ ไป จาก **MPL 2.0** ซึ่งเป็น open source ไปเป็น **Business Source License 1.1** (BSL) ซึ่งยังเปิดให้อ่าน source และใช้งานได้ แต่ห้ามเอาไปทำผลิตภัณฑ์ที่แข่งกับ HashiCorp จึงไม่นับเป็น open source
+- <Term en="OpenTofu" th="Terraform ฉบับ fork ที่ยังเป็น open source" /> คือ fork แบบ open source ที่เขียนไฟล์และใช้ขั้นตอนเหมือน Terraform
+- ทั้งสองฝั่งยังพึ่ง provider และ module เป็นหลัก แต่ความเข้ากันได้อาจห่างกันขึ้นเรื่อย ๆ
+- จะเลือกตัวไหน ให้ดูเงื่อนไขสัญญาอนุญาต ความสามารถของ platform การซัพพอร์ต และ provider ที่ทดสอบแล้วว่าใช้ด้วยกันได้
+
+---
+
+## ส่วนที่ 4 — Ansible: ตั้งค่าเครื่องที่มีอยู่แล้ว
+
+### Ansible ทำอะไร
+
+<Why>
+Terraform ให้เครื่องเปล่ามาสามเครื่อง แต่เครื่องเปล่ายังเสิร์ฟเว็บไม่ได้ ต้องลง nginx วางไฟล์ตั้งค่าให้สิทธิ์ถูก และเปิด service ให้เหมือนกันทุกเครื่อง และต้องทำซ้ำได้ทุกครั้งที่มีเครื่องใหม่
+</Why>
+
+<Term en="Ansible" th="เครื่องมือ automation และ configuration management" /> คือเครื่องมือ automation และ configuration management แบบ <Term en="Agentless" th="ไม่ต้องติดตั้งโปรแกรมของเครื่องมือค้างไว้บนเครื่องปลายทาง" />
+
+วิธีคิดคือ **เขียนสภาพที่ต้องการของเซิร์ฟเวอร์ แล้วให้เครื่องมือบังคับให้เซิร์ฟเวอร์เป็นอย่างนั้น** สภาพที่เขียนได้ เช่น
+
+- package ถูกติดตั้ง (หรือถอนออก)
+- ไฟล์ตั้งค่าถูกแก้ถูกต้อง และมี permission ที่ถูก
+- service ถูกเปิด (หรือปิด)
+
+Ansible ใช้ทำ deployment และ provisioning ได้ด้วย แม้งานถนัดจะเป็นการตั้งค่า
+
+### สถาปัตยกรรม
+
+<Figure number={9} caption="ทุกอย่างอยู่บน control node — ปลายทางต้องมีแค่ Python กับ SSH">
+  <AnsibleArchitecture />
+</Figure>
+
+- <Term en="Control node" th="เครื่องที่ติดตั้ง Ansible และเป็นคนสั่งงาน" /> — เครื่องที่ติดตั้ง Ansible และเป็นคนสั่ง ข้างในมีส่วนแกนกลาง (core components) กับส่วนเสริมจากชุมชน (community components)
+- <Term en="Managed node" th="เครื่องที่ถูก Ansible ตั้งค่า" /> — เครื่องที่ถูกตั้งค่า control node เชื่อมไปหาผ่าน **SSH**
+- <Term en="Inventory" th="รายชื่อเครื่องที่ Ansible จัดการ" /> — รายชื่อเครื่องและที่อยู่ของมัน
+- <Term en="Playbook" th="ไฟล์ YAML ที่เขียนสภาพที่ต้องการและขั้นตอน" /> — ไฟล์ที่บอกว่าเครื่องต้องอยู่ในสภาพไหน
+
+### ทำไมใช้ Ansible
+
+| เหตุผล | ความหมาย |
+| --- | --- |
+| **เข้าใจง่าย** | เขียนเป็น YAML |
+| **ไม่ต้องติดตั้งอะไรบนเครื่องปลายทาง** | ขอแค่มี Python และเปิด SSH |
+| **จัดการได้หลายร้อยเครื่อง** | ฮาร์ดแวร์หลากหลาย ตั้งแต่เซิร์ฟเวอร์ถึง Raspberry Pi ซึ่งเป็นคอมพิวเตอร์บอร์ดเล็กขนาดบัตรเครดิต |
+| **แชร์ง่าย** | module, plugin, library, <Term en="Role" th="ชุดงานตั้งค่าที่แพ็กไว้ใช้ซ้ำ" /> และ playbook แชร์กันผ่านคลังกลางชื่อ <Term en="Ansible Galaxy" th="คลังกลางที่คนแชร์ส่วนเสริมของ Ansible" /> |
+| **หน้าตาเหมือนกันทุก OS** | งานแบบเดียวกันเขียนแบบเดียวกันข้าม OS |
+| **Push-based และ master-less** | control node ส่งงานไปหาเครื่องตอนที่เราสั่ง ไม่มีเซิร์ฟเวอร์กลางที่ต้องรันค้างไว้ |
+
+ข้อสุดท้ายต่างจาก Chef และ Puppet ที่อยู่กลุ่มเดียวกัน ซึ่งในการติดตั้งแบบดั้งเดิมต้องลง agent บนทุกเครื่องให้คอยดึงงานจากเซิร์ฟเวอร์กลาง
+
+### ติดตั้งและบอกว่ามีเครื่องอะไรบ้าง
+
+ติดตั้งบน control node ด้วย pip แล้วตรวจว่าใช้ได้
+
+```bash
+pip install ansible
+ansible --version
+```
+
+สร้างไฟล์ตั้งค่า แล้วลิงก์ไปไว้ที่ `~/.ansible.cfg` ซึ่งเป็นที่หนึ่งที่ Ansible มองหาไฟล์ตั้งค่า
+
+```bash
+ansible-config init --disabled > ~/ansible/ansible.cfg
+ln -s ~/ansible/ansible.cfg ~/.ansible.cfg
+```
+
+`--disabled` สร้างไฟล์ที่มีทุกตัวเลือกแต่ comment ไว้หมด จากนั้นแก้ส่วน `[defaults]` ให้ชี้ไปที่ inventory
+
+```ini
+[defaults]
+inventory       = ~/ansible/inventory
+```
+
+#### Inventory
+
+```yaml
+all:
+  hosts:
+    pacific:
+      ansible_host: 35.240.143.206
+      ansible_python_interpreter: /usr/bin/python3
+    arctic:
+      ansible_host: 35.240.143.207
+      ansible_python_interpreter: /usr/bin/python3
+    atlantic:
+      ansible_host: 35.240.143.208
+      ansible_python_interpreter: /usr/bin/python3
+webservers:
+  hosts:
+    pacific:
+    atlantic:
+```
+
+| เครื่อง | IP (`ansible_host`) | อยู่กลุ่ม |
+| --- | --- | --- |
+| pacific | 35.240.143.206 | `all`, `webservers` |
+| arctic | 35.240.143.207 | `all` |
+| atlantic | 35.240.143.208 | `all`, `webservers` |
+
+- `pacific` เป็นชื่อเรียกใน Ansible ส่วน IP จริงอยู่ใน `ansible_host`
+- `ansible_python_interpreter` บอกว่า Python บนเครื่องปลายทางอยู่ที่ไหน
+- กลุ่ม `webservers` อ้างถึงเครื่องที่ประกาศไว้แล้วด้วยชื่ออย่างเดียว เครื่องหนึ่งอยู่ได้หลายกลุ่ม
+
+### สั่งทีละคำสั่ง: ad-hoc command
+
+<Why>
+ก่อนเขียนไฟล์ยาว ๆ มักอยากถามคำถามสั้น ๆ กับทุกเครื่องก่อน เช่น "ทุกเครื่องต่อได้ไหม" หรือ "รีบูตสองเครื่องนี้ที" <Term en="Ad-hoc command" th="คำสั่ง Ansible บรรทัดเดียวที่รันครั้งเดียวจบ" /> คือคำสั่งบรรทัดเดียวสำหรับงานแบบนี้
+</Why>
+
+```text
+ansible <pattern> [options]
+```
+
+- `<pattern>` เลือกเครื่อง เช่น `all` หรือชื่อกลุ่ม `webservers`
+- `-m <module>` เลือก <Term en="Module (Ansible)" th="โปรแกรมชิ้นเล็กที่ทำงานหนึ่งอย่างบนเครื่องปลายทาง" /> — โปรแกรมชิ้นเล็กที่ Ansible ส่งไปทำงานหนึ่งอย่างบนเครื่องปลายทาง
+- `-a <module args>` ส่ง argument ให้ module
+
+<Pitfall title="module ของ Ansible คนละความหมายกับ module ของ Terraform">
+- **module ของ Terraform** คือโฟลเดอร์ของไฟล์ `.tf` ที่เรียกใช้ซ้ำได้
+- **module ของ Ansible** คือหน่วยงานหนึ่งชิ้น เช่น `ping` หรือ `copy`
+</Pitfall>
+
+```text
+$ ansible all -m ping
+atlantic | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+pacific | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+arctic | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+```
+
+- module `ping` ไม่ใช่ ping แบบ ICMP มันล็อกอินผ่าน SSH แล้วรัน Python บนปลายทาง ได้ `pong` แปลว่าเครื่องนั้นพร้อมให้ Ansible ใช้
+- `"changed": false` บอกว่าไม่มีอะไรบนเครื่องถูกเปลี่ยน
+- ลำดับคำตอบไม่ตรงกับ inventory เพราะ Ansible ถามหลายเครื่องพร้อมกัน
+
+#### รันคำสั่งบนบางเครื่อง
+
+```text
+$ ansible webservers -a "/bin/echo hello" --limit pacific
+pacific | CHANGED | rc=0 >>
+hello
+```
+
+- ไม่ใส่ `-m` Ansible ใช้ module `command` เป็นค่าเริ่มต้น
+- `--limit pacific` กรองเครื่องในกลุ่ม `webservers` ให้เหลือแค่ pacific
+- `rc=0` คือ return code ของคำสั่ง
+- ขึ้น **CHANGED** ทั้งที่ `echo` ไม่ได้เปลี่ยนอะไร เพราะ module `command` ไม่รู้ว่าคำสั่งทำอะไรไป จึงรายงานว่าเปลี่ยนไว้ก่อนเสมอ
+
+#### งานที่ต้องใช้สิทธิ์ root
+
+<Compare>
+<Wrong title="ไม่ยกสิทธิ์">
+```text
+$ ansible all -a "/sbin/reboot" --limit arctic,atlantic
+arctic | FAILED | rc=1 >>
+Call to Reboot failed: Interactive authentication required.non-zero return code
+atlantic | FAILED | rc=1 >>
+Call to Reboot failed: Interactive authentication required.non-zero return code
+```
+
+ผู้ใช้ที่ SSH เข้าไปไม่มีสิทธิ์รีบูตเครื่อง
+</Wrong>
+<Right title="ยกสิทธิ์ด้วย -b">
+```text
+$ ansible all -a "/sbin/reboot" --limit arctic,atlantic -b --ask-become-pass
+BECOME password:
+atlantic | CHANGED | rc=0 >>
+
+arctic | CHANGED | rc=0 >>
+```
+
+`-b` ขอยกสิทธิ์ และ `--ask-become-pass` ถามรหัสผ่านสำหรับยกสิทธิ์
+</Right>
+</Compare>
+
+<Term en="Become" th="การยกสิทธิ์ขึ้นเป็นผู้ใช้อื่น ปกติคือ root" /> คือชื่อที่ Ansible ใช้เรียกการยกสิทธิ์ ปกติทำผ่าน `sudo` ส่วน `--limit arctic,atlantic` เลือกหลายเครื่องโดยคั่นด้วยจุลภาค
+
+### Module และ collection
+
+#### module ที่มากับทุกการติดตั้ง
+
+module ที่มากับ Ansible ทุกชุดอยู่ในกลุ่ม `ansible.builtin` ครอบงานพื้นฐานห้าด้าน
+
+| ด้าน | module |
+| --- | --- |
+| ควบคุมระบบ | `command`, `cron` (ตั้งงานให้รันตามเวลา), `debug`, `shell`, `service` |
+| จัดการไฟล์ | `file`, `copy`, `find` (ค้นไฟล์ตามเงื่อนไข) |
+| จัดการ package | `apt`, `dnf` และ `yum` (ตัวจัดการ package ของ Fedora และ Red Hat), `pip` |
+| ดึงข้อมูลเครื่อง (facts) | `setup` |
+| อื่น ๆ | `ping`, `wait_for` (รอจนพอร์ตเปิดหรือไฟล์ปรากฏ) |
+
+ตัวที่ใช้บ่อยที่สุด
+
+| Module | ทำอะไร | Parameter ที่ใช้บ่อย |
+| --- | --- | --- |
+| `ansible.builtin.apt` | จัดการ package ของ apt (Debian / Ubuntu) | `name`, `state`, `update_cache`, `upgrade` |
+| `ansible.builtin.service` | ควบคุม service บนเครื่องปลายทาง | `name`, `state`, `enabled` |
+| `ansible.builtin.file` | จัดการไฟล์และคุณสมบัติของไฟล์ | `path`, `mode`, `src`, `dest`, `state` |
+| `ansible.builtin.copy` | คัดลอกไฟล์ไปเครื่องปลายทาง | `src`, `dest`, `force` |
+| `ansible.builtin.debug` | พิมพ์ข้อความระหว่างรัน | `msg`, `var`, `verbosity` |
+
+เอกสารของทุก module ในกลุ่มนี้อยู่ที่ `https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/index.html`
+
+#### ชื่อเต็มกันชื่อชน
+
+<Why>
+`copy` เป็นชื่อที่ใคร ๆ ก็อยากตั้ง ถ้าติดตั้งส่วนเสริมที่มี module ชื่อ `copy` ของตัวเองด้วย เขียนแค่ `copy` แล้ว Ansible จะใช้ตัวไหน
+</Why>
+
+ส่วนเสริมของ Ansible มาเป็น <Term en="Collection" th="ชุด module, plugin, role และ playbook ที่รวมไว้ใต้ namespace เดียว" /> ซึ่งรวม module, plugin, role และ playbook ไว้ใต้ <Term en="Namespace" th="ชื่อกลุ่มหน้าสุดที่บอกว่าใครเป็นเจ้าของ collection" /> เดียว ชื่อเต็มของ module จึงมีสามท่อน เรียกว่า <Term en="FQCN" th="Fully Qualified Collection Name ชื่อเต็มที่ระบุ namespace และ collection" />
+
+```text
+namespace.collection.module
+ansible.builtin.copy
+kubernetes.core.k8s
+```
+
+- เขียนชื่อสั้นอย่าง `copy` หรือ `yum` ได้ แต่ **แนะนำ FQCN** เพราะอ่านแล้วรู้ทันทีว่ามาจากไหน และไม่ชนกับ collection อื่น
+- `ansible.builtin` คือ collection ของ module ที่มากับทุกการติดตั้ง
+
+module ยังถูกจัดเป็นหมวดตามชนิดของงาน เช่น หมวด Cloud รวม module ที่สร้างและดูแลทรัพยากรบนคลาวด์ ส่วนหมวด Database รวม module ที่จัดการฐานข้อมูล
+
+<Detail label="ตัวอย่างหมวดของ module 21 หมวด">
+Builtin, Cloud, Clustering, Commands, Crypto, Database, Files, Identity, Infrastructure, Inventory, Messaging, Monitoring, Net Tools, Network, Notification, Packaging, Source Control, Storage, System, Utilities, Windows
+</Detail>
+
+#### `ansible-core` กับ `ansible`
+
+| ติดตั้ง | ได้อะไร |
+| --- | --- |
+| `ansible-core` | ตัว automation engine กับ plugin ที่มาในตัว |
+| `ansible` | `ansible-core` บวก community collection ชุดที่คัดมาแล้ว |
+
+`pip install ansible` ในหัวข้อติดตั้งจึงได้แบบหลัง
+
+#### Collection จากชุมชน
+
+Galaxy มี role และ collection ที่ชุมชนทำไว้จำนวนมาก ทำให้ Ansible ต่อเติมได้แทบทุกงาน ใครทำ role หรือ collection ที่ติดตั้งและตั้งค่าซอฟต์แวร์ยอดนิยมได้ ก็แชร์ขึ้น Galaxy ให้คนอื่นใช้ต่อ การดาวน์โหลดจาก Galaxy ต้องใช้ `ansible-core` ตั้งแต่ 2.13.9 ขึ้นไป
+
+หน้า Galaxy ยังโปรโมต **Ansible Lightspeed** ของ Red Hat ซึ่งใช้ generative AI (IBM watsonx Code Assistant) ช่วยเขียนงาน Ansible
+
+ตัวอย่างคือ collection สำหรับ Kubernetes ชื่อ `kubernetes.core` ต้องติดตั้งสองฝั่ง
+
+| ฝั่ง | คำสั่ง | ทำไม |
+| --- | --- | --- |
+| **control node** | `ansible-galaxy collection install kubernetes.core` | ให้ Ansible รู้จัก module ใน collection นี้ |
+| **managed node** | `pip install kubernetes` | module รันบนเครื่องปลายทาง และใช้ Python package นี้คุยกับ Kubernetes API |
+
+`kubernetes.core` เดิมชื่อ `community.kubernetes` ใช้จัดการแอปบน Kubernetes และ OpenShift รวมถึงสร้างและดูแลตัวคลัสเตอร์ ต้องใช้ Ansible ตั้งแต่ 2.15.0 ขึ้นไป module หลักของมันคือ `kubernetes.core.k8s` ที่เจอในหัวข้อ FQCN
+
+#### ปักรุ่นของ collection
+
+ถ้าอยากให้รันซ้ำแล้วได้ผลเหมือนเดิม ให้ **ปักรุ่นของ collection ไว้ใน `requirements.yml`** — เหตุผลเดียวกับที่ Terraform มี `.terraform.lock.hcl`
+
+<Example added title="ปักรุ่นของ kubernetes.core">
+สไลด์บอกให้ปักรุ่นใน `requirements.yml` แต่ไม่ได้แสดงหน้าตาไฟล์ ตัวอย่างนี้ปัก `kubernetes.core` ไว้ที่รุ่น 5.0.0 แล้วติดตั้งด้วย ansible-core 2.21.4
+
+```yaml
+---
+collections:
+  - name: kubernetes.core
+    version: 5.0.0
+```
+
+```text
+$ ansible-galaxy collection install -r requirements.yml -p ./collections
+...
+kubernetes.core:5.0.0 was installed successfully
+
+$ ansible-galaxy collection list -p ./collections
+Collection      Version
+--------------- -------
+kubernetes.core 5.0.0
+```
+
+- `-r` อ่านรายการ collection จากไฟล์ ส่วน `-p` บอกโฟลเดอร์ที่จะติดตั้ง
+- ถึง Galaxy จะออกรุ่นใหม่ ใครรันไฟล์นี้ก็ยังได้ 5.0.0 เหมือนกัน
+- ไฟล์นี้ commit ไว้คู่กับ playbook แบบเดียวกับ `.terraform.lock.hcl`
+</Example>
+
+### Playbook — เขียนสภาพที่ต้องการลงไฟล์
+
+<Why>
+ad-hoc command ใช้ครั้งเดียวแล้วหาย ถ้าการตั้งเว็บเซิร์ฟเวอร์ต้องทำห้าขั้น คนต่อไปต้องจำให้ได้ว่าพิมพ์อะไรไปบ้าง ซึ่งคือปัญหาเดิมของการทำมือ
+</Why>
+
+playbook คือระบบ configuration management และ deployment หลายเครื่องที่ **ทำซ้ำได้ ใช้ซ้ำได้ และเรียบง่าย** ขั้นตอนการตั้งค่าและการสั่งงานถูกประกาศเป็น YAML
+
+`nginx_install.yaml`
+
+```yaml
+---
+- hosts: webservers
+  become: yes
+  tasks:
+    - name: ensure nginx is at the latest version
+      apt: name=nginx state=latest
+    - name: start nginx
+      service:
+        name: nginx
+        state: started
+```
+
+รายการแต่ละข้อที่ขึ้นต้นด้วย `- hosts:` เรียกว่า <Term en="Play" th="ชุดงานหนึ่งชุดที่ทำกับกลุ่มเครื่องหนึ่งกลุ่ม" /> ข้างในมี <Term en="Task" th="งานหนึ่งขั้นใน play ที่เรียก module หนึ่งตัว" /> เรียงตามลำดับ
+
+| บรรทัด | ความหมาย |
+| --- | --- |
+| `hosts: webservers` | ทำกับกลุ่ม webservers คือ pacific และ atlantic |
+| `become: yes` | ยกสิทธิ์ให้ทุก task ใน play นี้ |
+| `apt: name=nginx state=latest` | ให้ nginx อยู่ในสภาพ **ติดตั้งแล้วและเป็นรุ่นล่าสุด** — argument เขียนแบบ `key=value` บรรทัดเดียวได้ |
+| `service:` กับ `state: started` | ให้ nginx อยู่ในสภาพ **กำลังรัน** — argument เขียนแบบ YAML หลายบรรทัดก็ได้ |
+
+argument ของ module ไม่ได้บอกขั้นตอนว่าต้องติดตั้งหรือเปิดยังไง มีแต่ `state:` ที่บอกปลายทาง ส่วน `- name:` บรรทัดแรกของแต่ละ task เป็นแค่ป้ายที่ Ansible พิมพ์ตอนรัน
+
+```text
+$ ansible-playbook playbooks/nginx_install.yaml
+
+PLAY [webservers] **************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [pacific]
+ok: [atlantic]
+
+TASK [ensure nginx is at the latest version] ***********************************
+changed: [pacific]
+changed: [atlantic]
+
+TASK [start nginx] *************************************************************
+ok: [pacific]
+ok: [atlantic]
+
+PLAY RECAP *********************************************************************
+atlantic                   : ok=3    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+pacific                    : ok=3    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+- **Gathering Facts** เป็น task ที่ Ansible แทรกให้ก่อนเสมอถ้าไม่ปิดไว้ มันเรียก module `setup` เก็บข้อมูลเครื่อง เช่น OS และ IP
+- task ติดตั้งขึ้น **changed** เพราะเครื่องยังไม่มี nginx
+- task เปิด service ขึ้น **ok** เพราะบน Debian และ Ubuntu ติดตั้ง nginx เสร็จ service ก็เปิดเองแล้ว ไม่มีอะไรต้องทำ
+- **PLAY RECAP** สรุปต่อเครื่อง `ok=3` นับทุก task ที่สำเร็จ รวมตัวที่ changed ด้วย
+
+### Idempotency
+
+<Why>
+playbook ไม่ได้รันครั้งเดียว คนรันซ้ำเมื่อเพิ่มเครื่อง เมื่อแก้ไฟล์ หรือเมื่อรอบก่อนล้มกลางทาง ถ้ารอบที่สองติดตั้งซ้ำ ต่อไฟล์ซ้ำ หรือรีสตาร์ต service ทุกครั้ง การรันซ้ำก็กลายเป็นความเสี่ยงแทนที่จะเป็นการตรวจ
+</Why>
+
+<Term en="Idempotency" th="สั่งซ้ำกี่ครั้งผลก็เหมือนเดิม" /> คือ **ทำสิ่งเดียวกันซ้ำหลายครั้ง แล้วยังได้ผลเหมือนเดิม** คำนี้เจอมาแล้วตอนพูดถึง manifest ของ Kubernetes ใน [คาบ 5](/2110506-sds/lecture-5)
+
+รัน `nginx_install.yaml` ซ้ำเป็นรอบที่สอง
+
+```text
+TASK [ensure nginx is at the latest version] ***********************************
+ok: [pacific]
+ok: [atlantic]
+
+TASK [start nginx] *************************************************************
+ok: [atlantic]
+ok: [pacific]
+
+PLAY RECAP *********************************************************************
+atlantic                   : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+รอบสองได้ **`changed=0`** เพราะ module ตรวจสภาพก่อนลงมือ nginx เป็นรุ่นล่าสุดและรันอยู่แล้ว จึงไม่ทำอะไร
+
+นี่คือเหตุผลที่รัน playbook ได้บ่อยเท่าที่ต้องการ ครั้งแรกทำให้เครื่องเข้าที่ ครั้งต่อ ๆ ไปคือการตรวจว่ายังเข้าที่อยู่ `No changes.` ของ `terraform plan` ในส่วนที่ 3 คือคุณสมบัติเดียวกัน
+
+<Example added title="module ที่ idempotent กับคำสั่ง shell ที่ไม่ใช่">
+สไลด์แสดงรอบสองที่ `changed=0` แต่ไม่ได้แสดงว่าถ้าเลือก module ผิดจะเกิดอะไร ตัวอย่างนี้เพิ่มบรรทัด `listen 8000;` ลงไฟล์ตั้งค่าสองรอบ รันบนเครื่องตัวเองด้วย inventory ที่ตั้ง `ansible_connection: local`
+
+**ต่อท้ายไฟล์ด้วย `shell`**
+
+```text
+$ ansible all -m ansible.builtin.shell -a "echo 'listen 8000;' >> site_shell.cfg"
+my_notebook | CHANGED | rc=0 >>
+
+$ ansible all -m ansible.builtin.shell -a "echo 'listen 8000;' >> site_shell.cfg"
+my_notebook | CHANGED | rc=0 >>
+
+$ cat site_shell.cfg
+listen 8000;
+listen 8000;
+```
+
+**ใช้ `lineinfile`**
+
+```text
+$ ansible all -m ansible.builtin.lineinfile -a "path=site_line.cfg line='listen 8000;' create=true"
+my_notebook | CHANGED => {
+    "backup": "",
+    "changed": true,
+    "msg": "line added"
+}
+
+$ ansible all -m ansible.builtin.lineinfile -a "path=site_line.cfg line='listen 8000;' create=true"
+my_notebook | SUCCESS => {
+    "backup": "",
+    "changed": false,
+    "msg": ""
+}
+
+$ cat site_line.cfg
+listen 8000;
+```
+
+`shell` ทำตามคำสั่งทุกครั้ง ไฟล์จึงมีบรรทัดซ้ำเพิ่มขึ้นทุกรอบที่รัน ส่วน `lineinfile` บอกสภาพปลายทางว่า "ต้องมีบรรทัดนี้" รอบสองเห็นว่ามีแล้วจึงไม่ทำอะไร
+
+**ถ้าต้องใช้ `command` หรือ `shell` ให้คิดเสมอว่ารันซ้ำแล้วจะเกิดอะไร**
+</Example>
+
+### Playbook ที่ใช้งานจริงมากขึ้น
+
+`nginx_complex.yaml` ติดตั้ง nginx แล้วเปลี่ยนให้เสิร์ฟเว็บของเราเอง
+
+```yaml
+---
+- hosts: webservers
+  tasks:
+    - name: ensure nginx is at the latest version
+      apt: name=nginx state=latest
+      become: yes
+    - name: start nginx
+      service:
+        name: nginx
+        state: started
+      become: yes
+    - name: copy the nginx config file and restat nginx
+      copy:
+        src: static_site.cfg
+        dest: /etc/nginx/sites-available/static_site.cfg
+      become: yes
+    - name: Delete existing sites default
+      file:
+        path: /etc/nginx/sites-available/default
+        state: absent
+      become: yes
+    - name: create symlink
+      file:
+        src: /etc/nginx/sites-available/static_site.cfg
+        dest: /etc/nginx/sites-available/default
+        state: link
+      become: yes
+    - name: copy the content of the web site
+      copy:
+        src: static-site-src/
+        dest: /home/natawut/static-site
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+      become: yes
+```
+
+| # | task | module | ผล |
+| --- | --- | --- | --- |
+| 1 | ensure nginx is at the latest version | `apt` | nginx ติดตั้งแล้วเป็นรุ่นล่าสุด |
+| 2 | start nginx | `service` | nginx กำลังรัน |
+| 3 | copy the nginx config file | `copy` | วาง `static_site.cfg` ไว้ใน `/etc/nginx/sites-available/` |
+| 4 | Delete existing sites default | `file` กับ `state: absent` | ลบไฟล์ `default` เดิม |
+| 5 | create symlink | `file` กับ `state: link` | สร้าง `default` ใหม่เป็นลิงก์ไปที่ `static_site.cfg` |
+| 6 | copy the content of the web site | `copy` | คัดลอกของ **ข้างใน** `static-site-src/` ไปที่ `/home/natawut/static-site` |
+| 7 | restart nginx | `service` กับ `state: restarted` | รีสตาร์ต nginx ให้อ่านการตั้งค่าใหม่ |
+
+- ไฟล์นี้ใส่ `become: yes` **ทีละ task** แทนการใส่ทั้ง play task 6 ไม่มี `become` เพราะคัดลอกลงบ้านของผู้ใช้ที่ SSH เข้าไปเอง
+- task 4 และ 5 ใช้โครงสร้างของ nginx บน Debian และ Ubuntu ซึ่ง nginx อ่านไฟล์ใน `sites-enabled/` และ `sites-enabled/default` เป็นลิงก์ไปที่ `sites-available/default` อยู่แล้ว เมื่อ `sites-available/default` กลายเป็นลิงก์ไปที่ `static_site.cfg` nginx จึงอ่านการตั้งค่าใหม่ผ่านลิงก์สองชั้น
+- `src` ที่ลงท้ายด้วย `/` แปลว่าคัดลอกของข้างในโฟลเดอร์ ไม่ใช่ตัวโฟลเดอร์
+
+<Detail label="ไฟล์ static_site.cfg ที่ task 3 คัดลอก">
+ไฟล์นี้อยู่ใน repository ของวิชา
+
+```nginx
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    root /home/natawut/static-site;
+    server_name _;
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+```
+
+nginx ฟังพอร์ต 80 และเสิร์ฟไฟล์จาก `/home/natawut/static-site` ซึ่งเป็นที่ที่ task 6 วางเว็บไว้
+</Detail>
+
+<Pitfall title="playbook นี้รันรอบสองแล้วยังขึ้น changed">
+- task 7 ใช้ `state: restarted` ซึ่งแปลว่า "รีสตาร์ตเดี๋ยวนี้" ไม่ใช่สภาพปลายทาง มันจึงรีสตาร์ตและขึ้น changed ทุกรอบ แม้ไม่มีไฟล์ไหนเปลี่ยน
+- รอบสอง task 4 ลบ `default` ซึ่งตอนนี้คือลิงก์ที่ task 5 สร้างไว้เอง แล้ว task 5 ก็สร้างลิงก์ใหม่ ทั้งสองจึงขึ้น changed ทุกรอบเช่นกัน
+- ชื่อ task 3 `copy the nginx config file and restat nginx` บอกว่ารีสตาร์ต แต่ task นี้แค่คัดลอก Ansible ไม่อ่านชื่อ task ชื่อเป็นแค่ป้าย
+</Pitfall>
+
+<Example added title="รีสตาร์ตเฉพาะตอนไฟล์ตั้งค่าเปลี่ยน ด้วย handler">
+สไลด์ไม่ได้พูดถึงวิธีแก้ task 7 วิธีที่ Ansible เตรียมไว้คือ <Term en="Handler" th="task ที่รันเฉพาะเมื่อมี task อื่นแจ้งมาและ task นั้นเปลี่ยนของจริง" /> — task ที่รันเฉพาะเมื่อ task อื่น `notify` มา **และ task นั้น changed**
+
+ตัวอย่างนี้รันบนเครื่องตัวเอง ใช้ `debug` แทนการรีสตาร์ต nginx จริง
+
+```yaml
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: copy the nginx config file
+      ansible.builtin.copy:
+        content: "listen 8000;\n"
+        dest: "{{ playbook_dir }}/static_site.cfg"
+      notify: restart nginx
+  handlers:
+    - name: restart nginx
+      ansible.builtin.debug:
+        msg: "nginx restarts here"
+```
+
+**รอบแรก** ไฟล์ยังไม่มี task จึง changed และ handler ทำงาน
+
+```text
+TASK [copy the nginx config file] **********************************************
+changed: [my_notebook]
+
+RUNNING HANDLER [restart nginx] ************************************************
+ok: [my_notebook] => {
+    "msg": "nginx restarts here"
+}
+
+PLAY RECAP *********************************************************************
+my_notebook                : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+**รอบสอง** ไฟล์เหมือนเดิม handler ไม่ถูกเรียกเลย
+
+```text
+TASK [copy the nginx config file] **********************************************
+ok: [my_notebook]
+
+PLAY RECAP *********************************************************************
+my_notebook                : ok=1    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+</Example>
+
+### Variable, loop และ when
+
+<Why>
+ถ้าจะลงโปรแกรมสามตัว ต้องเขียน task แบบเดียวกันสามครั้ง ถ้าจะสร้างผู้ใช้สิบคน ต้องก๊อป task สิบครั้ง และค่าอย่างพอร์ตหรือเส้นทางไฟล์ก็กระจายอยู่ทั่ว playbook
+</Why>
+
+playbook มีเครื่องมือสำหรับเรื่องนี้
+
+- **variable** ประกาศใน playbook ได้สามรูป คือ ค่าเดี่ยว, list และ dictionary ใส่ค่าลงไปด้วย `{{ ชื่อตัวแปร }}` ซึ่งเป็นไวยากรณ์ของ <Term en="Jinja2" th="ภาษา template ที่ Ansible ใช้แทนค่าตัวแปร" />
+- <Term en="register" th="คำสั่งให้เก็บผลของ task ไว้ในตัวแปร" /> เก็บผลของ task ไว้ในตัวแปร ให้ task ถัดไปใช้
+- <Term en="loop" th="การวน task เดิมตามรายการ" /> วน task เดิมตาม list ค่าของแต่ละรอบอยู่ในตัวแปร `item`
+- <Term en="when" th="เงื่อนไขที่ต้องจริงก่อน task จะทำงาน" /> ตรวจเงื่อนไขก่อนทำ task
+
+**วนตาม list ของข้อความ** — task เดียวลงสามโปรแกรม
+
+```yaml
+- name: Install multiple packages
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - curl
+    - git
+    - tmux
+```
+
+**วนตาม list ของ dictionary** — แต่ละรอบ `item` เป็น dictionary อ่านค่าข้างในด้วยจุด
+
+```yaml
+- name: Create users with specific shells
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    shell: "{{ item.shell }}"
+    state: present
+  loop:
+    - { username: 'alice', shell: '/bin/bash' }
+    - { username: 'bob', shell: '/bin/zsh' }
+```
+
+**วนพร้อมเงื่อนไข** — `when` ถูกตรวจ **ทีละรอบ** รอบที่ไม่ผ่านถูกข้าม
+
+```yaml
+- name: Create directories only for active users
+  ansible.builtin.file:
+    path: "/home/{{ item.name }}/shared"
+    state: directory
+  loop:
+    - { name: 'clara', active: true }
+    - { name: 'david', active: false }
+    - { name: 'emma', active: true }
+  when: item.active == true
+```
+
+<Example added title="variable ทั้งสามรูป loop when และ register ในการรันจริง">
+สไลด์มีโค้ดของ loop และ when แต่ไม่มีผลลัพธ์ และไม่มีโค้ดของ variable กับ register เลย playbook นี้รวมทั้งหมด รันบนเครื่องตัวเอง สร้างโฟลเดอร์ใต้ `./home` แทน `/home`
+
+```yaml
+---
+- hosts: all
+  gather_facts: false
+  vars:
+    base: ./home
+    web_port: 8000
+    packages: [curl, git, tmux]
+    site: { name: static_site, root: /home/natawut/static-site }
+  tasks:
+    - name: Print a simple variable and a dictionary field
+      ansible.builtin.debug:
+        msg: "{{ site.name }} listens on {{ web_port }}"
+    - name: Iterate over a list of strings
+      ansible.builtin.debug:
+        msg: "install {{ item }}"
+      loop: "{{ packages }}"
+    - name: Create directories only for active users
+      ansible.builtin.file:
+        path: "{{ base }}/{{ item.name }}/shared"
+        state: directory
+      loop:
+        - { name: 'clara', active: true }
+        - { name: 'david', active: false }
+        - { name: 'emma', active: true }
+      when: item.active == true
+    - name: Check whether clara's directory exists
+      ansible.builtin.stat:
+        path: "{{ base }}/clara/shared"
+      register: clara_dir
+    - name: Print what register captured
+      ansible.builtin.debug:
+        var: clara_dir.stat.isdir
+```
+
+`web_port` เป็นค่าเดี่ยว `packages` เป็น list และ `site` เป็น dictionary
+
+**รอบแรก** — บรรทัดที่ตัดสินผล
+
+```text
+ok: [my_notebook] => {
+    "msg": "static_site listens on 8000"
+}
+
+ok: [my_notebook] => (item=curl) => {
+    "msg": "install curl"
+}
+
+TASK [Create directories only for active users] ********************************
+changed: [my_notebook] => (item={'name': 'clara', 'active': True})
+skipping: [my_notebook] => (item={'name': 'david', 'active': False})
+changed: [my_notebook] => (item={'name': 'emma', 'active': True})
+
+ok: [my_notebook] => {
+    "clara_dir.stat.isdir": true
+}
+
+PLAY RECAP *********************************************************************
+my_notebook                : ok=5    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
+- `when` ข้าม david รอบเดียว clara กับ emma ได้โฟลเดอร์
+- `register` เก็บผลของ `stat` ไว้ใน `clara_dir` แล้ว task ถัดไปอ่าน `clara_dir.stat.isdir` ได้ `true`
+- สร้างโฟลเดอร์สองอันแต่ recap ขึ้น `changed=1` เพราะ recap นับเป็น **task** ไม่ใช่นับรอบของ loop
+
+**รอบสอง** โฟลเดอร์มีอยู่แล้ว
+
+```text
+ok: [my_notebook] => (item={'name': 'clara', 'active': True})
+skipping: [my_notebook] => (item={'name': 'david', 'active': False})
+ok: [my_notebook] => (item={'name': 'emma', 'active': True})
+
+my_notebook                : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+</Example>
+
+<Detail label="ผลของ playbook รอบแรกทั้งหมด">
+```text
+PLAY [all] *********************************************************************
+
+TASK [Print a simple variable and a dictionary field] **************************
+ok: [my_notebook] => {
+    "msg": "static_site listens on 8000"
+}
+
+TASK [Iterate over a list of strings] ******************************************
+ok: [my_notebook] => (item=curl) => {
+    "msg": "install curl"
+}
+ok: [my_notebook] => (item=git) => {
+    "msg": "install git"
+}
+ok: [my_notebook] => (item=tmux) => {
+    "msg": "install tmux"
+}
+
+TASK [Create directories only for active users] ********************************
+changed: [my_notebook] => (item={'name': 'clara', 'active': True})
+skipping: [my_notebook] => (item={'name': 'david', 'active': False})
+changed: [my_notebook] => (item={'name': 'emma', 'active': True})
+
+TASK [Check whether clara's directory exists] **********************************
+ok: [my_notebook]
+
+TASK [Print what register captured] ********************************************
+ok: [my_notebook] => {
+    "clara_dir.stat.isdir": true
+}
+
+PLAY RECAP *********************************************************************
+my_notebook                : ok=5    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+</Detail>
+
+---
+
+## ส่วนที่ 5 — ต่อทุกอย่างเข้าด้วยกัน
+
+### เลือก Terraform หรือ Ansible
+
+| | Terraform | Ansible |
+| --- | --- | --- |
+| ใช้เมื่อ | ต้อง provision โครงสร้างพื้นฐาน เช่น cloud instance, network, storage | ต้องตั้งค่าและดูแลเซิร์ฟเวอร์ **หลังจากที่มันมีอยู่แล้ว** |
+| ถนัด | โครงสร้างพื้นฐานที่สร้างซ้ำได้เหมือนเดิมทุก environment (dev, test, prod) | งานที่ต้องทำเรื่อย ๆ เช่น ลง patch และรีสตาร์ต service |
+| ขอบเขต | environment หลากหลาย เช่น หลายคลาวด์พร้อมกัน | ตั้งค่าแบบ agentless และสั่งงาน ad-hoc ข้ามหลายเครื่อง |
+
+<Quiz question="ต้องลง security patch ให้เซิร์ฟเวอร์ 50 เครื่องที่รันอยู่แล้วทุกคืนวันอาทิตย์ ควรใช้ Terraform หรือ Ansible">
+**Ansible** — เครื่องมีอยู่แล้ว งานคือเปลี่ยนของบนเครื่อง และเป็นงานที่ทำซ้ำเรื่อย ๆ ซึ่งตรงกับ configuration management
+
+Terraform ถนัดสร้างหรือแก้ตัวทรัพยากร ไม่ใช่ลงโปรแกรมบนเครื่องที่รันอยู่
+</Quiz>
+
+### ส่งต่อจาก Terraform ไป Ansible
+
+<Why>
+inventory ของ Ansible ต้องมี IP ของเครื่อง แต่ IP ของเครื่องที่ Terraform สร้างเป็น `(known after apply)` รู้ได้หลัง apply เท่านั้น ถ้าต้องมีคนคัดลอก IP จากหน้าจอไปใส่ inventory เอง ก็กลับไปทำมืออีก
+</Why>
+
+<Figure number={10} caption="state คือจุดส่งต่อ — Terraform เขียน ส่วน Ansible อ่าน">
+  <TerraformAnsibleHandoff />
+</Figure>
+
+1. Terraform อ่าน `aws.tf` แล้ว **provision** เครื่องและบริการบน AWS
+2. ผลถูกจดลง **state** รวมถึง IP ของเครื่องและ secret
+3. Ansible อ่านค่าเหล่านั้นจาก state ผ่าน collection **`cloud.terraform`**
+4. Ansible ใช้ playbook **configure** เครื่องชุดเดียวกันนั้น
+
+ขั้นที่ 3 ทำงานด้วย <Term en="Inventory plugin" th="ตัวสร้าง inventory จากแหล่งข้อมูลอื่น แทนไฟล์รายชื่อที่เขียนเอง" /> ชื่อ `cloud.terraform.terraform_state` มันอ่าน state แล้วเปลี่ยน resource ที่เป็นเครื่อง เช่น `aws_instance` และ `google_compute_instance` เป็น host ใน inventory โดยมี attribute ของเครื่อง เช่น IP เป็นตัวแปรของ host นั้น ไฟล์ inventory จึงเหลือแค่บอกว่า state อยู่ที่ไหน และชื่อไฟล์ต้องลงท้ายด้วย `terraform_state.yml` หรือ `terraform_state.yaml`
+
+```yaml
+plugin: cloud.terraform.terraform_state
+backend_type: s3
+backend_config:
+  region: us-east-1
+  bucket: my-sample-bucket
+  key: terraform/state
+```
+
+ไฟล์นี้ชี้ไปที่ state ที่เก็บใน S3 bucket พอสั่ง `ansible-inventory -i aws.terraform_state.yml --graph` ก็ได้รายชื่อ host จากเครื่องใน state ทุกครั้งที่ Terraform สร้างหรือลบเครื่อง inventory ก็เปลี่ยนตามโดยไม่มีใครต้องแก้ไฟล์
+
+<Callout type="info" title="จาก repository ของวิชา">
+ไฟล์ Terraform ที่สร้าง VM สามเครื่อง pacific, arctic และ atlantic บน Google Cloud เตรียมสองอย่างไว้ให้ Ansible
+
+- สั่งลง `python3` ตอนเครื่องบูต เพราะ managed node ต้องมี Python
+- ส่ง IP ของทุกเครื่องออกมาเป็น output รูป map จากชื่อเครื่องไปเป็น IP
+
+```hcl
+output "nat_ip" {
+  value = {
+    for instance in google_compute_instance.default : instance.name => instance.network_interface.0.access_config.0.nat_ip
+  }
+}
+```
+</Callout>
+
+### Kubernetes มี kubectl แล้ว ทำไมยังต้องใช้ Ansible
+
+`kubectl` จัดการ deployment, pod และ service ได้ครบ แต่การ deploy แอปในงานจริงมักซับซ้อนกว่านั้น
+
+- **มีหลาย deployment ต้องขึ้นพร้อมกัน** Kubernetes ประกาศหลาย object ในไฟล์ YAML เดียวได้ แต่นั่นช่วยแค่ส่วนที่อยู่ในคลัสเตอร์
+- **ต้องตั้งค่าอุปกรณ์ network ใหม่** เช่น firewall และ router
+- **อาจต้องรีสตาร์ต host หรือเซิร์ฟเวอร์**
+- **ต้องรันชุดทดสอบจากเซิร์ฟเวอร์หรือ client เครื่องอื่น**
+
+สามข้อหลังอยู่นอกคลัสเตอร์ทั้งหมด `kubectl` ไปไม่ถึง playbook เดียวของ Ansible เรียงงานทั้งหมดนี้ต่อกันได้ รวมถึงสั่ง Kubernetes ผ่าน `kubernetes.core.k8s`
+
+### GitOps
+
+<Why>
+ไฟล์ Terraform และ playbook อยู่ใน git แล้วก็จริง แต่ถ้ายังมีคน SSH เข้าไปแก้เครื่อง หรือสั่ง `terraform apply` จากเครื่องตัวเอง ไฟล์ใน git กับระบบที่รันจริงก็ค่อย ๆ ไม่ตรงกัน และไม่มีใครตอบได้ว่าระบบตอนนี้มาจาก commit ไหน
+</Why>
+
+<Figure number={11} caption="แก้ที่ git ที่เดียว แล้ว pipeline ทำให้ของจริงตามมา">
+  <GitopsFlow />
+</Figure>
+
+<Term en="GitOps" th="ใช้ git เป็นแหล่งความจริงเดียวของการตั้งค่าระบบ" /> เอาทุกอย่างในหน้านี้มาต่อกัน
+
+- **infrastructure as code** (Terraform), **configuration management** (Ansible) และ **application code** เก็บอยู่ใน git ที่เดียว git จึงเป็น **source of truth** ของโค้ดแบบ declarative ทั้งหมด
+- **การแก้โค้ดใน git สั่งให้ pipeline ทำงาน**
+- **pipeline รันงานเป็นชุด** จนสภาพของระบบที่รันจริงตรงกับที่เขียนใน git
+
+<Example added title="เพิ่มเครื่อง baltic ด้วย commit เดียว">
+สไลด์แสดงภาพรวมของ GitOps โดยไม่มีตัวอย่าง ตัวอย่างนี้เก็บ `instance_set` กับ `for_each` จากส่วนที่ 3 ไว้ใน git แล้วรันขั้นแรกที่ pipeline จะรันด้วยมือ โดยใช้ `terraform_data` แทนเครื่องจริง
+
+การเพิ่มเครื่องไม่ได้เริ่มที่การสร้างเครื่อง แต่เริ่มที่ commit ที่แก้ไฟล์บรรทัดเดียว
+
+```text
+$ git log --oneline
+225d635 Add baltic web server
+046778b Create three web servers
+
+$ git diff HEAD~1 -- main.tf
+-  default = ["pacific", "arctic", "atlantic"]
++  default = ["pacific", "arctic", "atlantic", "baltic"]
+```
+
+commit นี้สั่งให้ pipeline ทำงาน ขั้นแรกคือ plan แล้ว apply
+
+```text
+$ terraform plan
+  # terraform_data.server["baltic"] will be created
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+$ terraform apply -auto-approve
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+$ terraform plan
+No changes. Your infrastructure matches the configuration.
+```
+
+- plan แตะแค่ baltic เพราะ `for_each` ผูกของแต่ละชิ้นกับชื่อ
+- `-auto-approve` ข้ามการพิมพ์ `yes` เพราะใน pipeline ไม่มีคนนั่งพิมพ์ คนตรวจการเปลี่ยนตอน review commit แทน
+- plan รอบถัดไปได้ `No changes.` ระบบตรงกับ commit ล่าสุดแล้ว ขั้นต่อไปของ pipeline คือรัน playbook กับ baltic โดยใช้ inventory ที่อ่านจาก state
+
+<Detail label="ไฟล์และผลทั้งหมด">
+`main.tf` หลัง commit ล่าสุด
+
+```hcl
+variable "instance_set" {
+  type    = list(string)
+  default = ["pacific", "arctic", "atlantic", "baltic"]
+}
+
+resource "terraform_data" "server" {
+  for_each = toset(var.instance_set)
+  input    = "sds-${each.value}"
+}
+```
+
+```text
+$ git diff HEAD~1 -- main.tf
+diff --git a/main.tf b/main.tf
+index 34b52e8..78393cb 100644
+--- a/main.tf
++++ b/main.tf
+@@ -1,6 +1,6 @@
+ variable "instance_set" {
+   type    = list(string)
+-  default = ["pacific", "arctic", "atlantic"]
++  default = ["pacific", "arctic", "atlantic", "baltic"]
+ }
+
+ resource "terraform_data" "server" {
+
+$ terraform plan
+terraform_data.server["pacific"]: Refreshing state... [id=67c40bb6-09f4-fd7c-1046-3f00d7d6dd01]
+terraform_data.server["atlantic"]: Refreshing state... [id=ad902833-5fd1-2759-752a-f9f898aae256]
+terraform_data.server["arctic"]: Refreshing state... [id=cc7c7e24-f1ca-6521-af6c-cee079c019e5]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # terraform_data.server["baltic"] will be created
+  + resource "terraform_data" "server" {
+      + id     = (known after apply)
+      + input  = "sds-baltic"
+      + output = (known after apply)
+    }
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+$ terraform apply -auto-approve
+terraform_data.server["baltic"]: Creation complete after 0s [id=cc3bd525-8b0e-119d-5337-28db4bcae3d4]
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+$ terraform plan
+terraform_data.server["baltic"]: Refreshing state... [id=cc3bd525-8b0e-119d-5337-28db4bcae3d4]
+terraform_data.server["arctic"]: Refreshing state... [id=cc7c7e24-f1ca-6521-af6c-cee079c019e5]
+terraform_data.server["pacific"]: Refreshing state... [id=67c40bb6-09f4-fd7c-1046-3f00d7d6dd01]
+terraform_data.server["atlantic"]: Refreshing state... [id=ad902833-5fd1-2759-752a-f9f898aae256]
+
+No changes. Your infrastructure matches the configuration.
+```
+</Detail>
+</Example>
+
+<KeyIdea>
+ใน GitOps ไม่มีใครแก้ระบบจริงตรง ๆ ทุกการเปลี่ยนเริ่มที่ commit ประวัติของ git จึงเป็นประวัติของระบบทั้งระบบ
+
+นี่คือปลายทางของส่วนที่ 1 — ทุกขั้นจากโค้ดถึงเครื่องจริงเป็นอัตโนมัติ และตัวเครื่องเองก็เป็นโค้ด
+</KeyIdea>
+
+<Detail label="แหล่งอ่านต่อ">
+**Terraform**
+
+- Terraform Tutorial: `https://learn.hashicorp.com/collections/terraform/cli`
+- `https://github.com/hashicorp/learn-terraform-init`
+- Terraform on Google Cloud: `https://cloud.google.com/docs/terraform`
+- S. Ninawe, "How to Use Terraform For_Each Meta-Argument [Examples]": `https://spacelift.io/blog/terraform-for-each`
+- ภาพรวมและวงจรของ Terraform: `https://geekflare.com/terraform-for-beginners/`
+
+**Ansible**
+
+- `https://docs.ansible.com/ansible/latest/getting_started/index.html`
+- `https://digitalvarys.com/how-to-write-an-ansible-playbook/`
+- deployment, provisioning และ orchestration ต่างกันยังไง: `https://codefol.io/posts/deployment-versus-provisioning-versus-orchestration/`
+
+**DevOps**
+
+- CI, continuous delivery และ continuous deployment: `https://www.bmc.com/blogs/continuous-delivery-continuous-deployment-continuous-integration-whats-difference/`
+- DevOps, SRE และ platform engineering: `https://bytebytego.com/guides/devops-vs-sre-vs-paltform-engg/`
+- ภาพรวมของ IaC: `https://k21academy.com/devops-foundation/day4-live-session-review/`
+- GitOps: `https://aws.plainenglish.io/what-is-gitops-gitops-tools-devops-5a72d18f3c65`
+</Detail>
+
+---
+
+<Recap>
+**DevOps**
+
+- Agile เร่งรอบระหว่างผู้ใช้กับนักพัฒนา แต่งานติดตรงส่งต่อให้ operator ตอน deploy — DevOps มาแก้ช่วงนี้
+- เป้าหมาย: SDLC สั้นลงโดยคุณภาพยังสูง คิดเรื่อง deploy ตั้งแต่ต้น ให้ทุกคนมีส่วนร่วม และทำทุกขั้นให้อัตโนมัติเร็วที่สุด
+- วงจรแปดขั้น plan, code, build, test, release, deploy, operate, monitor ผ่านสาม environment คือ development, test, production
+- ความยาวของเส้นอัตโนมัติ: CI ถึง test · Continuous Delivery ถึง release (มีคนกดปล่อย) · Continuous Deployment ถึง deploy (ไม่มีคนกด) · DevOps ถึง operate
+- เครื่องมือตามขั้น: git/GitHub, Docker Hub, Terraform/Ansible, Prometheus และ Jenkins/GitHub Actions ร้อยเป็น pipeline
+- DevOps ทีมทำครบเอง · SRE รับช่วงตาม standards และวัดด้วยเป้าบริการที่เป็นตัวเลข · Platform Engineering ให้ทีม product ใช้เครื่องมือกลางเอง
+
+**Infrastructure as Code**
+
+- เขียนสถานะที่ต้องการของโครงสร้างพื้นฐานเป็นไฟล์ แล้วได้ version control, roll-back, automated testing และ documentation
+- ห้ากลุ่ม: ad hoc scripts · provisioning (Terraform, CloudFormation, Pulumi) · server templating (Docker, Vagrant, Packer) · configuration management (Ansible, Chef, Puppet) · orchestration (Compose/Swarm, Kubernetes)
+- Terraform ทำให้มีเครื่อง Ansible ทำให้เครื่องพร้อมใช้
+
+**Terraform**
+
+- Core + provider (resources, data sources) + state (`*.tfstate`)
+- block คือ `<type> "<label>" "<label>"` แล้วตามด้วยตัว block · อ้างถึงกันด้วย `type.name.attribute` แล้ว Terraform หาลำดับการสร้างเอง
+- `init` โหลด provider และสร้าง `.terraform.lock.hcl` (commit) · `plan` ดูก่อนด้วย `+` `~` `-` · `apply` ต้องพิมพ์ `yes` · `destroy` ลบของใน state
+- `(known after apply)` คือค่าที่ต้องรอของจริงเกิด
+- variable (`var.`), local (`local.`), output · data source (`data.`) อ่านอย่างเดียว · module คือโฟลเดอร์ที่มี variable เข้าและ output ออก
+- `sensitive` ซ่อนแค่บนหน้าจอ state ยังเก็บค่าจริง ห้าม commit state
+- meta-argument: `depends_on` (ลำดับที่การอ้างถึงบอกไม่ได้), `count`, `for_each`, `provider` (เลือกชุดที่มี `alias`), `lifecycle` · provisioner ใช้เป็นทางสุดท้าย
+- ของที่มีชื่อใช้ `for_each` — `count` เพิ่มหรือลบกลางรายการแล้วตัวถัดไปขยับทั้งแถว
+- สิงหาคม 2023 Terraform เปลี่ยนจาก MPL 2.0 เป็น BSL 1.1 ซึ่งห้ามทำผลิตภัณฑ์แข่งกับ HashiCorp · OpenTofu คือ fork แบบ open source
+
+**Ansible**
+
+- agentless, push-based, master-less · ปลายทางต้องมีแค่ Python และ SSH
+- control node + inventory + playbook ส่งงานผ่าน SSH ไปที่ managed nodes
+- ad-hoc: `ansible <pattern> -m <module> -a <args>` · ไม่ใส่ `-m` ได้ `command` ซึ่งขึ้น CHANGED เสมอ · `-b --ask-become-pass` ยกสิทธิ์ · `--limit` กรองเครื่อง
+- FQCN `namespace.collection.module` เช่น `ansible.builtin.copy` · `ansible` = `ansible-core` + community collections · ปักรุ่นใน `requirements.yml`
+- playbook เขียน `state:` ปลายทาง ไม่ใช่ขั้นตอน · PLAY RECAP `ok` นับรวม `changed` และนับเป็น task ไม่ใช่รอบของ loop
+- idempotency: รอบสองต้อง `changed=0` · `shell` และ `command` ไม่ idempotent ให้ใช้ module ที่บอกสภาพได้ เช่น `lineinfile`
+- รีสตาร์ตด้วย handler + `notify` ไม่ใช่ task `state: restarted` ที่รีสตาร์ตทุกรอบ
+- `vars` (ค่าเดี่ยว, list, dictionary) · `{{ }}` · `register` · `loop` กับ `item` · `when` ตรวจทีละรอบ
+- Galaxy: `ansible-galaxy collection install kubernetes.core` บน control node และ `pip install kubernetes` บน managed node
+
+**ใช้ร่วมกัน**
+
+- Terraform เขียน IP และ secret ลง state แล้ว inventory plugin `cloud.terraform.terraform_state` เปลี่ยนเครื่องใน state เป็น host ของ Ansible
+- kubectl ไม่พอเมื่อ deploy ต้องแตะ firewall หรือ router, รีสตาร์ต host หรือทดสอบจากเครื่องอื่น
+- GitOps: git คือ source of truth · commit สั่ง pipeline · pipeline ปรับระบบจริงให้ตรงกับ git
+</Recap>
