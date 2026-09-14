@@ -45,8 +45,15 @@ follow `docs/agents/courses.md`, then come back here.
 5. Draw each diagram you need. Read `docs/agents/figures.md` first.
 6. Add the page to `"pages"` in `content/<course>/meta.json`, after its `.mdx` file exists.
    A missing file is dropped silently, so a typo in the name is invisible.
-7. Run `pnpm check`. Done when it passes.
-8. Build and serve with `pnpm build && PORT=3101 pnpm start`. `pnpm dev` runs out of memory
+7. Review with two fresh subagents defined in `.claude/agents/`. Confirm each finding against
+   the deck, the tool, or the page before acting on it: a reviewer can be wrong. Done when every
+   finding is fixed or rejected with a reason.
+   1. `page-fact-checker`: is the page true and complete? Fix what it finds.
+   2. `page-editor`: does the page teach? Save a copy of the page outside the repo first, then
+      fix what it finds.
+   3. `page-fact-checker` again, passing that copy, so the edits dropped no fact.
+8. Run `pnpm check`. Done when it passes.
+9. Build and serve with `pnpm build && PORT=3101 pnpm start`. `pnpm dev` runs out of memory
    on lecture pages. Read the page end to end. Done when all of these hold:
    - every section read in light mode and in dark mode
    - every figure's text readable in both
@@ -79,6 +86,10 @@ Every one of these is a blocker, not a preference.
   sides of it.
 - **Quote the deciding lines, fold the rest.** Show the lines of command output that prove the
   point and put the full output, or a long lookup table, in a `<Detail>`.
+- **Say it once.** Each point has one home on the page; a later section names it or links back
+  instead of explaining it again. Cut words that carry no meaning. A cut never drops a fact: a
+  sentence goes only when everything it carries is said elsewhere. `<KeyIdea>` and `<Recap>`
+  repeat on purpose.
 - **Assume no background.** If a term needs earlier knowledge, explain that first or link to
   the lecture that covers it.
 - **Thai prose, English terms.** Explain in Thai. Keep standard technical terms in English.
@@ -86,7 +97,7 @@ Every one of these is a blocker, not a preference.
 - **Own the order.** Group sections by idea, and sequence them so each one is understandable
   from the ones before it. The deck's order is one candidate; follow it where it is already
   the best teaching order, as a decision. Walking the deck splits topics that belong together
-  and copies its _inherited gaps_ — step 8's name check catches the second.
+  and copies its _inherited gaps_ — step 9's name check catches the second.
 - **End with `<Recap>`.** Bullets a student can read the night before an exam. The table of
   contents links `สรุปท้ายคาบ` to `#recap` on every page, so without it that link is dead.
 
@@ -129,7 +140,7 @@ The schema lives in `lib/source.ts`; a wrong type fails the build.
   `N · Short topic` for a lecture and a plain Thai phrase for a course index page.
 - `credit` tells a stranger this is a student's summary, not the real slides.
 - `source` renders nowhere. It is a repo path for the next agent to find the PDF.
-- `readingMinutes`: other pages run about 500–850 Thai characters per minute.
+- `readingMinutes`: other pages run about 350–550 Thai characters per minute.
 
 ## Components
 
