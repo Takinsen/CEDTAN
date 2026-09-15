@@ -21,7 +21,7 @@ export function HashOneWay() {
         hello
       </text>
       <text x="24" y="99" fontSize="11" opacity="0.85">
-        ไฟล์ติดตั้งขนาด 4 GB
+        ไฟล์ 4 GB ศูนย์ล้วน
       </text>
       <text x="24" y="137" fontSize="11" opacity="0.85">
         hellp
@@ -53,10 +53,10 @@ export function HashOneWay() {
         2cf24dba5fb0a30e...
       </text>
       <text x="404" y="109" fontSize="11" opacity="0.85">
-        9f86d081884c7d65...
+        ddd45e35df0b6767...
       </text>
       <text x="404" y="138" fontSize="11" opacity="0.85">
-        70e2fc1a4e2b0c3d...
+        fdd7585e08c4e2af...
       </text>
 
       <text x="500" y="164" textAnchor="middle" fontSize="11" opacity="0.8">
@@ -76,7 +76,7 @@ export function HashOneWay() {
       </text>
 
       <text x="310" y="242" textAnchor="middle" fontSize="11" opacity="0.78">
-        ค่าที่ออกมาสั้นกว่าค่าที่เข้าไป แปลว่ามีข้อความคนละชิ้นที่ได้ค่าเดียวกันแน่นอน นั่นคือ collision
+        ข้อความที่เข้าไปมีได้ไม่จำกัด แต่ค่าที่ออกมามีจำกัด จึงต้องมีข้อความคนละชิ้นที่ได้ค่าเดียวกัน นั่นคือ collision
       </text>
 
       <defs>
