@@ -413,7 +413,11 @@ lecture page is not.
   bottom 10%, and a dark radial pool sits behind the course name. The incoming cover fades in
   over 1s on top of the outgoing one, which holds its opacity and zoom underneath and hides only
   once covered, so the hero never dims or jumps mid-change. The incoming cover eases back from a
-  1.08 zoom over 16s. A course with no cover shows its code set huge at 5% white.
+  1.08 zoom over 16s. Until a cover arrives, a 32px copy of it, inlined at
+  build time, stands in blurred at 22px; the cover then fades in soft (18px blur, 1.04 scale)
+  and pulls into focus over 1.2s. Only the first cover loads with the page; the rest follow one
+  at a time in strip order, and the cover on screen jumps the queue. A course with no cover
+  shows its code set huge at 5% white.
 - **Type:** the course name in 700 at up to 96px with a three-layer text shadow, above it one
   Red Hat Mono line with the code and the lecture count (`2110506 · 5 คาบ`), the Thai name
   below. The name is plain text, since a course has no overview page (ADR 0003); `ดูทุกคาบ ↓` is a solid light pill, alone and

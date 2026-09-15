@@ -11,6 +11,7 @@ export type HeroCourse = {
   name: string;
   nameTh?: string;
   cover?: string;
+  thumb?: string;
   lectureCount: number;
 };
 
@@ -77,11 +78,22 @@ export function CourseHero({ courses, lectureTitles }: { courses: HeroCourse[]; 
   const picked = useRef(false);
   const pausedRef = useRef(false);
   const activeRef = useRef(0);
+  const fullCovers = useRef<(HTMLImageElement | null)[]>([]);
+  const [loaded, setLoaded] = useState(() => courses.map((item) => !item.cover));
   const copies = copiesFor(courses.length);
 
   useEffect(() => {
     pausedRef.current = paused;
   }, [paused]);
+
+  // a cover that finished loading before hydration fired its load event unheard
+  useEffect(() => {
+    fullCovers.current.forEach((img, i) => img?.complete && img.naturalWidth > 0 && markLoaded(i));
+  }, []);
+
+  function markLoaded(index: number) {
+    setLoaded((list) => (list[index] ? list : list.map((value, i) => value || i === index)));
+  }
 
   // move both strips each frame; the middle chip picks the course unless the reader picked one
   useEffect(() => {
@@ -196,18 +208,32 @@ export function CourseHero({ courses, lectureTitles }: { courses: HeroCourse[]; 
           <div
             key={item.slug}
             data-on={i === active || undefined}
+            data-loaded={(item.cover && loaded[i]) || undefined}
             className="home-cover absolute inset-0 overflow-hidden"
           >
             {item.cover ? (
-              <Image
-                src={item.cover}
-                alt=""
-                fill
-                sizes="100vw"
-                loading={i === 0 ? 'eager' : 'lazy'}
-                fetchPriority={i === 0 ? 'high' : 'auto'}
-                className="object-cover brightness-80"
-              />
+              <div className="home-cover-drift absolute inset-0">
+                {/* eslint-disable-next-line @next/next/no-img-element -- an inline data URI needs no optimising */}
+                {item.thumb && <img src={item.thumb} alt="" className="home-cover-thumb" />}
+                {/* covers load one after another in strip order, and the one on screen jumps the queue */}
+                {(i === 0 || loaded[i - 1] || i === active) && (
+                  <Image
+                    ref={(img) => {
+                      fullCovers.current[i] = img;
+                    }}
+                    src={item.cover}
+                    alt=""
+                    fill
+                    sizes="100vw"
+                    loading="eager"
+                    fetchPriority={i === 0 ? 'high' : 'auto'}
+                    onLoad={(event) => {
+                      event.currentTarget.decode().catch(() => {}).then(() => markLoaded(i));
+                    }}
+                    className="home-cover-full object-cover"
+                  />
+                )}
+              </div>
             ) : (
               <div className="grid h-full place-items-center font-mono text-[clamp(80px,16vw,260px)] leading-none tracking-[-0.05em] text-white/5">
                 {item.code}

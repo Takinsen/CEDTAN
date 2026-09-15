@@ -29,6 +29,9 @@ never waits for the pages.
    WebP with a dark ground, because the landing hero is dark in both themes. When the owner hands
    over a PNG, convert it with `sharp` and move the PNG into `data/covers/`, which git ignores.
    A course with no cover still renders, with its code set faint on black.
+   To replace a cover, give the new file a new name, such as `<slug>-cover-4k-2.webp`, and update
+   `cover`. Optimised images stay cached for 31 days, so a file overwritten under its old name
+   keeps showing the old picture.
 4. Run `pnpm check`, then open `/` on a production build. Done when the course appears in the
    strip and the directory marked `กำลังเรียบเรียง`, with no link to a page that does not exist.
 

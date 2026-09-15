@@ -92,7 +92,7 @@
   transition: opacity 0s 1000ms;
 }
 
-.home-cover img {
+.home-cover-drift {
   transform: scale(1.08);
   transition: transform 0s 1000ms;
 }
@@ -104,13 +104,41 @@
   transition: opacity 1000ms ease-out;
 }
 
-.home-cover[data-on] img {
+.home-cover[data-on] .home-cover-drift {
   transform: scale(1);
   transition: transform 16s ease-out;
 
   @starting-style {
     transform: scale(1.08);
   }
+}
+
+/* a blurred 32px thumbnail holds the place until the cover arrives */
+.home-cover-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.8) blur(22px);
+  transform: scale(1.15);
+}
+
+/* the full cover starts soft and pulls into focus once loaded */
+.home-cover-full {
+  opacity: 0;
+  filter: brightness(0.8) blur(18px);
+  transform: scale(1.04);
+  transition:
+    opacity 500ms ease-out,
+    filter 1200ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 1200ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.home-cover[data-loaded] .home-cover-full {
+  opacity: 1;
+  filter: brightness(0.8);
+  transform: none;
 }
 
 .home-rise {
@@ -134,7 +162,8 @@
   }
 
   .home-cover,
-  .home-cover img,
+  .home-cover-drift,
+  .home-cover-full,
   .home-course::details-content,
   .home-course > summary {
     transition: none;
