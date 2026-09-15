@@ -11,7 +11,7 @@ never waits for the pages.
 
 - The deck folder is `data/<CODE>-<ABBR>/`, uppercase: `data/2110471-CN/`.
 - The slug is the same pair in lowercase: `2110471-cn`. It names the entry, the content folder
-  `content/<slug>/`, the page URL `/<slug>`, and the cover file.
+  `content/<slug>/`, the page URLs `/<slug>/lecture-<n>`, and the cover file.
 
 ## Steps
 
@@ -35,10 +35,9 @@ never waits for the pages.
 ## When the pages start
 
 1. Create `content/<slug>/meta.json` with `"root": true`, `"title": "<CODE> <ABBR>"`,
-   `"description"` set to the English name, and `"pages"` listing `index` and each lecture.
-2. Write `content/<slug>/index.mdx`, the course overview, from the syllabus, with
-   `sidebarTitle: "ภาพรวมวิชา"` and `source` pointing at the syllabus.
-3. Add lectures with the steps in `AGENTS.md`.
+   `"description"` set to the English name, and `"pages"` listing each lecture.
+2. Add lectures with the steps in `AGENTS.md`.
 
-The landing page picks each of these up on its own: the course name links to the overview once
-`index.mdx` exists, and the directory folds open once a lecture exists.
+Do not write a course overview page. Schedules, grading and exam rules change from term to term,
+so a copy of the syllabus goes stale; see `docs/adr/0003-no-course-overview-page.md`. The URL
+`/<slug>` redirects to lecture 1. The landing page folds the course open once a lecture exists.

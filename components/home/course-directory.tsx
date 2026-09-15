@@ -9,7 +9,6 @@ export type DirectoryCourse = {
   code: string;
   name: string;
   nameTh?: string;
-  hasOverview: boolean;
   lectures: { url: string; label: string; lecture?: number }[];
 };
 
@@ -30,7 +29,6 @@ export function CourseDirectory({ courses }: { courses: DirectoryCourse[] }) {
     const details = saved && document.getElementById(`course-${saved}`);
     if (!(details instanceof HTMLDetailsElement)) return;
     details.open = true;
-    details.dataset.last = '';
   }, []);
 
   function remember(details: HTMLDetailsElement, slug: string) {
@@ -81,15 +79,7 @@ export function CourseDirectory({ courses }: { courses: DirectoryCourse[] }) {
               </summary>
 
               <div className="pb-4 sm:pl-[calc(7.5em+1rem)]">
-                {course.hasOverview && (
-                  <Link
-                    href={`/${course.slug}`}
-                    className="text-sm font-semibold underline underline-offset-4 hover:text-fd-primary"
-                  >
-                    ภาพรวมวิชา →
-                  </Link>
-                )}
-                <ol className="mt-2 gap-8 sm:columns-2">
+                <ol className="gap-8 sm:columns-2">
                   {course.lectures.map((lecture) => (
                     <li key={lecture.url} className="break-inside-avoid">
                       <Link
@@ -118,10 +108,7 @@ function CourseHeading({ course }: { course: DirectoryCourse }) {
     <>
       <span className="col-span-full font-mono text-[13px] text-fd-muted-foreground sm:col-span-1">{course.code}</span>
       <span>
-        <h3 className="inline text-[17px] font-semibold">{course.name}</h3>
-        <span className="ml-2 hidden rounded-full border border-fd-border px-2 text-xs text-fd-muted-foreground group-data-last:inline-block">
-          เปิดล่าสุด
-        </span>
+        <h3 className="text-[17px] font-semibold">{course.name}</h3>
         {course.nameTh && <span className="block text-sm text-fd-muted-foreground">{course.nameTh}</span>}
       </span>
     </>

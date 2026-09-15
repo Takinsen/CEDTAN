@@ -1,15 +1,12 @@
 import { courses, courseLectures } from '@/lib/courses';
-import { source } from '@/lib/source';
 import { CourseHero } from '@/components/home/course-hero';
 import { CourseDirectory } from '@/components/home/course-directory';
 import { stripNumber } from '@/components/home/strip';
 import '@/components/home/home.css';
 
 export default function HomePage() {
-  // a course listed before its pages exist has no overview to link to
   const catalog = courses.map((course) => ({
     ...course,
-    hasOverview: Boolean(source.getPage([course.slug])),
     lectures: courseLectures(course.slug).map((lecture) => ({ ...lecture, label: stripNumber(lecture.label) })),
   }));
 
@@ -22,7 +19,6 @@ export default function HomePage() {
           name: course.name,
           nameTh: course.nameTh,
           cover: course.cover,
-          hasOverview: course.hasOverview,
           lectureCount: course.lectures.length,
         }))}
         lectureTitles={catalog.flatMap((course) => course.lectures.map((lecture) => lecture.label))}

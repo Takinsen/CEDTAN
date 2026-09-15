@@ -72,7 +72,7 @@ export const courses: Course[] = [
   },
 ];
 
-// lecture pages of a course in lecture order, not counting its index page
+// lecture pages of a course in lecture order
 export function courseLectures(slug: string): CourseLecture[] {
   return source
     .getPages()

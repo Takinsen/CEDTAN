@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { ArrowDown, Pause, Play } from 'lucide-react';
 import { useEffect, useRef, useState, type FocusEvent, type MouseEvent } from 'react';
 import { copiesFor, easeInOutCubic, exitProgress, nearestIndex, wrapOffset } from './strip';
@@ -12,7 +11,6 @@ export type HeroCourse = {
   name: string;
   nameTh?: string;
   cover?: string;
-  hasOverview: boolean;
   lectureCount: number;
 };
 
@@ -198,7 +196,7 @@ export function CourseHero({ courses, lectureTitles }: { courses: HeroCourse[]; 
           <div
             key={item.slug}
             data-on={i === active || undefined}
-            className="home-cover absolute inset-0 overflow-hidden opacity-0 transition-opacity duration-1000 ease-out data-on:opacity-100 motion-reduce:transition-none"
+            className="home-cover absolute inset-0 overflow-hidden"
           >
             {item.cover ? (
               <Image
@@ -235,13 +233,7 @@ export function CourseHero({ courses, lectureTitles }: { courses: HeroCourse[]; 
               </>
             )}
           </p>
-          {course.hasOverview ? (
-            <Link href={`/${course.slug}`} className={`${NAME} rounded-lg decoration-2 underline-offset-[0.12em] hover:underline ${FOCUS}`}>
-              {course.name}
-            </Link>
-          ) : (
-            <p className={NAME}>{course.name}</p>
-          )}
+          <p className={NAME}>{course.name}</p>
           {course.nameTh && <p className="mt-2 text-[clamp(16px,1.8vw,20px)] text-white/90">{course.nameTh}</p>}
           <div className="mt-6 flex justify-center text-[15px] text-white/85">
             {course.lectureCount > 0 ? (

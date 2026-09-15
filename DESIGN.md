@@ -398,7 +398,7 @@ surface — the theme's defaults do not.
 
 Course switcher, then one entry per page, each on one line. Entries are muted 14px at rest and
 ink on a grey fill when active. Labels come from a page's `sidebarTitle`, not its full title:
-`ภาพรวมวิชา`, `1 · Software-Defined Systems`, `5 · Kubernetes`.
+`1 · Software-Defined Systems`, `5 · Kubernetes`.
 
 ### Landing Hero
 
@@ -410,11 +410,13 @@ lecture page is not.
   photographs, so the hero ignores the reader's theme.
 - **Cover:** full bleed behind the whole hero at 80% brightness, from
   `public/images/courses/<slug>-cover-4k.webp`. A solid black fade covers the top 8% and the
-  bottom 10%, and a dark radial pool sits behind the course name. The incoming cover eases back
-  from a 1.08 zoom over 16s. A course with no cover shows its code set huge at 5% white.
+  bottom 10%, and a dark radial pool sits behind the course name. The incoming cover fades in
+  over 1s on top of the outgoing one, which holds its opacity and zoom underneath and hides only
+  once covered, so the hero never dims or jumps mid-change. The incoming cover eases back from a
+  1.08 zoom over 16s. A course with no cover shows its code set huge at 5% white.
 - **Type:** the course name in 700 at up to 96px with a three-layer text shadow, above it one
   Red Hat Mono line with the code and the lecture count (`2110506 · 5 คาบ`), the Thai name
-  below. The name links to the course overview; `ดูทุกคาบ ↓` is a solid light pill, alone and
+  below. The name is plain text, since a course has no overview page (ADR 0003); `ดูทุกคาบ ↓` is a solid light pill, alone and
   centred under the name.
 - **Motion:** a strip of course chips runs left along the foot and a strip of lecture titles
   runs right beneath it. The chip crossing the centre tick lights up and picks the course shown.
@@ -431,10 +433,9 @@ lecture page is not.
 ### Lecture Directory
 
 Under the hero, one hairline row per course: code, name and Thai name, lecture count, and a
-chevron. A row opens to a `ภาพรวมวิชา →` link and the lectures in two columns, unfolding over
-420ms where the browser can animate `::details-content` and at once where it cannot. Every course is
-folded on arrival except the one this browser opened last, which also carries a `เปิดล่าสุด`
-pill. The choice lives in `localStorage` under `cedtan:last-course`.
+chevron. A row opens to the lectures in two columns, unfolding over 420ms where the browser can
+animate `::details-content` and at once where it cannot. Every course is folded on arrival
+except the one this browser opened last. The choice lives in `localStorage` under `cedtan:last-course`.
 
 ### Named Rules
 

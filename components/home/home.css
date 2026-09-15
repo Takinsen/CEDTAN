@@ -86,22 +86,35 @@
   mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
 }
 
-/* the cover that just came in eases back from a slight zoom */
+/* the old cover holds its opacity and zoom under the new one for a second, then hides */
+.home-cover {
+  opacity: 0;
+  transition: opacity 0s 1000ms;
+}
+
+.home-cover img {
+  transform: scale(1.08);
+  transition: transform 0s 1000ms;
+}
+
+/* the new cover fades in on top and eases back from a slight zoom */
+.home-cover[data-on] {
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 1000ms ease-out;
+}
+
 .home-cover[data-on] img {
-  animation: home-drift 16s ease-out both;
+  transform: scale(1);
+  transition: transform 16s ease-out;
+
+  @starting-style {
+    transform: scale(1.08);
+  }
 }
 
 .home-rise {
   animation: home-rise 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-
-@keyframes home-drift {
-  from {
-    transform: scale(1.08);
-  }
-  to {
-    transform: scale(1);
-  }
 }
 
 @keyframes home-rise {
@@ -116,11 +129,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-cover[data-on] img,
   .home-rise {
     animation: none;
   }
 
+  .home-cover,
+  .home-cover img,
   .home-course::details-content,
   .home-course > summary {
     transition: none;

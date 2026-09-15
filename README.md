@@ -38,15 +38,17 @@ lib/
   courses.ts   course registry for the landing page
 app/
   (home)/      landing page
-  (lecture)/   course and lecture pages
-docs/superpowers/   design spec and this project's plans
+  (lecture)/   lecture pages
+docs/
+  adr/         decisions and why
+  agents/      how-to guides for agents writing pages
 ```
 
 ## URLs
 
 ```
 /                        list of courses
-/2110506-sds             course overview
+/2110506-sds             redirects to lecture 1
 /2110506-sds/lecture-1   lecture summary
 ```
 
