@@ -979,7 +979,9 @@ docker run -d -t --rm --name webapp --network todo-net \
 3. **ลำดับสำคัญ** — สร้าง redis ก่อน แล้วค่อย notification แล้วค่อย todo เพราะตัวหลังต้องการตัวหน้า
 
 <Example added title="ระบบเดียวกันนี้ในรูปแบบ compose">
-ชุดคำสั่งหกบรรทัดข้างบนเขียนเป็น compose file ได้แบบนี้ ซึ่งอ่านง่ายกว่ามากและสั่งขึ้นทีเดียวจบ
+ชุดคำสั่งหกบรรทัดข้างบนเขียนเป็น compose file ได้ ซึ่งอ่านง่ายกว่ามากและสั่งขึ้นทีเดียวจบ
+
+<Detail label="compose file ของทั้งระบบ">
 
 ```yaml
 services:
@@ -1017,6 +1019,8 @@ services:
 networks:
   todo-net: {}
 ```
+
+</Detail>
 
 `tty: true` คือ `-t` และ `stdin_open: true` คือ `-i` จากคำสั่งเดิม
 

@@ -71,16 +71,19 @@ Every one of these is a blocker, not a preference.
 - **Cover everything.** Every topic on the slides appears on the page, minor-looking ones
   included, with enough left of each to carry its meaning.
 - **Reason before definition.** Open each concept with the problem it solves (`<Why>`), then
-  say what it is.
+  say what it is. Make the problem a concrete case the reader can picture — a message, an
+  attack, a number — and let the general statement follow it.
 - **Name a term when its problem arrives.** Tell one idea at a time: show the problem, then
   introduce the term that solves it, right there. A list of names up front, explained later,
   makes the reader memorise words that mean nothing yet. Mention a term only once the page
-  has introduced it.
+  has introduced it. A mechanism with several parts grounds each part, its name with its job,
+  before the section shows the parts working together.
 - **One concrete example per abstract idea.** Real input and real output, computed with a
   script or a tool rather than by hand. Slide material comes first: it is what the exam draws
   on, and every added line costs reading stamina. When the slides give no example, add one
   only if it shows behaviour the prose cannot, such as a surprising result, an error, or two
-  ways that differ.
+  ways that differ. The varied second case comes from a `<Compare>` or a `<Quiz>`; see
+  `docs/adr/0004-one-example-varied-by-contrast.md`.
   - **Passes but runs long:** give its result in one prose sentence with the real numbers, and
     fold the full run into a `<Detail>`.
   - **Shows only syntax the prose already explains:** leave it out.
@@ -97,8 +100,8 @@ Every one of these is a blocker, not a preference.
   point and put the full output, or a long lookup table, in a `<Detail>`.
 - **Say it once.** Each point has one home on the page; a later section names it or links back
   instead of explaining it again. Cut words that carry no meaning. A cut never drops a fact: a
-  sentence goes only when everything it carries is said elsewhere. `<KeyIdea>` and `<Recap>`
-  repeat on purpose.
+  sentence goes only when everything it carries is said elsewhere. `<KeyIdea>`, `<Recap>` and
+  a `<Quiz>` answer repeat on purpose.
 - **Assume no background.** If a term needs earlier knowledge, explain that first or link to
   the lecture that covers it.
 - **Thai prose, English terms.** Explain in Thai. Keep standard technical terms in English.
@@ -109,6 +112,29 @@ Every one of these is a blocker, not a preference.
   and copies its _inherited gaps_ — step 9's name check catches the second.
 - **End with `<Recap>`.** Bullets a student can read the night before an exam. The table of
   contents links `สรุปท้ายคาบ` to `#recap` on every page, so without it that link is dead.
+
+## Teaching blocks
+
+These blocks steer what the reader believes, so each has a shape. Every shape is a blocker.
+
+- **`<Analogy>` maps, then marks its edge.** Say which everyday part stands for which real
+  part, then end on the place the comparison stops holding: `อุปมานี้ใช้ไม่ได้ตรงที่…`. A reader
+  carries an analogy past an unmarked edge, and a wrong analogy costs more than none. The
+  subject's own workflow (checking a download against its published hash) is an example, not
+  an analogy: write it as prose or `<Example>`.
+- **`<Pitfall>` refutes a belief.** Four moves, in order: the wrong belief as a student would
+  say it; that it is wrong; why it looks right; what holds instead, with the case that shows
+  it. A bare rule (`อย่าใช้ nonce ซ้ำ`) becomes a pitfall once it names the belief that breaks
+  it (`nonce ไม่ใช่ความลับ ใช้ซ้ำก็ไม่เสียหาย`).
+- **`<Quiz>` makes the reader use the section.** Its question gives a case the section has not
+  shown — a new input, a new system, a choice between two options — so the answer comes from
+  reasoning rather than from finding a sentence above. Place it right after the section it
+  tests; every `##` part that teaches a mechanism has at least one. The answer gives the
+  reasoning, then the result, then the wrong answer a student most likely gives and why it
+  fails.
+- **Predict before a surprising result.** When a student would guess an output wrong, ask for
+  the guess on the line before it: `ลองทายก่อน: …`. Keep it for results that surprise; asking
+  for the obvious is noise.
 
 ## Write about the subject
 
@@ -124,10 +150,9 @@ the `credit` field already say where the material came from.
 - A heading names what the section teaches (`ภัยเก้าอย่างที่ต้องแยกให้ออก`), not what the slide
   held (`รู้จักกันครบไหม`).
 
-When a page is done, grep for these. Each is usually the visible end of a narrating sentence,
-and each hit needs a reason:
-`สไลด์` `กำกับไว้` `เขียนกำกับ` `เปิดคาบมาด้วย` `เรียงแบบนี้` `อยู่ใต้หัวเรื่อง` `ใต้รายการ`
-`ให้มาแค่` `ยกมาไว้` `ระบุไว้ว่า` `เขียนไว้เท่านั้น` `ตัวพิมพ์ใหญ่` `บรรทัดล่าง` `ทิ้งคำถามไว้`
+When a page is done, run `pnpm narration content/<course>/lecture-<n>.mdx`. It lists lines
+holding words that usually end a narrating sentence; each hit is a boundary marker, named by
+kind, or a rewrite.
 
 ## Frontmatter
 
@@ -159,16 +184,16 @@ Registered globally, used with no import line.
 | --- | --- |
 | `<KeyIdea>` | The one sentence to remember. |
 | `<Why>` | The problem the concept solves. Comes before the definition. |
-| `<Analogy>` | Everyday comparison. |
+| `<Analogy>` | Everyday comparison, mapped, with its edge. |
 | `<Example title="...">` | Concrete case with input and output. |
 | `<Example added>` | Same, for an example the slides did not have. |
 | `<Detail label="...">` | Folds away reference material: full command output, long tables. |
-| `<Pitfall>` | A mistake people make here. |
+| `<Pitfall>` | A wrong belief people hold here, refuted. |
 | `<Term en="Coupling" th="..." />` | First use of an English term. |
 | `<Figure number={1} caption="...">` | Wraps a diagram. |
 | `<Compare><Wrong>…</Wrong><Right>…</Right></Compare>` | A real wrong-way / right-way pair. |
 | `<StepThrough><Step title="...">…</Step></StepThrough>` | A process, one step at a time. |
-| `<Quiz question="...">` | Self-check, answer hidden. |
+| `<Quiz question="...">` | A new case to apply the section to, answer hidden. |
 | `<Recap>` | Bullet summary at the end. |
 
 From Fumadocs: `<Callout>`, `<Card>`, `<Cards>`, `<Tabs>`/`<Tab>`,
