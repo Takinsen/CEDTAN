@@ -52,7 +52,7 @@ export function IpSpoofing() {
         อาจยิงให้ล่มก่อน
       </text>
       <text x="180" y="166" textAnchor="middle" fontSize="11" opacity="0.8">
-        (เสริม) จะได้ไม่ปฏิเสธแทน
+        จะได้ไม่ปฏิเสธแทน
       </text>
 
       <defs>

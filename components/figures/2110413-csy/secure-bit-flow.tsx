@@ -44,12 +44,12 @@ export function SecureBitFlow() {
     <svg
       viewBox="0 0 620 334"
       role="img"
-      aria-label="หน่วยความจำของโพรเซสที่ทุกคำมี Secure Bit ติดอยู่ ภาพซ้ายคือก่อนล้น input ที่ kernel คัดลอกมาให้อยู่ใน buffer และมีบิตเป็น 1 ส่วน parameters ที่อยู่ขากลับ และ function pointers มีบิตเป็น 0 ภาพขวาคือหลังล้น บิต 1 ถูกคัดลอกไปพร้อมข้อมูลจน function pointers และที่อยู่ขากลับมีบิตเป็น 1 เมื่อคำสั่ง RET อ่านค่านี้ ตัวประมวลผลเห็นบิต 1 จึงปฏิเสธและยกเลิกการกระโดด"
+      aria-label="หน่วยความจำของ process ที่ทุก word มี Secure Bit ติดอยู่ ภาพซ้ายคือก่อนล้น input ที่ kernel คัดลอกมาให้อยู่ใน buffer และมีบิตเป็น 1 ส่วน parameters, return address และ function pointers มีบิตเป็น 0 ภาพขวาคือหลังล้น บิต 1 ถูกคัดลอกไปพร้อมข้อมูลจน function pointers และ return address มีบิตเป็น 1 เมื่อคำสั่ง RET อ่านค่านี้ CPU เห็นบิต 1 จึงปฏิเสธและยกเลิกการกระโดด"
       className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       <text x="20" y="28" fontSize="11" opacity="0.8">
-        บิตซ้ายของแต่ละคำ: 0 = มาจากในโพรเซสเอง · 1 = ข้ามขอบเขตเข้ามา (input)
+        บิตซ้ายของแต่ละ word: 0 = มาจากใน process เอง · 1 = ข้ามขอบเขตเข้ามา (input)
       </text>
 
       <Column x={20} title="ก่อนล้น" rows={BEFORE} />
@@ -73,10 +73,10 @@ export function SecureBitFlow() {
       </text>
 
       <text x="20" y="266" fontSize="11" opacity="0.8">
-        kernel คัดลอก input เข้ามาในโหมด sbit_write บิตของทุกคำปลายทางจึงเป็น 1 ตั้งแต่แรก
+        kernel คัดลอก input เข้ามาในโหมด sbit_write บิตของทุก word ปลายทางจึงเป็น 1 ตั้งแต่แรก
       </text>
       <text x="20" y="288" fontSize="11" opacity="0.8">
-        การคัดลอกในโพรเซสยกบิตไปพร้อมค่า ผู้โจมตีจึงเขียนค่าใหม่ลงช่องได้ แต่ล้างบิต 1 ไม่ได้
+        การคัดลอกใน process ยกบิตไปพร้อมค่า ผู้โจมตีจึงเขียนค่าใหม่ลงช่องได้ แต่ล้างบิต 1 ไม่ได้
       </text>
       <text x="20" y="310" fontSize="11" opacity="0.8">
         CALL, JMP และ RET ตรวจบิตของเป้าหมายก่อนกระโดด เห็น 1 เมื่อไหร่ก็ไม่ยอมกระโดด

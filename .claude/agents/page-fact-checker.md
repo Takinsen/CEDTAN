@@ -35,8 +35,10 @@ configs you write yourself.
 4. **Check fidelity.** Compare every number, command, flag, code block, table and command output
    taken from the deck against the deck. Done when every code block and table on the page has
    been compared.
-5. **Check added material.** For each claim the deck does not carry, check it is marked as added
-   material, and settle whether it is true: run it, or read the tool's docs or source. Output or
+5. **Check added material.** For each claim the deck does not carry, settle whether it is true:
+   run it, or read the tool's docs or source. An added case, story, number or example sits in
+   `<Example added>` or a callout titled as added; an explanation of deck material stays
+   unmarked (CONTEXT.md, _added material_). Output or
    text credited to docs must match them exactly, or the page must say what it cut or changed. A
    claim inside a callout that names its source, such as `จาก repository ของวิชา`, must be true of
    that source. Done when every added claim is marked and settled, or is a finding.
@@ -67,7 +69,9 @@ Kinds:
 - `wrong`: contradicts the deck, the real tool, or its docs.
 - `missing`: a deck topic absent, or thinned past its meaning, including the mechanism of an
   image-carried slide.
-- `unmarked`: added material with no marker, or a boundary marker the deck does not bear out.
+- `unmarked`: an added case, story, number or example outside `<Example added>` or an added-titled
+  callout, or a boundary marker the deck does not bear out. Fix it by moving the material into
+  that box, or by cutting it when it does not help the reader understand a deck topic.
 - `figure`: a figure disagrees with the deck or its prose.
 - `doubt`: a claim you could not settle; say what would settle it.
 
