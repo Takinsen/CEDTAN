@@ -104,8 +104,15 @@ Every one of these is a blocker, not a preference.
   a `<Quiz>` answer repeat on purpose.
 - **Assume no background.** If a term needs earlier knowledge, explain that first or link to
   the lecture that covers it.
-- **Thai prose, English terms.** Explain in Thai. Keep standard technical terms in English.
-  Wrap the first use of each term in `<Term en="..." th="..." />`.
+- **Thai prose, English terms.** Explain in Thai. Write each term the way Thai CS students
+  say it aloud: English for stack, pointer, return address, packet, session; Thai where Thai
+  is the everyday word, such as ช่องโหว่ or หน่วยความจำ. Wrap the first use of each term in
+  `<Term en="..." th="..." />`. `th` is its meaning in a few natural Thai words
+  (`เขียนข้อมูลเกินขนาด buffer`), since the page prints it inline in brackets; the sentence
+  around it does the defining.
+- **One point per paragraph.** A paragraph makes one point in one to three sentences. A term
+  that needs explaining gets its own sentence where the reader first needs it. Name only what
+  the reader meets again or needs for the exam; describe the rest in plain words.
 - **Own the order.** Group sections by idea, and sequence them so each one is understandable
   from the ones before it. The deck's order is one candidate; follow it where it is already
   the best teaching order, as a decision. Walking the deck splits topics that belong together

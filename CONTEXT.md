@@ -43,10 +43,12 @@ correctly the subject.
 
 ## Added material
 
-Explanation, examples, or figures written for the page because the deck has none. Carries a
-visible marker — the `<Example added>` badge, or a `<Callout>` naming what the deck left out.
-Distinguished from material carried over from the deck, which needs no marker beyond the
-page's source callout and its `credit` field.
+Explanation, examples, or figures written for the page because the deck has none. An added
+case, story, number or example sits in `<Example added>`, whose badge marks it, or a `<Callout>`
+whose title names what the deck left out. An explanation of deck material is the page's own
+job and stays unmarked, like material carried over from the deck, which the source callout and
+the `credit` field already cover. `scripts/content.test.mjs` fails a prose line that labels
+itself `ข้อมูลเสริม` or `คำอธิบายเสริม`: such a sentence speaks to a reviewer, not the student.
 
 ## Inherited gap
 

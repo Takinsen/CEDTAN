@@ -59,3 +59,15 @@ test('every added example keeps its visible code and output within the limit', (
     }
   }
 });
+
+// a sentence like "ย่อหน้านี้เป็นข้อมูลเสริม" talks to the reviewer, not the student; the <Example added> badge marks added material
+test('no prose sentence labels itself as added material', () => {
+  const offenders = [];
+  for (const lecture of lectures) {
+    lecture.text.split('\n').forEach((line, i) => {
+      const prose = line.replace(/\w+="[^"]*"/g, '');
+      if (/(ข้อมูล|คำอธิบาย)เสริม/.test(prose)) offenders.push(`${lecture.path}:${i + 1}`);
+    });
+  }
+  assert.deepEqual(offenders, [], `delete these marker sentences, or move the added case into <Example added>:\n${offenders.join('\n')}`);
+});

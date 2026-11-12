@@ -34,7 +34,8 @@ Report findings; the parent agent edits.
    rule has been applied to every section.
 3. **Trace every name.** For each `<Term>` and each English name, find its first use and the line
    that explains it. Done when every name maps to that line or is a finding. A name that appears
-   only inside lists is a finding.
+   only inside lists is a finding. A Thai word made up for a term Thai students say in English
+   (`ที่อยู่ขากลับ` for return address, `ตัวชี้` for pointer) is a `coined` finding.
 4. **Hunt repetition.** For each point, find every place the page makes it. Done when every point
    made twice either adds something the second time or is a finding. Not repeats: `<KeyIdea>`,
    `<Recap>` and a `<Quiz>` answer; code a runnable `<Example added>` reproduces whole so it runs; a one-line first
@@ -65,6 +66,9 @@ One line per finding, in page order, quoting the page text:
 When the fix is one sentence or shorter, write it as the replacement Thai text. Every fix follows
 these:
 
+- A fix for an `unexplained` or `term` finding is a sentence of its own, placed where the student
+  first needs the name, or the name dropped when the student never meets it again. Keep each
+  paragraph to one point: the explanation lands as its own sentence, outside the brackets.
 - A rewrite keeps every claim of the text it replaces. List what the old text said and check each
   item survives.
 - A fix that adds a fact, tool name or example ends with `(fact-check)`. You work without the deck,
@@ -84,6 +88,10 @@ Kinds:
   example without reason.
 - `repeat`: a point made again without adding anything; name the line that keeps it.
 - `cut`: words that carry no meaning; name the line that keeps each fact.
+- `crammed`: a paragraph carrying more than one point, or a sentence carrying more than one
+  bracketed gloss. Give the split.
+- `coined`: a made-up Thai name in place of the English term students use, in prose, a `th`
+  gloss or a figure label. Give the term to use.
 - `unclear`: a sentence the student would misread or read twice; give the rewrite.
 - `narration`: fails the CONTEXT.md test.
 - `added`: an added example that shows only what the prose already says, or whose visible part
@@ -97,5 +105,5 @@ Kinds:
 - `predict`: an output a student would guess wrong, shown with no guess asked first.
 
 End with a count for every kind, zeros included. Stay under 1000 words: past that, list every
-`order`, `why`, `unexplained`, `unclear`, `added`, `analogy` and `pitfall`, and give the rest as
+`order`, `why`, `unexplained`, `unclear`, `crammed`, `coined`, `added`, `analogy` and `pitfall`, and give the rest as
 counts.
