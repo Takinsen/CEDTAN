@@ -10,15 +10,15 @@ export function AttackSurfaceLayers() {
     <svg
       viewBox="0 0 640 312"
       role="img"
-      aria-label="ไม่มีการลดพื้นที่ผิว การโจมตีทะลุทั้งสามชั้นลงไปยึดระบบได้ เมื่อลดพื้นที่ผิว ชั้นเครือข่ายกับชั้นตัวระบบทำให้การโจมตีบางลงทีละชั้น ความเสียหายจึงถูกจำกัดไว้"
+      aria-label="ถ้าไม่ลด attack surface การโจมตีทะลุทั้งสามชั้นลงไปยึดระบบได้ ถ้าลด attack surface ชั้นเครือข่ายกับชั้นตัวระบบทำให้การโจมตีบางลงทีละชั้น ความเสียหายจึงถูกจำกัดไว้"
       className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
       <text x="180" y="24" textAnchor="middle" fontSize="11" fontWeight="600">
-        ไม่ลดพื้นที่ผิว (No ASR)
+        ไม่ทำ ASR (No ASR)
       </text>
       <text x="380" y="24" textAnchor="middle" fontSize="11" fontWeight="600">
-        ลดพื้นที่ผิว (ASR)
+        ทำ ASR
       </text>
       <text x="280" y="44" textAnchor="middle" fontSize="11" opacity="0.75">
         ← ต้องหาจุดสมดุล (Balance) →
@@ -54,7 +54,10 @@ export function AttackSurfaceLayers() {
         network controls กัน
       </text>
       <text x="462" y="145" fontSize="11">
-        เครื่องมือโจมตีส่วนใหญ่ไว้
+        เครื่องมือและเทคนิค
+      </text>
+      <text x="462" y="162" fontSize="11">
+        โจมตีส่วนใหญ่ไว้
       </text>
       <text x="462" y="188" fontSize="11">
         authentication/authorization
