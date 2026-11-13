@@ -21,7 +21,7 @@ export function LectureBox({
   children: ReactNode;
 }) {
   return (
-    <div id={id} className="my-6 scroll-mt-20 overflow-hidden rounded-xl border border-fd-border bg-fd-card">
+    <div id={id} className="my-6 scroll-mt-[calc(var(--fd-docs-row-3)+--spacing(4))] overflow-hidden rounded-xl border border-fd-border bg-fd-card">
       <div className="flex flex-wrap items-center gap-2 px-4 pt-3 text-sm font-semibold text-fd-muted-foreground">
         <Icon className={cn('size-4 shrink-0', accent)} />
         <span>{title ?? label}</span>

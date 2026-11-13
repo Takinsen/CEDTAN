@@ -69,7 +69,8 @@ export default async function Page(props: PageProps<'/[...slug]'>) {
         <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
         {meta.length > 0 && <p className="text-sm text-fd-muted-foreground">{meta.join(' · ')}</p>}
         <div className="flex flex-row flex-wrap gap-2 items-center border-b pb-6">
-          <MarkdownCopyButton markdownUrl={markdownUrl} />
+          {/* a phone reader has no use for raw Markdown, and the button pushes the tools onto a second row */}
+          <MarkdownCopyButton markdownUrl={markdownUrl} className="max-md:hidden" />
           <ViewOptionsPopover
             markdownUrl={markdownUrl}
             githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/${page.path}`}

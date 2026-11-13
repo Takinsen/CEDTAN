@@ -8,7 +8,8 @@
     "start": "next start",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test components/lecture/motion-values.test.mjs components/figures/2110506-sds/part-3-figures.test.mjs components/home/strip.test.mjs scripts/content.test.mjs",
     "narration": "node scripts/narration.mjs",
-    "check": "next typegen && tsc --noEmit && eslint . && pnpm test && next build"
+    "check": "next typegen && tsc --noEmit && eslint . && pnpm test && next build",
+    "test:browser": "node --test components/lecture/reading-tools.browser.test.mjs"
   },
   "dependencies": {
     "cnfast": "^0.1.0",
@@ -31,6 +32,7 @@
     "@types/react-dom": "^19.2.7",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.3.4",
+    "playwright-core": "1.64.0",
     "postcss": "^8.5.28",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
