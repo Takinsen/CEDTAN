@@ -65,7 +65,7 @@ export function ForensicsTimeline() {
 
       <line x1="160" y1="244" x2="604" y2="244" stroke="currentColor" strokeOpacity="0.5" strokeDasharray="4 4" />
       <text x="382" y="260" textAnchor="middle" fontSize="11" opacity="0.8">
-        ช่วงที่ 2 อ่านต้นฉบับเพื่อทำสำเนา ตั้งแต่ช่วงที่ 3 ทุกอย่างทำกับสำเนา
+        ช่วงที่ 2 อ่านต้นฉบับเพื่อทำสำเนา ช่วงที่ 3 ทำกับสำเนา ช่วงที่ 4 ส่งมอบพร้อมบันทึกที่มา
       </text>
 
       <defs>
