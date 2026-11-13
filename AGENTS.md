@@ -66,18 +66,22 @@ it never drops one.
 
 ## Quality bar
 
-Every one of these is a blocker, not a preference.
+Every one of these is a blocker, not a preference. The research behind each rule, and where
+it stops, is in `docs/research/writing-rules-evidence.md`.
 
-- **Cover everything.** Every topic on the slides appears on the page, minor-looking ones
-  included, with enough left of each to carry its meaning.
+- **Cover every topic, depth by weight.** Every topic on the slides appears on the page,
+  minor-looking ones included, with enough left of each to carry its meaning. Depth follows
+  what the topic carries: a detail that no later section and no likely exam question needs
+  folds into a `<Detail>`, so the main path stays the main points.
 - **Reason before definition.** Open each concept with the problem it solves (`<Why>`), then
   say what it is. Make the problem a concrete case the reader can picture — a message, an
   attack, a number — and let the general statement follow it.
 - **Name a term when its problem arrives.** Tell one idea at a time: show the problem, then
   introduce the term that solves it, right there. A list of names up front, explained later,
   makes the reader memorise words that mean nothing yet. Mention a term only once the page
-  has introduced it. A mechanism with several parts grounds each part, its name with its job,
-  before the section shows the parts working together.
+  has introduced it. A mechanism with several parts may open by naming each part with its job,
+  before the section shows the parts working together: a name with its job is grounded, a
+  bare name is not.
 - **One concrete example per abstract idea.** Real input and real output, computed with a
   script or a tool rather than by hand. Slide material comes first: it is what the exam draws
   on, and every added line costs reading stamina. When the slides give no example, add one
@@ -112,12 +116,16 @@ Every one of these is a blocker, not a preference.
   around it does the defining.
 - **One point per paragraph.** A paragraph makes one point in one to three sentences. A term
   that needs explaining gets its own sentence where the reader first needs it. Name only what
-  the reader meets again or needs for the exam; describe the rest in plain words.
+  the reader meets again or needs for the exam; describe the rest in plain words. Open each
+  paragraph with its key words, and say how it follows from the one before (`เพราะ…`, `แต่…`,
+  `ผลคือ…`): a reader with little background cannot guess the link between short paragraphs.
 - **Own the order.** Group sections by idea, and sequence them so each one is understandable
   from the ones before it. The deck's order is one candidate; follow it where it is already
   the best teaching order, as a decision. Walking the deck splits topics that belong together
   and copies its _inherited gaps_ — step 9's name check catches the second.
-- **End with `<Recap>`.** Bullets a student can read the night before an exam. The table of
+- **End with `<Recap>`.** Bullets a student can read the night before an exam, then two or
+  three `<Quiz>` blocks inside it that make the reader recall the page's main mechanisms:
+  recalling an answer fixes it in memory, rereading a bullet barely does. The table of
   contents links `สรุปท้ายคาบ` to `#recap` on every page, so without it that link is dead.
 
 ## Teaching blocks
@@ -126,19 +134,23 @@ These blocks steer what the reader believes, so each has a shape. Every shape is
 
 - **`<Analogy>` maps, then marks its edge.** Say which everyday part stands for which real
   part, then end on the place the comparison stops holding: `อุปมานี้ใช้ไม่ได้ตรงที่…`. A reader
-  carries an analogy past an unmarked edge, and a wrong analogy costs more than none. The
+  carries an analogy past an unmarked edge, and a wrong analogy costs more than none. Take the
+  everyday side from something a Thai student has done first-hand (a bank queue, a LINE group,
+  a condo keycard): an analogy helps only a reader who knows its source well. The
   subject's own workflow (checking a download against its published hash) is an example, not
   an analogy: write it as prose or `<Example>`.
 - **`<Pitfall>` refutes a belief.** Four moves, in order: the wrong belief as a student would
-  say it; that it is wrong; why it looks right; what holds instead, with the case that shows
-  it. A bare rule (`อย่าใช้ nonce ซ้ำ`) becomes a pitfall once it names the belief that breaks
+  say it; that it is wrong; why it looks right; what holds instead, with the mechanism that
+  makes it so and the case that shows it. The mechanism does most of the correcting: a reader
+  told only the right answer drifts back to the belief. A bare rule (`อย่าใช้ nonce ซ้ำ`) becomes a pitfall once it names the belief that breaks
   it (`nonce ไม่ใช่ความลับ ใช้ซ้ำก็ไม่เสียหาย`).
 - **`<Quiz>` makes the reader use the section.** Its question gives a case the section has not
   shown — a new input, a new system, a choice between two options — so the answer comes from
   reasoning rather than from finding a sentence above. Place it right after the section it
   tests; every `##` part that teaches a mechanism has at least one. The answer gives the
   reasoning, then the result, then the wrong answer a student most likely gives and why it
-  fails.
+  fails. The component already asks the reader to answer before opening, so the question
+  holds only the case.
 - **Predict before a surprising result.** When a student would guess an output wrong, ask for
   the guess on the line before it: `ลองทายก่อน: …`. Keep it for results that surprise; asking
   for the obvious is noise.

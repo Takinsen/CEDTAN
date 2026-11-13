@@ -68,7 +68,7 @@ Kinds:
 
 - `wrong`: contradicts the deck, the real tool, or its docs.
 - `missing`: a deck topic absent, or thinned past its meaning, including the mechanism of an
-  image-carried slide.
+  image-carried slide. A topic folded into a `<Detail>` is covered.
 - `unmarked`: an added case, story, number or example outside `<Example added>` or an added-titled
   callout, or a boundary marker the deck does not bear out. Fix it by moving the material into
   that box, or by cutting it when it does not help the reader understand a deck topic.

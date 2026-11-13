@@ -50,7 +50,8 @@ Report findings; the parent agent edits.
    fits the limit, or is a finding.
 8. **Shape the teaching blocks** against "Teaching blocks" in AGENTS.md. Done when every
    `<Analogy>`, `<Pitfall>` and `<Quiz>` has its shape, every `##` part that teaches a mechanism
-   has a quiz, and every output a student would guess wrong has a guess before it, or is a finding.
+   has a quiz, the `<Recap>` holds two or three quizzes on the page's main mechanisms, and every
+   output a student would guess wrong has a guess before it, or is a finding.
 
 ## Before reporting
 
@@ -93,15 +94,20 @@ Kinds:
 - `coined`: a made-up Thai name in place of the English term students use, in prose, a `th`
   gloss or a figure label. Give the term to use.
 - `unclear`: a sentence the student would misread or read twice; give the rewrite.
+- `link`: a paragraph that does not say how it follows from the one before, or buries its key
+  words at the end. Give the opening words to use.
 - `narration`: fails the CONTEXT.md test.
 - `added`: an added example that shows only what the prose already says, or whose visible part
   is over the limit. Give the counts, and say which lines stay visible, which fold, and which
   become one sentence.
-- `analogy`: an analogy that leaves its mapping or its edge unsaid, maps wrongly, or is really
-  the subject's own workflow.
-- `pitfall`: a pitfall missing one of the four moves; name the missing move.
+- `analogy`: an analogy that leaves its mapping or its edge unsaid, maps wrongly, takes its
+  everyday side from something a Thai student has not done first-hand, or is really the
+  subject's own workflow.
+- `pitfall`: a pitfall missing one of the four moves, or whose last move gives the right answer
+  without the mechanism behind it; name the missing move.
 - `quiz`: a quiz answered by finding a sentence above it, placed away from its section, missing
-  from a mechanism part, or whose answer skips the reasoning or the likely wrong answer.
+  from a mechanism part or from the `<Recap>`, or whose answer skips the reasoning or the likely
+  wrong answer.
 - `predict`: an output a student would guess wrong, shown with no guess asked first.
 
 End with a count for every kind, zeros included. Stay under 1000 words: past that, list every

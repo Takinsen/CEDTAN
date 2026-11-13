@@ -71,3 +71,39 @@ test('no prose sentence labels itself as added material', () => {
   }
   assert.deepEqual(offenders, [], `delete these marker sentences, or move the added case into <Example added>:\n${offenders.join('\n')}`);
 });
+
+// pages written before the Recap-quiz rule; remove a page once its Recap holds its quizzes
+const RECAP_QUIZ_PENDING = new Set([
+  "2110413-csy/lecture-1",
+  "2110413-csy/lecture-2",
+  "2110413-csy/lecture-3",
+  "2110413-csy/lecture-4",
+  "2110413-csy/lecture-5",
+  "2110413-csy/lecture-6",
+  "2110413-csy/lecture-7",
+  "2110413-csy/lecture-8",
+  "2110413-csy/lecture-9",
+  "2110413-csy/lecture-10",
+  "2110413-csy/lecture-11",
+  "2110413-csy/lecture-12",
+  "2110413-csy/lecture-13",
+  "2110506-sds/lecture-1",
+  "2110506-sds/lecture-2",
+  "2110506-sds/lecture-3",
+  "2110506-sds/lecture-4",
+  "2110506-sds/lecture-5",
+  "2110506-sds/lecture-6",
+]);
+
+test('every Recap holds two or three quizzes, and the pending list only shrinks', () => {
+  for (const lecture of lectures) {
+    const recap = lecture.text.match(/<Recap>[\s\S]*?<\/Recap>/)?.[0] ?? '';
+    const quizzes = (recap.match(/<Quiz\b/g) ?? []).length;
+    const id = `${lecture.course}/${lecture.slug}`;
+    if (RECAP_QUIZ_PENDING.has(id)) {
+      assert.equal(quizzes, 0, `${id} now has Recap quizzes; remove it from RECAP_QUIZ_PENDING`);
+    } else {
+      assert.ok(quizzes >= 2 && quizzes <= 3, `${lecture.path} Recap holds ${quizzes} <Quiz>, needs 2 or 3`);
+    }
+  }
+});
