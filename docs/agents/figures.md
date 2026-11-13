@@ -24,7 +24,8 @@ themes.
 
 ## Legibility floors
 
-The card scales the drawing up by about 1.28x, so these units land at readable pixel sizes.
+At 1440px the card scales the drawing up by about 1.28x, and at 1024–1280px by about 1.0–1.1x,
+so these units land at readable pixel sizes only if the drawing keeps them.
 
 - Text is `fontSize="11"` or larger. Smaller loses Thai tone marks.
 - A shape stroke is `strokeOpacity="0.5"` or stronger. Fainter drops under 3:1 contrast.

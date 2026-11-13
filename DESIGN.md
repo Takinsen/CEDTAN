@@ -200,8 +200,11 @@ column without wrapping. There is no display face: hierarchy comes from size and
 - **Headline** (600, 24px, 1.4, 48px space above): a part divider — `ส่วนที่ 1`, `ส่วนที่ 2`.
   Preceded by a horizontal rule.
 - **Title** (600, 20px, 1.4): a section inside a part.
-- **Body** (400, 16px, 1.75): prose. The reading column is capped at 900px, which lands near
-  70 characters of Thai.
+- **Body** (400, 16px, 1.75): prose. The column is capped at 784px, which leaves 720px of text:
+  a median of 74–76 Thai letters a line at 1440px and about 70 at 1280px, counting neither
+  spaces nor the vowel and tone marks that stack above and below. The framework's 900px cap
+  measured 84–88; Thai has no spaces between words, so the eye's return to the next line
+  costs more than in English and the line has to be shorter.
 - **Label** (400, 14px, 1.43): block labels, meta line, table cells, sidebar entries.
 - **Code** (400, 13px, 1.43): both fenced blocks and inline spans.
 
@@ -220,7 +223,7 @@ URL or flag name in the middle of a sentence must not push the page sideways on 
 
 Three columns on a wide screen, and the group fills the window: a 268px sidebar against the
 left edge, the content, and a 268px table of contents against the right edge. The content
-column is capped at 900px and centred inside whatever is left, so the reading measure stays
+column is capped at 784px (`app/global.css` overrides the framework's 900px) and centred inside whatever is left, so the reading measure stays
 constant while the window grows. The table of contents disappears below 1280px and the sidebar
 becomes a drawer below 768px.
 
@@ -317,6 +320,12 @@ is what makes them usable: the strip at the top scrolls away after 400px of a 34
 and the reader who wants them is the one who has scrolled furthest. Both copies read one
 state, so the label and `aria-pressed` never disagree.
 
+Below 1280px the strip drops the fold toggle, and below 768px `Copy Markdown` too, because the
+popover already carries the toggle and a phone reader has no use for raw Markdown. That keeps
+the strip to one row on a phone. A tool tapped inside the popover closes it, which the
+framework does only for a table-of-contents entry; without that, `ข้ามไปสรุป` landed the
+reader on the recap with the open popover covering it. `pnpm test:browser` checks both.
+
 The strip's controls are 8px radius, hairline border, `bg-fd-secondary/50`. The rail's are
 borderless muted rows that align with the table-of-contents entries beneath them. Focus is a
 2px ink outline at 2px offset on both.
@@ -373,20 +382,27 @@ numbered `รูปที่ N:`. The SVG scrolls horizontally inside the card o
 card itself never overflows.
 
 The SVG fills the card rather than sitting at its natural size — it carries a `min-width` for
-the mobile scroll and no `max-width`, so a 620-unit drawing renders 1.28x larger in a 792px
-card and every label grows with it. The text-size, stroke and spacing floors that follow from
-that scale live in `docs/agents/figures.md`.
+the mobile scroll and no `max-width`, so a 620-unit drawing renders about 1.28x larger at
+1440px and every label grows with it. A top-level figure reaches 52px past each side of the
+784px column where the window has room, so narrowing the text did not shrink the drawings.
+The text-size, stroke and spacing floors that follow from that scale live in
+`docs/agents/figures.md`.
 
 A mark inside a diagram — a cross, a tick, an arrow — is drawn as a stroked path, not as a
 text glyph. A `✕` set at 9px and 45% opacity measured 2.71:1; the same cross as two 1.6px
 strokes at 75% measures 8.7:1 and keeps its weight at any zoom.
 
 A figure that is wider than its frame prints `เลื่อนรูปทางขวาเพื่อดูส่วนที่เหลือ` in muted 12px
-between the diagram and the caption. It is measured, not guessed, so it appears on the ten
-diagrams that overflow a 390px phone and on none of them at 1440px. The affordance is a line
-of text rather than an edge fade because the Flat-Forever Rule leaves no gradient to fade with,
-and because a cut diagram reads as a broken image until something says otherwise. It stays
-after the first scroll: a sentence that is still true is cheaper than state.
+between the diagram and the caption. It is measured, not guessed: at 390px it appears on all
+115 diagrams, and at 1024px and wider on none. The affordance is a line of text rather than an
+edge fade because the Flat-Forever Rule leaves no gradient to fade with, and because a cut
+diagram reads as a broken image until something says otherwise. It stays after the first
+scroll: a sentence that is still true is cheaper than state.
+
+The same line carries `ขยายรูปเต็มจอ`, which opens the diagram in a full-screen `<dialog>` at
+one drawing unit per pixel or more, so a label at the 11-unit floor draws at 11px or larger.
+On a phone turned sideways the same drawing reaches about 1.3x. Esc or `ปิด` closes it and
+focus returns to the button.
 
 ### Code Block
 
@@ -458,7 +474,7 @@ page carries the legend, and no block ships a colour that the legend does not na
 ### Do:
 
 - **Do** carry meaning with the icon colour and the label, and leave the card neutral.
-- **Do** cap the reading column at 900px and let the window grow around it.
+- **Do** cap the reading column at 784px and let the window grow around it.
 - **Do** use the surface tint plus a 1px hairline whenever something must separate from the page.
 - **Do** fold long transcripts and reference tables into a `<Detail>` rather than cutting the topic.
 - **Do** check every new colour at 4.5:1 for text and 3:1 for an icon, in both themes, against
