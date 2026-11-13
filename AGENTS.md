@@ -60,9 +60,7 @@ follow `docs/agents/courses.md`, then come back here.
    - at a 400px-wide window, the page body has no sideways scroll
    - every coverage-list item ticked, and every name in a list found somewhere else on the page
 
-When revising a page that already exists, extract every number, code span, quotation, English
-token and URL before and after, and account for every difference. A reorganisation moves facts;
-it never drops one.
+When revising a page that already exists, follow `docs/agents/revising.md`.
 
 ## Quality bar
 
