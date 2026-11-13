@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowUp, ChevronsDown, ListChecks } from 'lucide-react';
-import { createContext, use, useState, type ReactNode } from 'react';
+import { createContext, use, useState, type MouseEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 const ToolsContext = createContext<{
@@ -41,6 +41,14 @@ const RAIL =
   'transition-[color,background-color,transform] duration-150 ease-out hover:bg-fd-accent hover:text-fd-foreground active:scale-[0.98] ' +
   'motion-reduce:transition-colors motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-primary';
 
+// the framework closes its phone toc popover only for a toc entry, so a tool inside it closes it here
+function closePopover(event: MouseEvent<HTMLElement>) {
+  const trigger = event.currentTarget
+    .closest('[data-toc-popover]')
+    ?.querySelector<HTMLElement>('[data-toc-popover-trigger]');
+  if (trigger?.getAttribute('aria-expanded') === 'true') trigger.click();
+}
+
 // jump to the recap and open every fold, for a reader who came to scan rather than read
 export function ReadingTools({ variant = 'row' }: { variant?: 'row' | 'rail' }) {
   const tools = use(ToolsContext);
@@ -50,19 +58,31 @@ export function ReadingTools({ variant = 'row' }: { variant?: 'row' | 'rail' }) 
   const rail = variant === 'rail';
   const style = rail ? RAIL : ROW;
 
-  function toTop() {
+  function toTop(event: MouseEvent<HTMLElement>) {
+    closePopover(event);
     const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
   }
 
+  function toggle(event: MouseEvent<HTMLElement>) {
+    closePopover(event);
+    toggleAll();
+  }
+
   return (
     <div className={cn(rail ? 'flex flex-col gap-0.5' : 'contents')}>
-      <a href="#recap" className={style}>
+      <a href="#recap" onClick={closePopover} className={style}>
         <ListChecks className="size-4 shrink-0" />
         ข้ามไปสรุป
       </a>
       {hasFolds && (
-        <button type="button" onClick={toggleAll} aria-pressed={open} className={style}>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-pressed={open}
+          // below xl the toc popover carries this toggle, so the top row drops it to save a row
+          className={cn(style, !rail && 'max-xl:hidden')}
+        >
           <ChevronsDown
             className={cn(
               'size-4 shrink-0 transition-transform duration-150 ease-out motion-reduce:transition-none',

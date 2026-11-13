@@ -65,6 +65,18 @@ body {
   --fd-layout-width: 100%;
 }
 
+/* the framework caps the column at 900px, which sets 86-88 Thai letters a line; 784px brings it near 72 */
+#nd-page:not([data-full='true']) {
+  max-width: 784px;
+}
+
+/* a figure keeps the width the old column gave it where the window has room, so its labels do not shrink */
+@media (min-width: 1280px) {
+  #nd-page:not([data-full='true']) .prose > figure[data-diagram] {
+    margin-inline: calc(-1 * clamp(0px, (100vw - 1351px) / 2 + 32px, 52px));
+  }
+}
+
 /* the framework rings chrome controls in neutral-400, which is 2.31:1 in light mode — focus is ink */
 :root,
 .dark {
