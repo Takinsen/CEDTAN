@@ -41,7 +41,7 @@ export function ReverseShell() {
 
       {/* legend */}
       <text x="18" y="244" fontSize="11" opacity="0.82">1 คนร้ายเปิดพอร์ตฟังรอ · 2 เหยื่อต่อสายออกไปหา · 3 คนร้ายสั่งงานเครื่องเหยื่อ ผลลัพธ์วิ่งกลับ</text>
-      <text x="18" y="266" fontSize="11" opacity="0.72">ฝั่งที่ฟังพอร์ตคือฝั่งที่ได้สิทธิ์สั่งงาน ฝั่งที่ต่อออกไปคือฝั่งที่ยอมมอบเชลล์ของตัวเอง</text>
+      <text x="18" y="266" fontSize="11" opacity="0.72">ในภาพนี้ คนร้ายเป็นฝ่ายฟังพอร์ตและสั่งงาน ส่วนเหยื่อเป็นฝ่ายต่อออกและมอบเชลล์ของตัวเอง</text>
 
       <defs>
         <marker id="rs-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">

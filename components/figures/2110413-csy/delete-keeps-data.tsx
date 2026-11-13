@@ -4,7 +4,7 @@ export function DeleteKeepsData() {
     <svg
       viewBox="0 0 620 304"
       role="img"
-      aria-label="สองระดับของการลบ ระดับไฟล์ ชื่อ mountain.jpg ถูกลบออกจากไดเรกทอรี บล็อก 1194 ถึง 1204 ถูกนับว่าว่าง แต่ไบต์ของรูปยังอยู่ครบ carving จึงหาไบต์ FF D8 FF แล้วตัดรูปออกมาได้ ระดับพาร์ทิชัน รายการพาร์ทิชัน Linux ที่เริ่มเซกเตอร์ 8192 ยาว 4194304 เซกเตอร์ถูกลบ ข้อมูล ext4 ยังอยู่ แต่ระบบเห็นเป็นดิสก์ที่ยังไม่ format TestDisk หาจุดเริ่มของระบบไฟล์ในไบต์ดิบแล้วรายงานตำแหน่งให้"
+      aria-label="สองระดับของการลบ ระดับไฟล์ ชื่อ mountain.jpg ถูกลบออกจาก directory block 1194 ถึง 1204 ถูกนับว่าว่าง แต่ไบต์ของรูปยังอยู่ครบ carving จึงหาไบต์ FF D8 FF แล้วตัดรูปออกมาได้ ระดับ partition รายการ partition Linux ที่เริ่ม sector 8192 ยาว 4194304 sector ถูกลบ ข้อมูล ext4 ยังอยู่ แต่ระบบเห็นเป็นดิสก์ที่ยังไม่ format TestDisk หาจุดเริ่มของระบบไฟล์ในไบต์ดิบแล้วรายงานตำแหน่งให้"
       className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
@@ -14,7 +14,7 @@ export function DeleteKeepsData() {
 
       <rect x="16" y="34" width="190" height="80" rx="7" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.55" />
       <text x="28" y="52" fontSize="11" fontWeight="600">
-        ไดเรกทอรี /
+        directory /
       </text>
       <g fontSize="11" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" opacity="0.85">
         <text x="28" y="72">11 lost+found</text>
@@ -32,7 +32,7 @@ export function DeleteKeepsData() {
         FF D8 FF E0 ...
       </text>
       <text x="411" y="44" textAnchor="middle" fontSize="11" opacity="0.85">
-        บล็อก 1194–1204
+        block 1194–1204
       </text>
       <path d="M 136 88 L 240 70" stroke="currentColor" strokeOpacity="0.55" strokeWidth="1.4" fill="none" strokeDasharray="4 3" />
       <g stroke="currentColor" strokeOpacity="0.8" strokeWidth="1.4">
@@ -43,18 +43,18 @@ export function DeleteKeepsData() {
         ถูกนับว่าว่างแล้ว แต่ไบต์ของรูปยังอยู่ครบ 42261 ไบต์
       </text>
       <text x="310" y="132" textAnchor="middle" fontSize="11" opacity="0.8">
-        carving อ่านไบต์ดิบทั้งก้อน หา FF D8 FF แล้วตัดออกมา โดยไม่ต้องพึ่งไดเรกทอรีเลย
+        carving อ่านไบต์ดิบทั้งก้อน หา FF D8 FF แล้วตัดออกมา โดยไม่ต้องพึ่ง directory เลย
       </text>
 
       <line x1="16" y1="150" x2="604" y2="150" stroke="currentColor" strokeOpacity="0.5" strokeDasharray="4 4" />
 
       <text x="16" y="174" fontSize="11" fontWeight="600">
-        ระดับพาร์ทิชัน — microSD ในคดี (เซกเตอร์ละ 512 ไบต์)
+        ระดับ partition — microSD ในคดี (sector ละ 512 ไบต์)
       </text>
 
       <rect x="16" y="186" width="190" height="64" rx="7" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.55" />
       <text x="28" y="204" fontSize="11" fontWeight="600">
-        ตารางพาร์ทิชัน
+        partition table
       </text>
       <text x="28" y="224" fontSize="11" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" opacity="0.85">
         Linux 8192 4194304
@@ -76,7 +76,7 @@ export function DeleteKeepsData() {
         ส่วนที่เหลือ
       </text>
       <text x="286" y="246" textAnchor="middle" fontSize="11" opacity="0.85">
-        เซกเตอร์ 8192
+        sector 8192
       </text>
       <text x="476" y="246" textAnchor="middle" fontSize="11" opacity="0.85">
         4202495
@@ -85,7 +85,7 @@ export function DeleteKeepsData() {
         ข้อมูลยังอยู่ แต่ระบบปกติเห็นเป็นดิสก์ที่ยังไม่ได้ format
       </text>
       <text x="310" y="292" textAnchor="middle" fontSize="11" opacity="0.8">
-        TestDisk ไล่หาจุดเริ่มของระบบไฟล์ในไบต์ดิบ แล้วรายงานว่าพาร์ทิชันเริ่มและจบที่ไหน
+        TestDisk ไล่หาจุดเริ่มของระบบไฟล์ในไบต์ดิบ แล้วรายงานว่า partition เริ่มและจบที่ไหน
       </text>
     </svg>
   );

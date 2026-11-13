@@ -36,7 +36,7 @@ export function ArpSpoofing() {
     <svg
       viewBox="0 0 620 306"
       role="img"
-      aria-label="ภาพบน: ปกติเฟรมระหว่างเครื่องผู้ใช้กับ gateway วิ่งผ่านสวิตช์ตรงถึงกันทั้งขาไปและขากลับ เพราะ ARP cache จับคู่ 192.168.1.1 กับ MAC ของ gateway ภาพล่าง: หลังผู้โจมตีส่ง ARP reply ปลอมให้ทั้งสองฝั่ง cache ของผู้ใช้จับคู่ 192.168.1.1 กับ MAC ของผู้โจมตี และ cache ของ gateway จับคู่ 192.168.1.10 กับ MAC ของผู้โจมตี เฟรมทั้งขาไปและขากลับจึงวิ่งจากสวิตช์ไปหาผู้โจมตีก่อน แล้วผู้โจมตีส่งกลับผ่านสวิตช์ไปยังปลายทางจริง"
+      aria-label="ภาพบน: ปกติ frame ระหว่างเครื่องผู้ใช้กับ gateway วิ่งผ่าน switch ตรงถึงกันทั้งขาไปและขากลับ เพราะ ARP cache จับคู่ 192.168.1.1 กับ MAC ของ gateway ภาพล่าง: หลังผู้โจมตีส่ง ARP reply ปลอมให้ทั้งสองฝั่ง cache ของผู้ใช้จับคู่ 192.168.1.1 กับ MAC ของผู้โจมตี และ cache ของ gateway จับคู่ 192.168.1.10 กับ MAC ของผู้โจมตี frame ทั้งขาไปและขากลับจึงวิ่งจาก switch ไปหาผู้โจมตีก่อน แล้วผู้โจมตีส่งกลับผ่าน switch ไปยังปลายทางจริง"
       className="mx-auto h-auto w-full min-w-[590px]"
       fill="currentColor"
     >
@@ -44,7 +44,7 @@ export function ArpSpoofing() {
         ปกติ
       </text>
       <Node x={20} y={34} w={110} label="ผู้ใช้" />
-      <Node x={190} y={34} w={100} label="สวิตช์" />
+      <Node x={190} y={34} w={100} label="switch" />
       <Node x={350} y={34} w={120} label="gateway" />
       <Node x={520} y={34} w={84} label="อินเทอร์เน็ต" />
       <Arrow x1={132} y1={53} x2={188} y2={53} />
@@ -58,7 +58,7 @@ export function ArpSpoofing() {
         หลังได้รับ ARP reply ปลอม
       </text>
       <Node x={20} y={170} w={110} label="ผู้ใช้" />
-      <Node x={190} y={170} w={100} label="สวิตช์" />
+      <Node x={190} y={170} w={100} label="switch" />
       <Node x={350} y={170} w={120} label="gateway" />
       <Node x={520} y={170} w={84} label="อินเทอร์เน็ต" />
       <Node x={290} y={244} w={120} label="ผู้โจมตี" strong />
@@ -71,7 +71,7 @@ export function ArpSpoofing() {
       <Arrow x1={292} y1={189} x2={348} y2={189} />
       <Arrow x1={472} y1={189} x2={518} y2={189} />
       <text x="420" y="266" fontSize="11" opacity="0.8">
-        ทุกเฟรมทั้งไปและกลับผ่านที่นี่
+        ทุก frame ทั้งไปและกลับผ่านที่นี่
       </text>
       <text x="420" y="282" fontSize="11" opacity="0.8">
         อ่านหรือแก้ได้ก่อนส่งต่อ
