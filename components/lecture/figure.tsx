@@ -12,8 +12,8 @@ export function Figure({
   children: ReactNode;
 }) {
   return (
-    <figure className="my-6 rounded-xl border border-fd-border bg-fd-card p-4">
-      <ScrollFrame>{children}</ScrollFrame>
+    <figure data-diagram="" className="my-6 rounded-xl border border-fd-border bg-fd-card p-4">
+      <ScrollFrame caption={caption}>{children}</ScrollFrame>
       <figcaption className="mt-3 text-sm text-fd-muted-foreground text-center">
         {number !== undefined && <span className="font-semibold">รูปที่ {number}: </span>}
         {caption}
