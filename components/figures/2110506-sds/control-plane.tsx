@@ -118,7 +118,7 @@ export function ControlPlane() {
         controller คำนวณตารางแล้วส่งลงไปให้ทุกตัว
       </text>
       <text x="470" y="212" textAnchor="middle" fontSize="11.5" opacity="0.75">
-        switch ส่งแพ็กเก็ตตามตารางอย่างเดียว
+        switch ส่ง packet ตามตารางอย่างเดียว
       </text>
     </svg>
   );

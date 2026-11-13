@@ -5,7 +5,7 @@ sidebarTitle: "4 · Authorization"
 lecture: 4
 source: "data/2110413-CSY/Lecture-4.pdf"
 credit: "เรียบเรียงจากสไลด์ Chapter 4 ของ Krerk Piromsopa, Ph.D."
-readingMinutes: 35
+readingMinutes: 41
 ---
 
 import { PolicyPipeline } from '@/components/figures/2110413-csy/policy-pipeline';
@@ -294,7 +294,7 @@ Authentication ตอบว่า **คุณเป็นใคร** ส่ว�
 
 - **Unix/Linux** อาจสร้างผู้ใช้หนึ่งคนต่อหนึ่งบริการ คือแปลง role เป็น user เช่น `www-data` สำหรับเว็บเซิร์ฟเวอร์ และ `ftp-data` สำหรับ ftp
 - **แอปพลิเคชัน** อาจผูก role เข้ากับ method เช่นในการเขียนโปรแกรมเชิงวัตถุ
-- **เฟรมเวิร์กบางตัว** ให้ผู้ออกแบบสร้าง role เองแล้วผูกสิทธิ์เข้ากับ role บางตัวถึงขั้นให้ผู้ใช้พิมพ์รหัสผ่านเพื่อเปลี่ยน role
+- **framework บางตัว** ให้ผู้ออกแบบสร้าง role เองแล้วผูกสิทธิ์เข้ากับ role บางตัวถึงขั้นให้ผู้ใช้พิมพ์รหัสผ่านเพื่อเปลี่ยน role
 
 ในระบบสมัยใหม่ การติดตั้งซอฟต์แวร์ต้องพิมพ์รหัสผ่านเพื่อขอ role ของผู้ดูแลระบบ ซึ่งก็คือรูปแบบสุดท้ายนั่นเอง
 
@@ -350,7 +350,7 @@ Zero Trust คือการเอาความไม่เชื่อนั
 | `r` — read | Read |
 | `w` — write | Write |
 | `x` — execute (สำหรับโปรแกรม) | Execute |
-| `x` — search (สำหรับไดเรกทอรี) | Delete |
+| `x` — search (สำหรับ directory) | Delete |
 | | change permission |
 | | change ownership |
 
@@ -360,13 +360,13 @@ Zero Trust คือการเอาความไม่เชื่อนั
 - **ฝั่ง Windows** — ถ้าไม่ได้เป็นผู้ดูแล Windows Server ก็แทบไม่มีโอกาสได้เห็นสิทธิ์พวกนี้
 
 <Pitfall>
-`x` ในฝั่ง Unix ทำงานคนละอย่างกันระหว่างไฟล์กับไดเรกทอรี ทั้งที่เขียนเหมือนกัน
+`x` ในฝั่ง Unix ทำงานคนละอย่างกันระหว่างไฟล์กับ directory ทั้งที่เขียนเหมือนกัน
 
 **บนไฟล์** `x` แปลว่ารันโปรแกรมนี้ได้
 
-**บนไดเรกทอรี** `x` แปลว่าเดินผ่านเข้าไปข้างในได้ ซึ่งเป็นคนละเรื่องกับ `r` ที่แปลว่าดูรายชื่อไฟล์ในนั้นได้
+**บน directory** `x` แปลว่าเดินผ่านเข้าไปข้างในได้ ซึ่งเป็นคนละเรื่องกับ `r` ที่แปลว่าดูรายชื่อไฟล์ในนั้นได้
 
-ผลคือไดเรกทอรีที่มี `x` แต่ไม่มี `r` จะเปิดไฟล์ข้างในได้ถ้ารู้ชื่อ แต่ `ls` ดูรายชื่อไม่ได้
+ผลคือ directory ที่มี `x` แต่ไม่มี `r` จะเปิดไฟล์ข้างในได้ถ้ารู้ชื่อ แต่ `ls` ดูรายชื่อไม่ได้
 </Pitfall>
 
 <Quiz question="ระบบพวกนี้ใช้โมเดลไหน — Facebook Profile, Google Drive, ระบบไฟล์ของ Unix/Linux/Windows, ระบบลงทะเบียนของมหาวิทยาลัย">
@@ -734,7 +734,7 @@ China Wall ต่างจาก MAC และ DAC ตรงที่ **สิ�
 - RBAC ไม่มีนิยามที่ชัดเจนว่าจะนิยาม role ยังไง แต่ละที่ทำคนละแบบ เช่น `www-data`, `ftp-data`
 - **ABAC** ตัดสินจาก user / resource / environmental attributes · **OAuth 2.0 กับ OIDC** ให้สิทธิ์แอปอื่นแบบจำกัดโดยไม่ต้องบอกรหัสผ่าน · **Zero Trust** — `Never trust, always verify`
 - ความยืดหยุ่น: DAC High, MAC Low, RBAC Medium, ABAC Very High
-- สิทธิ์ไฟล์ Unix คือ `r` `w` `x` โดย `x` บนไดเรกทอรีแปลว่า search ส่วน NTFS มี Delete, change permission และ change ownership เพิ่ม
+- สิทธิ์ไฟล์ Unix คือ `r` `w` `x` โดย `x` บน directory แปลว่า search ส่วน NTFS มี Delete, change permission และ change ownership เพิ่ม
 
 **จากนโยบายไปเป็นของจริง**
 

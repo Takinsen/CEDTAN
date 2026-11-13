@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
+import { coinedTerms, readingMinutes } from './prose.mjs';
 
 const MAX_ADDED_CODE_LINES = 15;
 
@@ -100,4 +101,32 @@ test('every Recap holds two or three quizzes, and the pending list only shrinks'
       assert.ok(quizzes >= 2 && quizzes <= 3, `${lecture.path} Recap holds ${quizzes} <Quiz>, needs 2 or 3`);
     }
   }
+});
+
+// readingMinutes is the main path at one rate, so pages compare; scripts/prose.mjs holds the rate
+test('every readingMinutes is within 10% of the main path measured', () => {
+  const off = [];
+  for (const lecture of lectures) {
+    const stated = Number(lecture.text.match(/^readingMinutes: (\d+)/m)?.[1]);
+    const measured = readingMinutes(lecture.text);
+    if (Math.abs(stated - measured) > Math.max(1, measured * 0.1)) off.push(`${lecture.path}: ${stated}, measured ${measured}`);
+  }
+  assert.deepEqual(off, [], `set readingMinutes to the measured value:\n${off.join('\n')}`);
+});
+
+// students say these terms in English; a Thai coinage or spelling reads as odd (owner's review, 2026-11-12)
+test('no page or figure uses a coined Thai name for an English term', () => {
+  const files = [];
+  const walk = (dir, ext) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(path, ext);
+      else if (path.endsWith(ext)) files.push(path);
+    }
+  };
+  walk('content', '.mdx');
+  walk('components/figures', '.tsx');
+  const found = files.flatMap((path) =>
+    coinedTerms(readFileSync(path, 'utf8')).map(({ found, use }) => `${path}: ${found} -> ${use}`));
+  assert.deepEqual(found, [], `write the English term instead:\n${found.join('\n')}`);
 });
