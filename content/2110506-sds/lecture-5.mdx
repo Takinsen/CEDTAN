@@ -5,7 +5,7 @@ sidebarTitle: "5 · Kubernetes"
 lecture: 5
 source: "data/2110506-SDS/Lecture-5.pdf"
 credit: "เรียบเรียงจากสไลด์ Lecture 5 ของ ผศ.ดร.ณัฐวุฒิ หนูไพโรจน์"
-readingMinutes: 45
+readingMinutes: 46
 ---
 
 import { DeploymentEvolution } from '@/components/figures/2110506-sds/deployment-evolution';
@@ -1600,4 +1600,29 @@ Kubernetes ไม่ใช่ Compose ที่เก่งกว่า มั�
 - `delete --selector` ลบทุกตัวที่ป้ายตรง ทั้งคลัสเตอร์ — เปลี่ยนเป็น `get` ดูก่อน
 - pod ทุกตัวคุยกันได้หมดโดยปริยาย ต้องเขียน NetworkPolicy เอง
 - ระหว่าง rolling update ผู้ใช้เจอทั้งรุ่นเก่าและใหม่ปนกัน — สองรุ่นต้องอยู่ร่วมกันได้
+
+<Quiz question="คลัสเตอร์มีสอง node node แรกว่าง CPU เหลือ 300m อีก node ว่างเหลือ 400m แล้วคุณสร้าง pod ที่ตั้ง `requests` ของ CPU ไว้ 500m pod นี้จะได้รันไหม">
+scheduler ใช้ `requests` ตอนเลือก node และไม่เลือก node ที่เหลือน้อยกว่าที่ขอ ทั้งสอง node เหลือไม่ถึง 500m และ pod แบ่งไปอยู่สองเครื่องไม่ได้ เพราะ scheduler วาง pod ลงเครื่องเดียวทั้งก้อน
+
+คำตอบคือ **ไม่ได้รัน** pod ค้างอยู่ที่ `Pending` คือรอ scheduler เลือก node จนกว่าจะมี node ที่ว่างถึง 500m
+
+คำตอบที่ผิดบ่อยคือ "ได้ เพราะสอง node รวมกันว่าง 700m" ซึ่งนับคลัสเตอร์เป็นเครื่องเดียว แต่ scheduler เลือกทีละ node และ container ใน pod ต้องอยู่เครื่องเดียวกันเสมอ
+</Quiz>
+
+<Quiz question="แอปตัวหนึ่งโหลดข้อมูลตั้งต้นสองนาทีทุกครั้งที่สตาร์ต และระหว่างนั้นยังไม่ตอบ `/healthy` ตั้ง `livenessProbe` ไว้ที่ `initialDelaySeconds: 5`, `periodSeconds: 10`, `failureThreshold: 3` และไม่มี `startupProbe` จะเกิดอะไรขึ้น">
+`livenessProbe` เริ่มถามที่วินาทีที่ 5 แล้วถามซ้ำทุก 10 วินาที ไม่ผ่านครบสามครั้งติดกันในราวครึ่งนาที Kubernetes จึงฆ่า container แล้วสร้างใหม่ ตัวใหม่เริ่มโหลดจากศูนย์ แล้วโดนฆ่าอีกก่อนครบสองนาที
+
+คำตอบคือ **แอปไม่มีวันขึ้นเสร็จ** วนรีสตาร์ตไปเรื่อย ๆ จนเห็นสถานะ `CrashLoopBackOff` ทางแก้คือเพิ่ม `startupProbe` ที่รอได้เกินสองนาที เช่น `periodSeconds: 10` กับ `failureThreshold: 15` ระหว่างนั้น probe อีกสองตัวยังไม่เริ่มตรวจ
+
+คำตอบที่ผิดบ่อยคือ "ไม่เป็นไร แค่ช้าตอนเริ่ม โปรเซสก็ยังไม่ตาย" ซึ่งลืมว่า `livenessProbe` ไม่รู้ว่าแอปกำลังสตาร์ต มันเห็นแค่ว่าไม่ตอบ จึงถือว่าค้าง แล้วฆ่าทิ้ง
+</Quiz>
+
+<Quiz question="Service `kuard` จับ pod ด้วย `app=kuard` เพื่อนก๊อป manifest ของ Deployment `kuard` ไปทำ Deployment ใหม่ชื่อ `kuard-test` เปลี่ยน image เป็นรุ่นทดลองที่ยังมีบั๊ก แต่ไม่ได้เปลี่ยน label ผู้ใช้ที่เรียก Service `kuard` จะเจออะไร">
+Service เลือก pod ด้วยป้าย ไม่ได้ดูว่า pod มาจาก Deployment ไหน pod ของ `kuard-test` มีป้าย `app=kuard` เหมือนกัน จึงถูกเพิ่มเข้า `Endpoints` ของ Service และได้รับคำขอส่วนหนึ่ง
+
+คำตอบคือ **ผู้ใช้บางคนได้รุ่นทดลองที่มีบั๊ก** ปนกับรุ่นปกติ ทางแก้คือให้ `kuard-test` ใช้ป้ายของตัวเอง เช่น `app=kuard-test` ทั้งใน `selector` และใน `template`
+
+คำตอบที่ผิดบ่อยคือ "ไม่โดน เพราะ Service สร้างจาก `kubectl expose deployment/kuard`" ซึ่ง `expose` แค่ตั้ง selector `app=kuard` ให้ตอนสร้าง หลังจากนั้น Service จับทุก pod ที่ป้ายตรงกับ selector
+</Quiz>
+
 </Recap>

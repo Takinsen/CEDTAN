@@ -75,19 +75,6 @@ test('no prose sentence labels itself as added material', () => {
 
 // pages written before the Recap-quiz rule; remove a page once its Recap holds its quizzes
 const RECAP_QUIZ_PENDING = new Set([
-  "2110413-csy/lecture-1",
-  "2110413-csy/lecture-2",
-  "2110413-csy/lecture-3",
-  "2110413-csy/lecture-4",
-  "2110413-csy/lecture-5",
-  "2110413-csy/lecture-6",
-  "2110413-csy/lecture-7",
-  "2110506-sds/lecture-1",
-  "2110506-sds/lecture-2",
-  "2110506-sds/lecture-3",
-  "2110506-sds/lecture-4",
-  "2110506-sds/lecture-5",
-  "2110506-sds/lecture-6",
 ]);
 
 test('every Recap holds two or three quizzes, and the pending list only shrinks', () => {
