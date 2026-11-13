@@ -5,7 +5,7 @@ sidebarTitle: "3 · Multi-container Apps"
 lecture: 3
 source: "data/2110506-SDS/Lecture-3.pdf"
 credit: "เรียบเรียงจากสไลด์ Lecture 3 ของ รศ.ดร.วีระ เหมืองสิน"
-readingMinutes: 50
+readingMinutes: 48
 ---
 
 import { BuildPushRun } from '@/components/figures/2110506-sds/build-push-run';
@@ -1440,7 +1440,7 @@ services:
 <Quiz question="ถ้าอยากเข้า postgres จากเครื่องตัวเองเพื่อดีบัก ตั้งค่ายังไงให้ยังปลอดภัยพอควร">
 เพิ่ม `ports: - "127.0.0.1:5432:5432"` ให้ `db` ชั่วคราว
 
-การใส่ `127.0.0.1:` ข้างหน้าทำให้พอร์ตเปิดเฉพาะกับตัวเครื่องเอง ไม่ใช่ทุกหน้าต่างเครือข่าย เครื่องอื่นในวงแลนจึงยังต่อไม่ได้ แต่ก็ยังไม่ควรทิ้งไว้ตอนขึ้นระบบจริง
+การใส่ `127.0.0.1:` ข้างหน้าทำให้พอร์ตเปิดเฉพาะกับตัวเครื่องเอง ไม่ใช่ทุกหน้าต่างเครือข่าย เครื่องอื่นใน LAN จึงยังต่อไม่ได้ แต่ก็ยังไม่ควรทิ้งไว้ตอนขึ้นระบบจริง
 
 ทางที่สะอาดกว่าคือใช้ `docker compose exec db psql` เข้าไปข้างในเลย โดยไม่ต้องเปิดพอร์ตอะไรเพิ่ม
 </Quiz>
@@ -1553,7 +1553,7 @@ Compose ไม่ได้แย่กว่า Kubernetes มันแก้ค
 
 ### ต่อด้วย SSH
 
-Raspberry Pi รองรับ <Term en="multicast DNS" th="ระบบชื่อในวงแลนที่ไม่ต้องมีเซิร์ฟเวอร์" /> เครื่องอื่นในวงเดียวกันจึงเรียกมันด้วยชื่อ `raspberrypi` หรือ `raspberrypi.local` ได้เลย ไม่ต้องรู้หมายเลข IP
+Raspberry Pi รองรับ <Term en="multicast DNS" th="ระบบชื่อใน LAN ที่ไม่ต้องมีเซิร์ฟเวอร์" /> เครื่องอื่นในวงเดียวกันจึงเรียกมันด้วยชื่อ `raspberrypi` หรือ `raspberrypi.local` ได้เลย ไม่ต้องรู้หมายเลข IP
 
 <StepThrough>
 <Step title="เปิด hotspot บนมือถือ">
@@ -1729,4 +1729,29 @@ Kubernetes แก้ทั้งสี่ข้อนี้ด้วยเคร
 - Compose มีขอบเขตที่เครื่องเดียว container orchestration แก้เรื่องหลาย container บนหลายเครื่อง
 - Compose กับ Kubernetes ไม่ได้แข่งกัน — Compose เหมาะกับงานพัฒนาและระบบเล็ก Kubernetes เหมาะกับระบบจริงขนาดใหญ่ที่ต้องซ่อมตัวเองได้
 - แล็บ Raspberry Pi พิสูจน์ข้อจำกัด — user-defined network เป็นของเฉพาะเครื่อง เครือข่ายชื่อ `mynet` บนสองเครื่องคือคนละเครือข่าย เรียกกันด้วยชื่อไม่ได้ ต้องกลับไปใช้ IP ซึ่งเปราะและไม่ขยายตัว
+
+<Quiz question="image ชื่อ pinger มี ENTRYPOINT เป็น `ping -c 3` และ CMD เป็น `localhost` เขียนแบบ exec form ทั้งคู่ สั่ง `docker run pinger 8.8.8.8` กับ `docker run pinger bash` จะรันอะไร">
+เมื่อมีทั้งคู่ `CMD` เป็นแค่อาร์กิวเมนต์ตั้งต้นของ `ENTRYPOINT` สิ่งที่พิมพ์ต่อท้าย `docker run` จะแทนที่ `CMD` แล้วถูกเติมต่อท้าย `ENTRYPOINT` ตัวคำสั่ง `ping` ไม่มีวันหายไป
+
+คำตอบคือ คำสั่งแรกรัน `ping -c 3 8.8.8.8` ส่วนคำสั่งที่สองรัน **`ping -c 3 bash`** คือ ping ไปหาเครื่องชื่อ `bash` ไม่ได้เปิด shell
+
+คำตอบที่ผิดบ่อยคือ "คำสั่งที่สองได้ shell" ซึ่งเป็นพฤติกรรมของ image ที่มีแต่ `CMD` ที่ผู้ใช้พิมพ์คำสั่งใหม่ทับได้ทั้งอัน พอมี `ENTRYPOINT` ผู้ใช้เปลี่ยนได้แค่อาร์กิวเมนต์
+</Quiz>
+
+<Quiz question="ทีมใส่ `condition: service_healthy` ใน `depends_on` ของ api แต่ลืมเพิ่ม `healthcheck` ให้ postgres สั่ง `docker compose up` แล้วเกิดอะไรขึ้น">
+`service_healthy` สั่งให้ api รอจนกว่า postgres จะรายงานว่า healthy แต่ postgres ไม่มี `healthcheck` จึงไม่มีวันรายงานสถานะนั้น Compose รู้ตั้งแต่ต้นว่าเงื่อนไขนี้เป็นจริงไม่ได้
+
+คำตอบคือ **api ไม่ถูกสตาร์ตเลย** Compose หยุดพร้อมข้อความ `dependency failed to start: container ... has no healthcheck configured`
+
+คำตอบที่ผิดบ่อยคือ "api สตาร์ตตามปกติหลัง postgres สตาร์ต" ซึ่งมองว่าเงื่อนไขที่ตรวจไม่ได้จะถูกข้ามไป แต่สองส่วนนี้ต้องมาคู่กัน `healthcheck` ฝั่งหนึ่งวัดความพร้อม `condition: service_healthy` อีกฝั่งรอผลวัดนั้น
+</Quiz>
+
+<Quiz question="ระบบมอนิเตอร์สาม container บนเครือข่าย monitoring ทำงานบนคอมพิวเตอร์เครื่องเดียวได้ปกติ ถ้าย้าย grafana ไปรันบน Raspberry Pi แล้วสร้างเครือข่ายชื่อ monitoring บน Pi ด้วย grafana จะเรียก http://prometheus:9090 ได้ไหม">
+user-defined network เป็นของเฉพาะเครื่อง `monitoring` บนคอมพิวเตอร์กับ `monitoring` บน Pi ชื่อเหมือนกันแต่เป็นคนละเครือข่าย grafana จึงหาชื่อ `prometheus` ไม่เจอ และ prometheus เขียนไว้แค่ `expose: - 9090` พอร์ตจึงไม่โผล่ออกมาที่คอมพิวเตอร์ให้เครื่องอื่นเรียก
+
+คำตอบคือ **ไม่ได้** ทางเฉพาะหน้าแบบเดียวกับแล็บคือ เปลี่ยน prometheus เป็น `ports: - 9090:9090` แล้วให้ grafana ชี้ไปที่หมายเลข IP ของคอมพิวเตอร์ พอร์ต 9090 ซึ่งเปราะเพราะ IP เปลี่ยนได้
+
+คำตอบที่ผิดบ่อยคือ "ได้ เพราะทั้งสองเครื่องมีเครือข่ายชื่อ monitoring" ซึ่งเชื่อว่าชื่อเดียวกันคือเครือข่ายเดียวกัน Docker แต่ละเครื่องรู้จักแค่เครือข่ายของตัวเอง
+</Quiz>
+
 </Recap>

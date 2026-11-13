@@ -6,10 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test components/lecture/motion-values.test.mjs components/figures/2110506-sds/part-3-figures.test.mjs components/home/strip.test.mjs scripts/content.test.mjs",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test components/lecture/motion-values.test.mjs components/figures/2110506-sds/part-3-figures.test.mjs components/home/strip.test.mjs scripts/content.test.mjs scripts/prose.test.mjs",
     "narration": "node scripts/narration.mjs",
     "check": "next typegen && tsc --noEmit && eslint . && pnpm test && next build",
-    "test:browser": "node --test components/lecture/reading-tools.browser.test.mjs"
+    "test:browser": "node --test components/lecture/reading-tools.browser.test.mjs",
+    "test:pages": "node --test --test-concurrency=1 scripts/pages.browser.test.mjs"
   },
   "dependencies": {
     "cnfast": "^0.1.0",

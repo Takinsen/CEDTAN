@@ -19,7 +19,7 @@ slides — and understand better than the slides.
 
 A better explanation of the same material, not a shorter copy of it. The words in italics
 below (_narration_, _boundary marker_, _added material_, _inherited gap_, _image-carried
-slide_) are defined in `CONTEXT.md`.
+slide_, _main path_) are defined in `CONTEXT.md`.
 
 ## Guardrails
 
@@ -47,37 +47,44 @@ follow `docs/agents/courses.md`, then come back here.
    A missing file is dropped silently, so a typo in the name is invisible.
 7. Review with two fresh subagents defined in `.claude/agents/`. Confirm each finding against
    the deck, the tool, or the page before acting on it: a reviewer can be wrong. Done when every
-   finding is fixed or rejected with a reason.
+   finding is fixed or rejected with a reason. Save each report to
+   `~/.cache/cedtan-work/<course>/lecture-<n>/`, outside the repo since a report quotes the
+   deck: the fixes often run in a later session. To revise from findings, follow
+   `docs/agents/revising.md`.
    1. `page-fact-checker`: is the page true and complete? Fix what it finds.
    2. `page-editor`: does the page teach? Save a copy of the page outside the repo first, then
       fix what it finds.
    3. `page-fact-checker` again, passing that copy, so the edits dropped no fact.
 8. Run `pnpm check`. Done when it passes.
-9. Build and serve with `pnpm build && PORT=3101 pnpm start`. `pnpm dev` runs out of memory
-   on lecture pages. Read the page end to end. Done when all of these hold:
-   - every section read in light mode and in dark mode
-   - every figure's text readable in both
-   - at a 400px-wide window, the page body has no sideways scroll
-   - every coverage-list item ticked, and every name in a list found somewhere else on the page
+9. Run `pnpm build`, then `PAGES="<course>/lecture-<n>" pnpm test:pages`: it checks both
+   themes load without errors, the Recap holds its quizzes, and a 400px window has no sideways
+   scroll, and it saves every figure in both themes to a folder it names. `pnpm dev` runs out of
+   memory on lecture pages. Done when all of these hold:
+   - `pnpm test:pages` passes
+   - every saved figure's text readable in both themes
+   - the page read end to end on `PORT=3101 pnpm start`, every coverage-list item ticked, and
+     every name in a list found somewhere else on the page
 
-When revising a page that already exists, extract every number, code span, quotation, English
-token and URL before and after, and account for every difference. A reorganisation moves facts;
-it never drops one.
+When revising a page that already exists, follow `docs/agents/revising.md`.
 
 ## Quality bar
 
-Every one of these is a blocker, not a preference.
+Every one of these is a blocker, not a preference. The research behind each rule, and where
+it stops, is in `docs/research/writing-rules-evidence.md`.
 
-- **Cover everything.** Every topic on the slides appears on the page, minor-looking ones
-  included, with enough left of each to carry its meaning.
+- **Cover every topic, depth by weight.** Every topic on the slides appears on the page,
+  minor-looking ones included, with enough left of each to carry its meaning. Depth follows
+  what the topic carries: a detail that no later section and no likely exam question needs
+  folds into a `<Detail>`, so the main path stays the main points.
 - **Reason before definition.** Open each concept with the problem it solves (`<Why>`), then
   say what it is. Make the problem a concrete case the reader can picture — a message, an
   attack, a number — and let the general statement follow it.
 - **Name a term when its problem arrives.** Tell one idea at a time: show the problem, then
   introduce the term that solves it, right there. A list of names up front, explained later,
   makes the reader memorise words that mean nothing yet. Mention a term only once the page
-  has introduced it. A mechanism with several parts grounds each part, its name with its job,
-  before the section shows the parts working together.
+  has introduced it. A mechanism with several parts may open by naming each part with its job,
+  before the section shows the parts working together: a name with its job is grounded, a
+  bare name is not.
 - **One concrete example per abstract idea.** Real input and real output, computed with a
   script or a tool rather than by hand. Slide material comes first: it is what the exam draws
   on, and every added line costs reading stamina. When the slides give no example, add one
@@ -109,15 +116,26 @@ Every one of these is a blocker, not a preference.
   is the everyday word, such as ช่องโหว่ or หน่วยความจำ. Wrap the first use of each term in
   `<Term en="..." th="..." />`. `th` is its meaning in a few natural Thai words
   (`เขียนข้อมูลเกินขนาด buffer`), since the page prints it inline in brackets; the sentence
-  around it does the defining.
+  around it does the defining. `scripts/content.test.mjs` fails the coined Thai names listed in `scripts/prose.mjs`.
+- **Talk to the reader.** Address the reader as `คุณ` or `เรา` where it reads naturally, as
+  `content/2110413-csy/lecture-3.mdx` does. Tell a mechanism that runs in steps as events with
+  actors (ผู้โจมตีส่ง… เซิร์ฟเวอร์ตอบ…); explain the rest directly, since telling every paragraph
+  as a story makes it longer.
 - **One point per paragraph.** A paragraph makes one point in one to three sentences. A term
   that needs explaining gets its own sentence where the reader first needs it. Name only what
-  the reader meets again or needs for the exam; describe the rest in plain words.
+  the reader meets again or needs for the exam; describe the rest in plain words. Open each
+  paragraph with its key words, and say how it follows from the one before (`เพราะ…`, `แต่…`,
+  `ผลคือ…`): a reader with little background cannot guess the link between short paragraphs.
 - **Own the order.** Group sections by idea, and sequence them so each one is understandable
   from the ones before it. The deck's order is one candidate; follow it where it is already
   the best teaching order, as a decision. Walking the deck splits topics that belong together
   and copies its _inherited gaps_ — step 9's name check catches the second.
-- **End with `<Recap>`.** Bullets a student can read the night before an exam. The table of
+- **End each part on its point.** Every `##` part ends with a `<KeyIdea>` or a `<Quiz>`, so a
+  reader short of time can read those and the Recap and still keep the core. When
+  `pnpm narration` reports a _main path_ over 40 minutes, offer the owner a split point.
+- **End with `<Recap>`.** Bullets a student can read the night before an exam, then two or
+  three `<Quiz>` blocks inside it that make the reader recall the page's main mechanisms:
+  recalling an answer fixes it in memory, rereading a bullet barely does. The table of
   contents links `สรุปท้ายคาบ` to `#recap` on every page, so without it that link is dead.
 
 ## Teaching blocks
@@ -126,19 +144,23 @@ These blocks steer what the reader believes, so each has a shape. Every shape is
 
 - **`<Analogy>` maps, then marks its edge.** Say which everyday part stands for which real
   part, then end on the place the comparison stops holding: `อุปมานี้ใช้ไม่ได้ตรงที่…`. A reader
-  carries an analogy past an unmarked edge, and a wrong analogy costs more than none. The
+  carries an analogy past an unmarked edge, and a wrong analogy costs more than none. Take the
+  everyday side from something a Thai student has done first-hand (a bank queue, a LINE group,
+  a condo keycard): an analogy helps only a reader who knows its source well. The
   subject's own workflow (checking a download against its published hash) is an example, not
   an analogy: write it as prose or `<Example>`.
 - **`<Pitfall>` refutes a belief.** Four moves, in order: the wrong belief as a student would
-  say it; that it is wrong; why it looks right; what holds instead, with the case that shows
-  it. A bare rule (`อย่าใช้ nonce ซ้ำ`) becomes a pitfall once it names the belief that breaks
+  say it; that it is wrong; why it looks right; what holds instead, with the mechanism that
+  makes it so and the case that shows it. The mechanism does most of the correcting: a reader
+  told only the right answer drifts back to the belief. A bare rule (`อย่าใช้ nonce ซ้ำ`) becomes a pitfall once it names the belief that breaks
   it (`nonce ไม่ใช่ความลับ ใช้ซ้ำก็ไม่เสียหาย`).
 - **`<Quiz>` makes the reader use the section.** Its question gives a case the section has not
   shown — a new input, a new system, a choice between two options — so the answer comes from
   reasoning rather than from finding a sentence above. Place it right after the section it
   tests; every `##` part that teaches a mechanism has at least one. The answer gives the
   reasoning, then the result, then the wrong answer a student most likely gives and why it
-  fails.
+  fails. The component already asks the reader to answer before opening, so the question
+  holds only the case.
 - **Predict before a surprising result.** When a student would guess an output wrong, ask for
   the guess on the line before it: `ลองทายก่อน: …`. Keep it for results that surprise; asking
   for the obvious is noise.
@@ -159,7 +181,8 @@ the `credit` field already say where the material came from.
 
 When a page is done, run `pnpm narration content/<course>/lecture-<n>.mdx`. It lists lines
 holding words that usually end a narrating sentence; each hit is a boundary marker, named by
-kind, or a rewrite.
+kind, or a rewrite. It then warns on paragraphs over 300 Thai characters, paragraphs with more
+than two glosses, and a main path over 40 minutes: split the paragraph, or say why it stays.
 
 ## Frontmatter
 
@@ -181,7 +204,11 @@ The schema lives in `lib/source.ts`; a wrong type fails the build.
   `N · Short topic` for a lecture and a plain Thai phrase for a course index page.
 - `credit` tells a stranger this is a student's summary, not the real slides.
 - `source` renders nowhere. It is a repo path for the next agent to find the PDF.
-- `readingMinutes`: other pages run about 350–550 Thai characters per minute.
+- `description` is the question the page answers, asked concretely enough that a student
+  recognises it (`ทำไมพิมพ์ชื่อยาวเกินแค่ช่องเดียว โปรแกรมถึงถูกยึดได้`), not a list of topics.
+  It renders under the title.
+- `readingMinutes` is measured, not estimated: the _main path_ at 450 Thai characters a
+  minute (`scripts/prose.mjs`). `scripts/content.test.mjs` prints the value when it is off.
 
 ## Components
 

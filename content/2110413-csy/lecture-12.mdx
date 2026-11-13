@@ -5,7 +5,7 @@ sidebarTitle: "12 · Secure By Design"
 lecture: 12
 source: "data/2110413-CSY/Lecture-12.pdf"
 credit: "เรียบเรียงจากสไลด์ Chapter 10 ของ Krerk Piromsopa, Ph.D. ซึ่งยกบางหน้ามาจากเอกสารของ M. Howard แห่ง Microsoft"
-readingMinutes: 50
+readingMinutes: 45
 ---
 
 import { LoginTiming } from '@/components/figures/2110413-csy/login-timing';
@@ -55,9 +55,11 @@ import { AttackSurfaceLayers } from '@/components/figures/2110413-csy/attack-sur
 - **Software Engineering & Threat Modeling** — "Threat modeling is a method of addressing and documenting the security risks associated with an application." คือวิธีจัดการและจดความเสี่ยงของแอปพลิเคชันหนึ่ง ๆ
 - **Validation of Input** — "All input is evil until proven otherwise"
 
+หน้าสรุปของ Lecture 2 นับแนวคิดหนุนไว้แค่สองข้อ คือ Integrity กับ Input Validation ส่วนคาบนี้นับ Threat Modeling เป็นข้อที่สามด้วย
+
 Integrity บางครั้งถูกเรียกว่า Authenticity จึงถูกนับเป็น **A ตัวที่สี่** ของชิ้นส่วนความปลอดภัย ส่วนคำถามว่าจะรักษา integrity ของข้อมูลได้ยังไง อยู่ใน [Lecture 6](/2110413-csy/lecture-6#ส่วนที่-1--integrity-คือ-a-ตัวที่สี่)
 
-ของที่เรียนมาทั้งหมดจัดได้เป็นสามหัวข้อ โดยหัวข้อกลางแตกเป็น CIA จาก [Lecture 4](/2110413-csy/lecture-4#ส่วนที่-2--นโยบายตัดสินจากอะไร)
+Integrity ยังโผล่อีกที่หนึ่ง ถ้าจัดของที่เรียนมาทั้งหมดเป็นสามหัวข้อ หัวข้อกลางจะแตกเป็น CIA จาก [Lecture 4](/2110413-csy/lecture-4#ส่วนที่-2--นโยบายตัดสินจากอะไร)
 
 - **Authentication**
 - **Authorization** — Confidentiality, Integrity, Availability
@@ -103,20 +105,25 @@ Prog 1.                      Prog 2.                      Prog 3.
 </Figure>
 
 <Example added title="จับเวลาสามโปรแกรมนี้จริง">
-Prog 2 รั่วทางเวลา แต่ต่างกันแค่ไหน โค้ด Python ข้างล่างเขียนสามโปรแกรมนี้ใหม่ เทียบรหัสด้วย hash ที่ตั้งใจให้ช้าแบบระบบจริง (PBKDF2 วน 600,000 รอบ ดู [Lecture 3](/2110413-csy/lecture-3#รหัสผ่านถูกเก็บยังไง)) แล้วใส่รหัสผิดทุกครั้ง
+วัดจริงด้วย Python ที่เทียบรหัสด้วย hash ที่ตั้งใจให้ช้าแบบระบบจริง (PBKDF2 วน 600,000 รอบ ดู [Lecture 3](/2110413-csy/lecture-3#รหัสผ่านถูกเก็บยังไง)) และใส่รหัสผิดทุกครั้ง
 
 ```text
-prog1 alice  -> exit | asked password: True
-prog1 nobody -> exit (no password prompt) | asked password: False
 prog2  alice   wrong password     90.6 ms  -> exit
 prog2  nobody  wrong password      0.0 ms  -> exit
 prog3  alice   wrong password     90.3 ms  -> exit
 prog3  nobody  wrong password     90.7 ms  -> exit
 ```
 
-ทุกบรรทัดตอบ `exit` เหมือนกัน สิ่งที่รั่วคือการถูกถามรหัส (Prog 1) และเวลา 90 ms กับ 0 ms (Prog 2) ส่วน Prog 3 ต่างกันไม่ถึง 1 ms
+ทุกบรรทัดตอบ `exit` เหมือนกัน แต่ Prog 2 ต่างกัน 90 ms ส่วน Prog 3 ต่างกันไม่ถึง 1 ms
 
-<Detail label="โค้ดที่ใช้รัน">
+<Detail label="ผลของ Prog 1 และโค้ดที่ใช้รัน">
+Prog 1 ตอบ `exit` ทั้งสองชื่อเหมือนกัน สิ่งที่รั่วคือการถูกถามรหัส
+
+```text
+prog1 alice -> exit | asked password: True
+prog1 nobody -> exit (no password prompt) | asked password: False
+```
+
 ```python
 # three login programs from the deck; password check uses a slow hash, as real systems do
 import hashlib, os, time, hmac
@@ -171,18 +178,8 @@ for prog in (prog2, prog3):
 <Term en="Secure by Design" th="ออกแบบให้ปลอดภัยตั้งแต่ต้น" /> คือการถามคำถามนี้ตั้งแต่ตอนออกแบบ มีสามส่วน
 
 - **Plan more than just functionality (Plan for Security)** — วางแผนมากกว่าแค่ว่าโปรแกรมทำอะไรได้ คือวางแผนเรื่องความปลอดภัยไปด้วย
-- <Term en="Attack Surface Reduction" th="ลดจุดที่เปิดให้โจมตี" /> — ส่วนที่ 3
+- <Term en="Attack Surface Reduction" th="ลดจุดที่เปิดให้โจมตี" /> หรือ ASR — ส่วนที่ 3
 - **Threats & Risk Modeling** — ไล่หาภัยและประเมินความเสี่ยงอย่างเป็นระบบ ส่วนที่ 4
-
-<Analogy>
-นิทานลูกหมูสามตัว
-
-- **บ้านสามหลัง** คือโปรแกรมสามตัว ทุกหลังอยู่อาศัยได้ เหมือนที่ทุกโปรแกรมทำงานได้
-- **หมาป่า** คือผู้โจมตี
-- **วัสดุที่เลือกก่อนลงมือสร้าง** คือการตัดสินใจเรื่องความปลอดภัยตอนออกแบบ
-
-อุปมานี้ใช้ไม่ได้ตรงที่บ้านฟางต้องรื้อทั้งหลังถึงจะเป็นบ้านอิฐ แต่ Prog 2 กลายเป็น Prog 3 ได้ด้วยบรรทัดเดียว สิ่งที่ต้องมีตั้งแต่ตอนออกแบบจึงไม่ใช่วัสดุทั้งหลัง แต่เป็นคำถามว่า "ผู้โจมตีจะเห็นอะไร" ถ้าไม่มีใครถาม บรรทัดนั้นก็ไม่มีใครเขียน
-</Analogy>
 
 <Quiz question="หน้า 'ลืมรหัสผ่าน' ของเว็บหนึ่งให้กรอกอีเมล ถ้ามีอีเมลนี้ในระบบจะขึ้นว่า 'ส่งลิงก์ไปแล้ว' ถ้าไม่มีจะขึ้นว่า 'ไม่พบอีเมลนี้' หน้านี้เหมือนโปรแกรมตัวไหน และควรแก้ยังไง">
 หน้านี้ตอบต่างกันตามว่ามีบัญชีอยู่จริงไหม ผู้โจมตีจึงกรอกอีเมลไปทีละอันแล้วรู้ว่าใครเป็นสมาชิก แบบเดียวกับ Prog 1
@@ -199,7 +196,9 @@ for prog in (prog2, prog3):
 ### Attack Surface คืออะไร
 
 <Why>
-หมาป่าที่เป่าบ้านอิฐไม่พังจะหันไปหาปล่องไฟ ผู้โจมตีก็ไม่ได้เจาะจุดที่เราป้องกันแน่นที่สุด แต่หาจุดไหนก็ได้ที่เปิดอยู่ ระบบยิ่งมีประตู หน้าต่าง และปล่องไฟมาก โอกาสที่สักช่องจะลืมล็อกก็ยิ่งมาก
+Prog 3 ปิดการรั่วที่หน้า login แล้ว แต่ถ้าเว็บเดียวกันยังมีหน้า "ลืมรหัสผ่าน" แบบในโจทย์ข้างบน ผู้โจมตีก็ไล่ชื่อผ่านหน้านั้นแทน
+
+ผู้โจมตีไม่ได้เจาะจุดที่เราป้องกันแน่นที่สุด แต่หาจุดไหนก็ได้ที่เปิดอยู่ ระบบยิ่งมีหน้าเว็บ พอร์ต และบริการมาก โอกาสที่สักช่องจะลืมป้องกันก็ยิ่งมาก
 </Why>
 
 <Term en="Attack Surface" th="จุดทั้งหมดที่ถูกโจมตีได้" /> คือ **ชุดของเป้าหมายทั้งหมดที่ผู้โจมตีเข้าถึงได้** ทั้งช่องโหว่ เครือข่าย และ control เอง (vulnerabilities, controls, networks) control ก็นับด้วย เพราะของที่ตั้งไว้กันการโจมตี เช่นหน้า login ก็ถูกโจมตีได้
@@ -224,13 +223,17 @@ Attack surface รวม (Aggregate Attack Surface) มีสามชั้น
 
 - **Defense in Depth** — ป้องกันหลายชั้น ชั้นหนึ่งพังยังมีชั้นถัดไป ([หลักการที่ 2 ใน Lecture 1](/2110413-csy/lecture-1#หลักการที่-2--defense-in-depth))
 - **Least Privilege** — ให้สิทธิ์น้อยที่สุดเท่าที่งานต้องใช้ ([หลักการที่ 1 ใน Lecture 1](/2110413-csy/lecture-1#หลักการที่-1--least-privilege))
-- <Term en="Secure Defaults" th="ค่าเริ่มต้นที่ปลอดภัย" /> — Less code running = less stuff to attack โค้ดที่รันน้อยลง ของให้โจมตีก็น้อยลง ([หัวข้อ Secure Defaults](#secure-defaults))
+- <Term en="Secure Defaults" th="ค่าเริ่มต้นที่ปลอดภัย" /> — ปิดของที่ไม่จำเป็นไว้เป็นค่าเริ่มต้น ([หัวข้อ Secure Defaults](#secure-defaults))
 
 ### Defense in Depth ของจริง — MS03-007
 
 MS03-007 คือ security bulletin ฉบับที่ 7 ของปี 2003 ของ Microsoft แต่ละฉบับประกาศช่องโหว่พร้อม patch ที่แก้
 
-ช่องโหว่ของฉบับนี้เป็น <Term en="Buffer Overrun" th="เขียนข้อมูลเกินขนาด buffer" /> ใน `NTDLL.DLL` ของ Windows ผู้โจมตีเข้าถึงมันได้ผ่าน web server IIS ที่เปิด <Term en="WebDAV" th="ส่วนขยาย HTTP สำหรับจัดการไฟล์" /> ไว้ และมันกระทบ Windows 2000
+ช่องโหว่ของฉบับนี้เป็น <Term en="Buffer Overrun" th="เขียนข้อมูลเกินขนาด buffer" /> ใน `NTDLL.DLL` ของ Windows และมันกระทบ Windows 2000
+
+`NTDLL.DLL` คือไลบรารีชั้นล่างของ Windows ที่ไลบรารีอื่นของ Windows เรียกต่อลงไปอีกที โปรแกรมเกือบทุกตัวจึงใช้มันอยู่ทางอ้อม
+
+ผู้โจมตีเข้าถึงมันได้ผ่าน web server IIS ที่เปิด <Term en="WebDAV" th="ส่วนขยาย HTTP สำหรับจัดการไฟล์" /> ไว้
 
 แต่ **Windows Server 2003 ไม่โดน** และไม่ได้รอดเพราะชั้นเดียว มีถึงหกชั้น แต่ละชั้นถามว่า "ถ้าชั้นก่อนหน้าพังล่ะ"
 
@@ -247,16 +250,18 @@ Windows Security Push คือช่วงที่ทีม Windows หยุ�
 
 `-GS` วางค่า canary ไว้ข้าง buffer ถ้าค่านั้นถูกทับ โปรแกรมจะหยุดเองก่อนที่โค้ดของผู้โจมตีจะได้รัน กลไกเต็มอยู่ใน [Lecture 8](/2110413-csy/lecture-8)
 
-สังเกตว่ามีแค่ชั้นแรกที่เป็นโค้ดที่ดีขึ้น ชั้นที่ 2–4 เป็น **ค่าเริ่มต้น** ล้วน ๆ คือ IIS ไม่รัน WebDAV ไม่เปิด และความยาว URL ถูกจำกัด
+สังเกตว่ามีแค่ชั้นแรกที่แก้ตัวบั๊กเอง ชั้นที่ 2–4 เป็น **ค่าเริ่มต้น** ล้วน ๆ คือ IIS ไม่รัน WebDAV ไม่เปิด และความยาว URL ถูกจำกัด
 
 ### Secure Defaults
 
+Microsoft จัดความรุนแรงของช่องโหว่เป็นสี่ระดับ เรียงจากแรงที่สุดคือ Critical, Important, Moderate และ Low
+
 ค่าเริ่มต้นที่ปลอดภัยให้ผลหกข้อ
 
-- **Less code running by default = less stuff to attack by default**
+- **Less code running by default = less stuff to attack by default** — โค้ดที่รันเป็นค่าเริ่มต้นน้อยลง ของให้โจมตีก็น้อยลง
 - **Slammer และ CodeRed จะไม่เกิด ถ้าฟีเจอร์ที่ถูกโจมตีไม่ได้เปิดไว้เป็นค่าเริ่มต้น** ทั้งสองเป็น worm ที่แพร่จากเครื่องไปเครื่องเอง CodeRed เจาะ IIS ส่วน Slammer เจาะ SQL Server
 - **ลดความเร่งด่วนในการลง patch** ช่องโหว่ระดับ "critical" อาจถูกลดเป็น "important" เพราะต้องมีคนไปเปิดฟีเจอร์นั้นเองก่อน
-- **Defense in depth ตัด single point of failure ทิ้ง** คือไม่มีจุดเดียวที่พังแล้วพังทั้งระบบ
+- **Defense in depth removes single points of failure** — ค่าเริ่มต้นที่ปิดไว้เป็น defense in depth อีกชั้น อย่างชั้นที่ 2–4 ของ MS03-007 จึงไม่มีจุดเดียวที่พังแล้วพังทั้งระบบ
 - **ลูกค้าไม่ต้อง "harden" ระบบเอง** คือไม่ต้องไล่ปิดของที่ไม่ใช้ด้วยตัวเอง
 - **งานทดสอบของ*ผู้พัฒนา*เองก็ลดลง** เพราะของที่ปิดอยู่มีทางให้ผิดพลาดน้อยกว่า
 
@@ -331,7 +336,9 @@ ASR ปิดของที่ไม่ใช้ แต่ของที่จ
 
 <Term en="Vulnerability" th="ช่องโหว่" /> คือ **จุดอ่อนที่ทำให้เป้าหมายนั้นสำเร็จ** เช่นการรั่วทางเวลาของ Prog 2 ช่องโหว่แก้แล้วหายได้ อย่างที่ค่าสุ่มใน Prog 3 ทำ
 
-<Term en="Mitigation" th="สิ่งที่กั้นภัยไว้" /> คือ **สิ่งที่กั้นภัยไว้ก่อนถึงช่องโหว่** เช่นจำกัดจำนวนครั้งที่ลอง login ได้ต่อชั่วโมง Prog 2 ยังรั่วอยู่ และลองครั้งเดียวก็แยกชื่อได้ (90.6 ms กับ 0.0 ms) แต่ผู้โจมตีไล่ชื่อได้ช้าลงมาก
+<Term en="Mitigation" th="สิ่งที่กั้นภัยไว้" /> คือ **สิ่งที่กั้นภัยไว้ก่อนถึงช่องโหว่** เช่นให้หน้า login รับคำขอเฉพาะจาก subnet ภายใน แบบขั้น "รับคำขอเฉพาะช่วง IP เล็ก ๆ และ subnet ภายใน" ในส่วนที่ 3
+
+Prog 2 ยังรั่วอยู่ แต่คนนอกเครือข่ายเข้ามาจับเวลาไม่ได้
 
 ภัยที่วิ่งไปเจอ mitigation จะหยุดอยู่ตรงนั้น ภัยที่วิ่งไปเจอช่องโหว่โดยไม่มีอะไรกั้น จะไปถึง <Term en="Asset" th="ของที่ต้องปกป้อง" />
 
@@ -341,7 +348,7 @@ ASR ปิดของที่ไม่ใช้ แต่ของที่จ
 
 การทำ threat model มีสี่ขั้น ข้างล่างนี้ลองทำกับระบบ login ของส่วนที่ 2 ไปพร้อมกัน
 
-#### ขั้นที่ 1 — Gather Background Info
+### ขั้นที่ 1 — Gather Background Info
 
 เก็บข้อมูลพื้นฐานของระบบสามอย่าง
 
@@ -349,7 +356,7 @@ ASR ปิดของที่ไม่ใช้ แต่ของที่จ
 - **Bound scope** — ขีดขอบเขตว่าครั้งนี้ดูถึงไหน เช่นดูแค่การ login ไม่รวมการสมัครสมาชิก
 - **Determine dependencies** — ระบบพึ่งอะไรอยู่ เช่นที่เก็บรหัสผ่าน
 
-#### ขั้นที่ 2 — Model the System
+### ขั้นที่ 2 — Model the System
 
 วาดระบบเป็น <Term en="Data Flow Diagram" th="แผนภาพการไหลของข้อมูล" /> หรือ DFD ซึ่งมีของสี่ชนิด
 
@@ -360,15 +367,17 @@ ASR ปิดของที่ไม่ใช้ แต่ของที่จ
 | Data Store — ที่เก็บข้อมูล | เส้นขนานสองเส้น | ที่เก็บ hash ของรหัสผ่าน |
 | Data Flow — ข้อมูลที่วิ่งระหว่างของสามชนิดข้างบน | ลูกศร | ผู้ใช้ → login (ชื่อ, รหัส), login → ผู้ใช้ (ผล), login → ที่เก็บ (ค้นชื่อ), ที่เก็บ → login (hash) |
 
-จาก DFD ให้ชี้สามอย่าง <Term en="Entry Point" th="ทางที่ข้อมูลจากข้างนอกเข้ามา" /> คือทางที่ข้อมูลจากข้างนอกเข้ามา **assets** คือของที่ต้องปกป้อง และ <Term en="Threat Path" th="ทางที่ผู้โจมตีเดินไปถึงของ" /> คือทางที่ผู้โจมตีเดินจาก entry point ไปถึง asset
+จาก DFD ให้ชี้ของสามอย่าง ตัวอย่างในแต่ละข้อมาจากระบบ login
 
-ในระบบ login entry point คือช่องกรอกชื่อและรหัสผ่าน asset คือบัญชีของ alice และ hash ในที่เก็บ threat path หนึ่งเส้นคือผู้โจมตีกรอกชื่อทีละชื่อที่ช่องนั้น แล้วจับเวลาคำตอบของ Prog 2 จนรู้ว่าบัญชีไหนมีอยู่จริง
+- <Term en="Entry Point" th="ทางที่ข้อมูลจากข้างนอกเข้ามา" /> — ช่องกรอกชื่อและรหัสผ่าน
+- **Asset** — บัญชีของ alice และ hash ในที่เก็บ
+- <Term en="Threat Path" th="ทางที่ผู้โจมตีเดินไปถึงของ" /> — เส้นทางจาก entry point ถึง asset เช่นกรอกชื่อทีละชื่อแล้วจับเวลา Prog 2 จนรู้ว่าบัญชีไหนมีอยู่จริง
 
-#### ขั้นที่ 3 — Identify Threats
+### ขั้นที่ 3 — Identify Threats
 
-ขั้นนี้ใช้เครื่องมือสามอย่าง คือชนิดของภัย (STRIDE) threat tree และความเสี่ยง (risk) หัวข้อถัดไปอธิบายทีละตัว แล้วจึงถึงขั้นที่ 4 เพราะการเลือกว่าจะทำอะไรกับภัยแต่ละข้อต้องรู้ความเสี่ยงของมันก่อน
+ขั้นนี้ใช้เครื่องมือสามอย่าง คือชนิดของภัย (STRIDE) threat tree และความเสี่ยง (risk) หัวข้อย่อยข้างล่างอธิบายทีละตัว แล้วจึงถึงขั้นที่ 4 เพราะการเลือกว่าจะทำอะไรกับภัยแต่ละข้อต้องรู้ความเสี่ยงของมันก่อน
 
-### STRIDE: ภัยหกชนิด และ mitigation ของแต่ละชนิด
+#### STRIDE: ภัยหกชนิด และ mitigation ของแต่ละชนิด
 
 <Why>
 ถ้าถามลอย ๆ ว่า "ระบบ login นี้โดนอะไรได้บ้าง" คนส่วนใหญ่นึกถึงการเดารหัสผ่านแล้วหยุดแค่นั้น ภัยอย่าง "alice อ้างว่าไม่ได้ login ตอนตีสาม และเราไม่มี log พิสูจน์" แทบไม่มีใครนึกออก ถ้าไม่มีรายการให้ไล่ทีละข้อ
@@ -387,9 +396,11 @@ ASR ปิดของที่ไม่ใช้ แต่ของที่จ
 
 คอลัมน์สุดท้ายคือชิ้นส่วนเดิมจากส่วนที่ 1 ทั้งหมด คือ Authentication, Authorization ที่แตกเป็น Confidentiality, Integrity, Availability และ Nonrepudiation ซึ่งได้มาจาก Auditing กับลายเซ็นดิจิทัล ([Lecture 7](/2110413-csy/lecture-7#ส่วนที่-1--ช่องเดียวที่การเข้ารหัสยังปิดไม่ได้))
 
-Threat modeling จึงบอกว่า **ชิ้นส่วนไหนต้องไปวางไว้ตรงไหน** ส่วนหลักที่ใช้เลือก mitigation แต่ละตัวอยู่ใน[สิบหลักการของ Lecture 1](/2110413-csy/lecture-1#ส่วนที่-4--สิบหลักการความปลอดภัย)
+Threat modeling จึงบอกว่า **ชิ้นส่วนไหนต้องไปวางไว้ตรงไหน**
 
-### ของแต่ละชนิดใน DFD โดนภัยคนละชุด
+ส่วนจะเลือก mitigation ตัวไหน ให้ใช้[สิบหลักการของ Lecture 1](/2110413-csy/lecture-1#ส่วนที่-4--สิบหลักการความปลอดภัย)
+
+#### ของแต่ละชนิดใน DFD โดนภัยคนละชุด
 
 ของแต่ละชิ้นใน DFD โดนภัยได้หนึ่งชนิดขึ้นไป แต่ไม่ใช่ทุกชนิด เพราะภัยบางชนิดไม่มีความหมายกับของบางอย่าง เช่น data flow ปลอมตัวเป็นใครไม่ได้
 
@@ -404,17 +415,21 @@ Threat modeling จึงบอกว่า **ชิ้นส่วนไหน�
 
 **ทุก ✓ คือภัยที่อาจเกิดกับระบบหนึ่งข้อ** และภัยแต่ละข้อเกิดได้ก็ต่อเมื่อมีเงื่อนไขบางอย่างเป็นจริง หัวข้อถัดไปจะไล่หาเงื่อนไขพวกนั้น
 
-<Example title="work list ของ DFD ตัวอย่าง: ไล่ของ 15 ชิ้น">
-<Term en="Work List" th="รายการไล่ภัยทีละชิ้น" /> คือรายการที่ไล่ของใน DFD ทีละชิ้น แล้วแปะ ✓ ตามกฎในตารางข้างบน DFD ตัวอย่างหนึ่งแผ่นมี data flow สี่เส้น data store สามที่ interactor สามตัว และ process ห้าตัว จึงได้ภัยที่ต้องตรวจ 4×3 + 3×3 + 3×2 + 5×6 = **57 ข้อ**
+<Example added title="work list ของระบบ login: 23 ข้อ">
+<Term en="Work List" th="รายการไล่ภัยทีละชิ้น" /> คือรายการที่ไล่ของใน DFD ทีละชิ้น แล้วแปะ ✓ ตามกฎในตารางข้างบน
 
-<Detail label="เลขกำกับของแต่ละชิ้นใน work list">
-data flow 1→5, 5→6, 6→7, 7→8 · data store 7, 9, 11 · interactor 1, 2, 8 · process 3, 4, 5, 6, 10
+ลองทายก่อน: ระบบ login ของเรามี interactor 1 ตัว process 1 ตัว data store 1 ที่ และ data flow 4 เส้น จะได้ภัยที่ต้องตรวจกี่ข้อ
+
+คำตอบคือ 2 + 6 + 3 + 4×3 = **23 ข้อ** จากระบบที่มีโปรแกรมแค่ตัวเดียว
+
+<Detail label="work list ของ DFD ที่ใหญ่กว่า: 57 ข้อ">
+DFD ตัวอย่างหนึ่งแผ่นมีของ 15 ชิ้น คือ data flow สี่เส้น data store สามที่ interactor สามตัว และ process ห้าตัว จึงได้ภัยที่ต้องตรวจ 4×3 + 3×3 + 3×2 + 5×6 = **57 ข้อ**
+
+เลขกำกับของแต่ละชิ้น: data flow 1→5, 5→6, 6→7, 7→8 · data store 7, 9, 11 · interactor 1, 2, 8 · process 3, 4, 5, 6, 10
 </Detail>
-
-ระบบ login ของเรามี interactor 1 ตัว process 1 ตัว data store 1 ที่ และ data flow 4 เส้น ได้ 2 + 6 + 3 + 4×3 = **23 ข้อ**
 </Example>
 
-### Threat Tree: ภัยหนึ่งข้อเกิดได้จากเงื่อนไขอะไรบ้าง
+#### Threat Tree: ภัยหนึ่งข้อเกิดได้จากเงื่อนไขอะไรบ้าง
 
 <Why>
 ภัยข้อเดียวอย่าง "เข้าเป็น alice" เกิดได้หลายทาง เดารหัสผ่าน ขโมยไฟล์ hash ดักรหัสระหว่างทาง หรือรู้ก่อนว่า alice มีบัญชีแล้วค่อยเดา ปิดไปสามทางแล้ว จะรู้ได้ยังไงว่าไม่มีทางที่สี่เหลืออยู่
@@ -429,28 +444,32 @@ data flow 1→5, 5→6, 6→7, 7→8 · data store 7, 9, 11 · interactor 1, 2, 
 
 ตัวอย่างจากส่วนที่ 2 คือกิ่ง "รู้ว่า alice มีบัญชี ผ่าน Prog 2" ซึ่งต้องจริงสองข้อพร้อมกัน คือโปรแกรมออกเร็วเมื่อไม่มีชื่อนี้ **และ** ผู้โจมตีจับเวลาได้ กิ่งนี้จึงเป็น And Prog 3 ตัดข้อแรกทิ้งข้อเดียว กิ่งนี้ก็หายไปทั้งกิ่ง ถึงผู้โจมตีจะยังจับเวลาได้ก็ตาม
 
-ต้นไม้ไม่ต้องคิดใหม่ทุกครั้ง ภัยแต่ละชนิดมี **threat tree pattern** ให้หยิบมาใช้ pattern ของ **Spoofing Interactor or Process** แตกเป็นสี่กิ่ง ทุกกิ่งพูดถึง <Term en="Credential" th="ของที่ใช้พิสูจน์ตัวตน" /> เช่นรหัสผ่าน
+ต้นไม้ไม่ต้องคิดใหม่ทุกครั้ง ภัยแต่ละชนิดมี **threat tree pattern** ให้หยิบมาใช้ pattern ของ **Spoofing Interactor or Process** แตกเป็นสี่กิ่ง สามกิ่งแรกพูดถึง <Term en="Credential" th="ของที่ใช้พิสูจน์ตัวตน" /> เช่นรหัสผ่าน
 
-| กิ่ง | เงื่อนไขย่อย |
-| --- | --- |
-| Obtain legitimate credentials — ได้ credential ของจริงมา | Weak storage (ฝั่ง server หรือฝั่ง client), Weak transit, Weak change management |
-| Falsify credentials — ปลอม credential | Guessed, Equivalence |
-| Leverage insufficient authentication — อาศัยการพิสูจน์ตัวตนที่อ่อน | Null credentials, Downgrade authentication, Predictable credentials, Tampering threats against auth process |
-| No authentication system — ไม่มีระบบพิสูจน์ตัวตนเลย | Secure channel (ยังเหลือ tampering และ information disclosure threats against data flows), Non-secure channel |
+วิธีใช้คือแปะคำถามไว้ที่เงื่อนไขแต่ละข้อ แล้วเอาไปถามระบบของเรา กิ่งไหนไม่เกี่ยวก็ตัดทิ้ง
 
-วิธีใช้คือแปะคำถามไว้ที่เงื่อนไขแต่ละข้อ แล้วเอาไปถามระบบของเรา กิ่งไหนไม่เกี่ยวก็ตัดทิ้ง ต้นไม้ของ **Spoofing User** ข้างล่างตัดกิ่ง No authentication system ทิ้ง เพราะระบบมีระบบพิสูจน์ตัวตนอยู่แล้ว (There is an authentication system, so this threat tree doesn't apply)
+ต้นไม้ของ **Spoofing User** คือ pattern นี้ที่ใช้กับ interactor ที่เป็นผู้ใช้ และตัดกิ่ง No authentication system ทิ้ง เพราะระบบมีระบบพิสูจน์ตัวตนอยู่แล้ว ตารางข้างล่างคือ pattern ทั้งต้น พร้อมคำถามที่ต้นไม้ของ Spoofing User แปะไว้
 
-| เงื่อนไข | คำถามที่ต้องตอบให้ได้ |
-| --- | --- |
-| Weak storage — server | Where are the password stored on the server? — รหัสผ่านเก็บไว้ที่ไหนบน server |
-| Weak storage — client | Are credentials stored on the client? If so, how? — client เก็บ credential ไว้ไหม ถ้าเก็บ เก็บยังไง เช่น client บน Mac มักเก็บรหัสผ่านไว้ใน alias (ไฟล์ทางลัดของ Mac) |
-| Weak transit | How are credentials transmitted to the server? — credential ถูกส่งไปถึง server ยังไง |
-| Weak change management | How are credentials changed? — เปลี่ยน credential ยังไง |
-| Guessed | Are there password quality features? — มีอะไรบังคับให้รหัสผ่านเดายากไหม |
-| Equivalence | Are there agency relationships? What if the client is acting as a server itself? Can a request to user1 (in its server role) cause it to automatically authenticate as a client? — มีเครื่องที่ทำงานแทนกันไหม ถ้า client ทำหน้าที่เป็น server ด้วยล่ะ คำขอที่ส่งไปหา user1 ในบทบาท server ทำให้มันพิสูจน์ตัวตนออกไปในฐานะ client โดยอัตโนมัติได้ไหม |
-| Null credentials | Are null credentials possible? — credential ว่างใช้ได้ไหม |
-| Downgrade authentication | Is there more than one authentication method, and if so, is it negotiable? — มีวิธีพิสูจน์ตัวตนมากกว่าหนึ่งวิธีไหม ถ้ามี ต่อรองเลือกวิธีได้ไหม |
-| Predictable credentials | Are the credentials a function of the username? Client address? Time? — credential คำนวณได้จากชื่อผู้ใช้ ที่อยู่ของ client หรือเวลาไหม |
+| กิ่ง | เงื่อนไข | คำถามที่ต้องตอบให้ได้ |
+| --- | --- | --- |
+| Obtain legitimate credentials — ได้ credential ของจริงมา | Weak storage — server | Where are the password stored on the server? — รหัสผ่านเก็บไว้ที่ไหนบน server |
+| | Weak storage — client | Are credentials stored on the client? If so, how? — client เก็บ credential ไว้ไหม ถ้าเก็บ เก็บยังไง เช่น client บน Mac มักเก็บรหัสผ่านไว้ใน alias (ไฟล์ทางลัดของ Mac) |
+| | Weak transit | How are credentials transmitted to the server? — credential ถูกส่งไปถึง server ยังไง |
+| | Weak change management | How are credentials changed? — เปลี่ยน credential ยังไง |
+| Falsify credentials — ปลอม credential | Guessed | Are there password quality features? — มีอะไรบังคับให้รหัสผ่านเดายากไหม |
+| | Equivalence | Are there agency relationships? What if the client is acting as a server itself? Can a request to user1 (in its server role) cause it to automatically authenticate as a client? — มีเครื่องที่ทำงานแทนกันไหม ถ้า client ทำหน้าที่เป็น server ด้วยล่ะ คำขอที่ส่งไปหา user1 ในบทบาท server ทำให้มันพิสูจน์ตัวตนออกไปในฐานะ client โดยอัตโนมัติได้ไหม |
+| Leverage insufficient authentication — อาศัยการพิสูจน์ตัวตนที่อ่อน | Null credentials | Are null credentials possible? — credential ว่างใช้ได้ไหม |
+| | Downgrade authentication | Is there more than one authentication method, and if so, is it negotiable? — มีวิธีพิสูจน์ตัวตนมากกว่าหนึ่งวิธีไหม ถ้ามี ต่อรองเลือกวิธีได้ไหม |
+| | Predictable credentials | Are the credentials a function of the username? Client address? Time? — credential คำนวณได้จากชื่อผู้ใช้ ที่อยู่ของ client หรือเวลาไหม |
+| | Tampering threats against auth process | — |
+| No authentication system — ไม่มีระบบพิสูจน์ตัวตนเลย | Secure channel (ยังเหลือ tampering และ information disclosure threats against data flows) | ตัดทิ้งใน Spoofing User |
+| | Non-secure channel | ตัดทิ้งใน Spoofing User |
+
+สามเงื่อนไขในตารางมีชื่อที่ยังไม่บอกว่าผู้โจมตีทำอะไร
+
+- **Equivalence** — ผู้โจมตีไม่ต้องรู้รหัสผ่านของ user1 เอง แต่ส่งคำขอไปหาเครื่องของ user1 ที่เป็น server ด้วย แล้วเครื่องนั้นพิสูจน์ตัวตนออกไปเองในฐานะ client
+- **Downgrade authentication** — ถ้าเลือกวิธีพิสูจน์ตัวตนได้ ผู้โจมตีจะบังคับให้ใช้วิธีที่อ่อนที่สุด
+- **Tampering threats against auth process** — แก้ข้อมูลระหว่างขั้นพิสูจน์ตัวตน
 
 <Quiz question="เงื่อนไข 'Weak storage — server' จะทำให้ผู้โจมตีได้รหัสผ่านของ alice ไปใช้ได้จริง ต้องมีอะไรเป็นจริงบ้าง กิ่งนี้เป็น And หรือ Or">
 รหัสผ่านที่เก็บอยู่บน server อย่างเดียวยังไม่พอ ผู้โจมตีต้องได้ไฟล์ที่เก็บรหัสผ่านมาก่อน และไฟล์นั้นต้องถอดกลับเป็นรหัสผ่านได้ในเวลาที่รับได้ เช่นเก็บเป็นข้อความตรง ๆ หรือเป็น hash ที่ไม่มี salt ([Lecture 3](/2110413-csy/lecture-3#รหัสผ่านถูกเก็บยังไง))
@@ -460,19 +479,19 @@ data flow 1→5, 5→6, 6→7, 7→8 · data store 7, 9, 11 · interactor 1, 2, 
 คำตอบที่ผิดบ่อยคือ "เป็น Or เพราะมีหลายวิธีที่จะได้ไฟล์มา" วิธีขโมยไฟล์หลายวิธีต่อกันแบบ Or ก็จริง แต่อยู่ใต้ข้อ "ได้ไฟล์มา" ข้อเดียว และข้อนั้นยังต้องคู่กับข้อที่สองแบบ And
 </Quiz>
 
-### ให้คะแนนความเสี่ยงเป็นตัวเลข
+#### ให้คะแนนความเสี่ยงเป็นตัวเลข
 
 ภัยที่ไล่ได้มีหลายสิบข้อ และแก้ไม่ทันทุกข้อ จึงมีวิธีให้คะแนนความเสี่ยงเป็นตัวเลข เช่น <Term en="DREAD" th="ให้คะแนนความเสี่ยงห้าด้าน" />
 
 DREAD ให้คะแนนห้าด้าน คือ Damage (เสียหายแค่ไหน), Reproducibility (ทำซ้ำง่ายไหม), Exploitability (ลงมือยากไหม), Affected users (กระทบคนกี่คน) และ Discoverability (หาเจอง่ายไหม)
+
+คะแนนในสองข้อข้างล่างใช้สเกล 0.0 ถึง 1.0 ในคำถามเรื่อง private key มันคือความน่าจะเป็น 0.0 คือไม่มีทางเกิด และ 1.0 คือเกิดแน่นอน ส่วน 0.4 ในข้อสุดท้ายคือคะแนนความเสี่ยงบนสเกลเดียวกัน
 
 ปัญหาของการให้คะแนนแบบนี้มีสามข้อ
 
 - **Very subjective** — คนสองคนให้คะแนนภัยเดียวกันได้คนละค่า
 - **มักต้องให้ผู้เชี่ยวชาญด้านความปลอดภัยเป็นคนประเมิน** ลองตอบดูว่า ในสเกล 0.0 ถึง 1.0 ผู้โจมตีมีโอกาสเข้าถึง private key ได้แค่ไหน คนทั่วไปไม่มีพื้นให้ตอบ
 - **จะขีดเส้นตรงไหน** ถ้าตั้งว่าแก้ทุกข้อที่เสี่ยงเกิน 0.4 แล้วข้อที่ต่ำกว่าติดป้าย "Won't Fix" ทั้งหมด ข้อที่ได้ 0.39 กับ 0.41 ต่างกันจริง หรือแค่คนให้คะแนนอารมณ์ไม่เหมือนกัน
-
-สเกล 0.0 ถึง 1.0 ในคำถามข้อสองคือความน่าจะเป็น 0.0 คือไม่มีทางเกิด และ 1.0 คือเกิดแน่นอน
 
 ### ขั้นที่ 4 — Resolve Threats
 
@@ -490,7 +509,7 @@ DREAD ให้คะแนนห้าด้าน คือ Damage (เสี�
 - **Every threat needs a security test plan** — ภัยทุกข้อต้องมีแผนทดสอบว่ามันถูกกันไว้จริง
 - **Check all information disclosure threats – are they privacy issues?** — ข้อมูลที่รั่วเป็นข้อมูลส่วนตัวของใครหรือเปล่า
 - **Be wary of elevated processes** — ระวัง process ที่รันด้วยสิทธิ์สูง เพราะถ้าโดนยึด ผู้โจมตีได้สิทธิ์นั้นไปทั้งหมด
-- **Use the threat modeling tool** — ใช้เครื่องมือช่วยทำ threat model
+- **Use the threat modeling tool** — ใช้เครื่องมือช่วยทำ threat model เช่น Microsoft Threat Modeling Tool ที่วาด DFD แล้วสร้างรายการภัยตาม STRIDE ให้
 
 <Quiz question="แอปจองห้องสมุดมีหน้าค้นหนังสือที่ไม่ต้อง login และหน้าจองที่ต้อง login ถ้ามีเวลาทำ threat model ได้แค่ส่วนเดียว ควรเริ่มที่หน้าไหน และเป็นของชนิดไหนใน DFD">
 หน้าค้นหนังสือรับข้อมูลจากใครก็ได้ในโลกโดยไม่ต้องพิสูจน์ตัวตน จึงเป็น anonymous data path ในข้อที่สองของ checklist และคำค้นที่ผู้ใช้พิมพ์วิ่งไปถึง process ที่ค้นฐานข้อมูล
@@ -513,7 +532,9 @@ DREAD ให้คะแนนห้าด้าน คือ Damage (เสี�
 > — Michael Howard, Microsoft
 
 <Why>
-AAA ตอบคำถาม "ใครทำอะไรได้ เมื่อไหร่" โดยไม่ได้ดูเลยว่า **ข้อมูล** ที่คนคนนั้นส่งเข้ามาหน้าตาเป็นยังไง ผู้ใช้ที่ login ถูกต้องและมีสิทธิ์ค้นหา ก็ยังส่งข้อความที่ทำให้ระบบทำสิ่งที่ไม่มีใครอนุญาตได้
+ผู้ใช้ที่ login ถูกต้องและมีสิทธิ์ค้นสถานะพัสดุ กรอก `1001' or 2>1 --` แล้วได้สถานะพัสดุทุกชิ้น
+
+AAA ไม่ได้ห้ามอะไร เพราะสามด่านถามแค่ว่าใครทำอะไรได้ เมื่อไหร่ ไม่ได้ดูว่า **ข้อมูล** ที่ส่งมาหน้าตาเป็นยังไง
 
 **ข้อมูลเป็นอันตรายได้** แม้คนที่ส่งมาจะผ่านทั้งสามด่านแล้ว
 </Why>
@@ -563,7 +584,9 @@ rows: [(1,), (0,), (1,)]
 
 คนที่สี่เรียก `xp_cmdshell` ซึ่งเป็นคำสั่งของ Microsoft SQL Server ที่สั่งรันคำสั่งของระบบปฏิบัติการ เขากรอก `exec xp_cmdshell('net user add URHacked Pa$sw0rd')` แล้วตามด้วย `exec xp_cmdshell('net localgroup admins URHacked /add')` คือสร้างบัญชีใหม่บนเครื่อง แล้วจับบัญชีนั้นเข้ากลุ่มผู้ดูแลระบบ จากช่องค้นพัสดุช่องเดียว ผู้โจมตีกลายเป็น admin ของ server
 
+<Detail label="ไวยากรณ์จริงของสองคำสั่งนี้">
 สองคำสั่งนั้นเขียนไม่ตรงกับไวยากรณ์จริง บน Windows ต้องเขียน `net user URHacked Pa$sw0rd /add` และกลุ่มผู้ดูแลชื่อ `Administrators` แต่เจตนายังเหมือนเดิม
+</Detail>
 
 #### ป้ายทะเบียนรถก็เป็น input
 
@@ -611,7 +634,11 @@ function filter_sql($input) {
 'UNunionION SELECT'        -> 'UNION SELECT'
 ```
 
-ตัวกรองลบ `DELETE` ตรงกลางออกรอบเดียว ส่วนที่เหลือซ้ายขวาจึงต่อกันเป็น `DELETE` พอดี ผลนี้รันด้วย `re.sub` แบบไม่สนตัวพิมพ์เล็กใหญ่ของ Python ซึ่งแทนที่รอบเดียวเหมือน `eregi_replace` เพราะ PHP 7 ขึ้นไปไม่มีฟังก์ชันนี้แล้ว
+ตัวกรองลบ `DELETE` ตรงกลางออกรอบเดียว ส่วนที่เหลือซ้ายขวาจึงต่อกันเป็น `DELETE` พอดี
+
+<Detail label="ผลนี้รันด้วยอะไร">
+ผลนี้รันด้วย `re.sub` แบบไม่สนตัวพิมพ์เล็กใหญ่ของ Python ซึ่งแทนที่รอบเดียวเหมือน `eregi_replace` เพราะ PHP 7 ขึ้นไปไม่มีฟังก์ชันนี้แล้ว
+</Detail>
 
 </Wrong>
 <Right title="บอกว่าอะไรถูก แล้วปฏิเสธที่เหลือ">
@@ -623,6 +650,8 @@ function filter_sql($input) {
 "1001' or 2>1 --"             type check (numeric only)
 "1001' drop table orders --"  type check (numeric only)
 ```
+
+input สองตัวหลังถูกตีกลับตั้งแต่ type check เพราะมีอักขระที่ไม่ใช่ตัวเลข
 
 ตัวกรองที่ลบคำอันตรายต้องเดาให้ครบว่าผู้โจมตีจะเขียนอะไรได้บ้าง ซึ่งเดาไม่มีวันครบ ส่วนตัวตรวจที่บอกว่าอะไรถูก แค่ต้องรู้ว่าเลขพัสดุหน้าตาเป็นยังไง ซึ่งเรารู้อยู่แล้ว
 
@@ -655,12 +684,27 @@ function filter_sql($input) {
 
 คำตอบคือ **`Som_chai` กับ `Som\chai` ผ่าน ส่วน `Som'chai` ไม่ผ่าน** (รันด้วย `re.fullmatch('[A-z]+', ...)` ใน Python) ตัวตรวจยังกัน `'` ได้ แต่ปล่อย `\` ซึ่งเป็นตัว escape ในฐานข้อมูลบางตัวเข้ามา ช่วงที่ตั้งใจต้องเขียนเป็น `[A-Za-z]`
 
+ฐานข้อมูลบางตัว เช่น MySQL อ่าน `\'` เป็น `'` ธรรมดา ถ้า `\` ไปอยู่หน้า `'` ที่โปรแกรมใส่ไว้ปิดข้อความ `'` ตัวนั้นจึงไม่ปิดข้อความอีกต่อไป
+
 คำตอบที่ผิดบ่อยคือ "ไม่ผ่านทั้งสามชื่อ เพราะมีอักขระที่ไม่ใช่ตัวอักษร" ซึ่งเชื่อชื่อของช่วง แทนที่จะดูว่าช่วงนั้นครอบรหัสอะไรบ้าง
 </Quiz>
 
 ---
 
 ## ส่วนที่ 6 — Secure by Design ของจริงที่ Microsoft
+
+<Why>
+นับจำนวน security bulletin ระดับ "Critical" และ "Important" ที่ออกภายใน **455 วัน** หลังวางขาย ของ Windows สองรุ่น
+
+| ระบบ | ใช้ SDL ([หัวข้อ SDL](#security-development-lifecycle)) | bulletin ใน 455 วัน |
+| --- | --- | --- |
+| Windows 2000 Servers | ไม่ใช้ | **55** |
+| Windows Server 2003 | ใช้ | **17** |
+
+bulletin ของ Windows 2000 Servers แทบไม่เพิ่มในราว 90 วันแรก แล้วไต่ขึ้นเรื่อย ๆ จนถึง 55 ที่วันที่ 455 ส่วนของ Windows Server 2003 แทบไม่เพิ่มเลยเกือบทั้งช่วง แล้วค่อยขึ้นไปถึง 17 ตอนท้าย
+
+บริษัทเดียวกันทำระบบปฏิบัติการสองรุ่น แต่ได้ช่องโหว่ร้ายแรงต่างกันกว่าสามเท่า ส่วนนี้ดูว่าอะไรเปลี่ยนไประหว่างสองรุ่นนั้น
+</Why>
 
 ### จาก "evil empire" สู่ Secure by Design
 
@@ -673,50 +717,59 @@ function filter_sql($input) {
 
 ทีมนี้นิยามงานของตัวเองว่า **"Security-as-in-threats" ไม่ใช่ "Security-as-in-crypto"** คือมองความปลอดภัยเป็นเรื่องของภัยที่ต้องรับมือแบบในส่วนที่ 4 ไม่ใช่เรื่องการเลือกอัลกอริทึมเข้ารหัส
 
-ทีมอยู่ใต้ <Term en="Trustworthy Computing" th="โครงการความน่าเชื่อถือของ Microsoft" /> ซึ่งมีสี่เสา คือ **Security, Privacy, Reliability และ Business Integrity** ช่องทางติดต่อทีมคือ `mailto:switeam`, `http://swi` และ `http://msnsecurity/sdl`
+ทีมอยู่ใต้ <Term en="Trustworthy Computing" th="โครงการความน่าเชื่อถือของ Microsoft" /> ซึ่งมีสี่เสา คือ **Security, Privacy, Reliability และ Business Integrity**
+
+Business Integrity หมายถึงความซื่อตรงในการทำธุรกิจของบริษัทเอง ไม่ใช่ integrity ของข้อมูล
+
+<Detail label="ช่องทางติดต่อทีม">
+`mailto:switeam`, `http://swi` และ `http://msnsecurity/sdl`
+</Detail>
 
 ### Security Development Lifecycle
 
 <Term en="Security Development Lifecycle" th="วงจรพัฒนาที่ใส่งานความปลอดภัย" /> หรือ SDL คือการวางงานด้านความปลอดภัยซ้อนบนวงจรพัฒนาซอฟต์แวร์แบบเดิมของ Microsoft ทีละช่วง โดยมี **Security Training** คลุมช่วงต้นทั้งหมด
 
-| ช่วง | งานเดิม | งานความปลอดภัยที่เพิ่มเข้ามา |
-| --- | --- | --- |
-| Requirements | feature lists, quality guidelines, architecture docs, schedules | Security Kickoff & Register with SWI |
-| Design | functional specifications, design specifications | Security Design Best Practices, Security Architecture & Attack Surface Review, **Threat Modeling** |
-| Implementation | development of new code | Use Security Development Tools & Security Best Dev & Test Practices, Create Security Documentation and Tools for Product |
-| Verification | testing and verification, bug fixes | Prepare Security Response Plan, Security Push, Pen Testing, Final Security Review |
-| Release | code signing & checkpoint express signoff, RTM | — |
-| Support & Servicing | product support, service packs/QFEs, security updates | Security Servicing & Response Execution |
-
-ตัวย่อในตาราง
+| ช่วง | งานความปลอดภัยที่เพิ่มเข้ามา |
+| --- | --- |
+| Requirements | Security Kickoff & Register with SWI |
+| Design | Security Design Best Practices, Security Architecture & Attack Surface Review, **Threat Modeling** |
+| Implementation | Use Security Development Tools & Security Best Dev & Test Practices, Create Security Documentation and Tools for Product |
+| Verification | Prepare Security Response Plan, Security Push, Pen Testing, Final Security Review |
+| Release | — |
+| Support & Servicing | Security Servicing & Response Execution |
 
 - **SWI** — Secure Windows Initiative ทีมความปลอดภัยของ Windows
+- **Security Push** — ช่วงหยุดเขียนฟีเจอร์เพื่อไล่หาช่องโหว่ แบบเดียวกับ Windows Security Push ในส่วนที่ 3
+
+<Detail label="งานเดิมของแต่ละช่วง ก่อนมี SDL">
+| ช่วง | งานเดิม |
+| --- | --- |
+| Requirements | feature lists, quality guidelines, architecture docs, schedules |
+| Design | functional specifications, design specifications |
+| Implementation | development of new code |
+| Verification | testing and verification, bug fixes |
+| Release | code signing & checkpoint express signoff, RTM |
+| Support & Servicing | product support, service packs/QFEs, security updates |
+
 - **RTM** — Release to Manufacturing รุ่นที่ส่งออกขาย
 - **QFE** — patch แก้ปัญหาเฉพาะจุด
-- **Security Push** — ช่วงหยุดเขียนฟีเจอร์เพื่อไล่หาช่องโหว่ แบบเดียวกับ Windows Security Push ในส่วนที่ 3
+</Detail>
 
 **Threat Modeling** อยู่ในช่วง Design ซึ่งคือเนื้อหาของส่วนที่ 4 และ Attack Surface Review ในช่วงเดียวกันคือเนื้อหาของส่วนที่ 3 สองงานนี้อยู่ก่อนเขียนโค้ดบรรทัดแรก ซึ่งคือความหมายตรงตัวของคำว่า by design
 
-### ผลลัพธ์ที่วัดได้
-
-จำนวน security bulletin ระดับ "Critical" และ "Important" ที่ออกภายใน **455 วัน** หลังวางขาย
-
-| ระบบ | ใช้ SDL | bulletin ใน 455 วัน |
-| --- | --- | --- |
-| Windows 2000 Servers | ไม่ใช้ | **55** |
-| Windows Server 2003 | ใช้ | **17** |
-
-bulletin ของ Windows 2000 Servers เพิ่มขึ้นเรื่อย ๆ ตลอด 455 วันจนถึง 55 ส่วนของ Windows Server 2003 แทบไม่เพิ่มเลยเกือบทั้งช่วง แล้วค่อยขึ้นไปถึง 17 ตอนท้าย
-
 ### กรณีศึกษา — MS04-011
 
-MS04-011 คือ bulletin ที่แก้ช่องโหว่หลายตัวพร้อมกัน ทั้งหมด 14 ตัว ตารางข้างล่างแสดง 11 ตัว แต่ละตัวได้ระดับความรุนแรงแยกตามรุ่นของ Windows โดย Microsoft ใช้สี่ระดับ เรียงจากแรงที่สุดคือ Critical, Important, Moderate และ Low
+MS04-011 คือ bulletin ที่แก้ช่องโหว่หลายตัวพร้อมกัน ตารางในหัวข้อนี้แสดง 11 ตัว ส่วน bulletin ฉบับจริงของ Microsoft มี 14 ตัว แต่ละตัวได้ระดับความรุนแรงแยกตามรุ่นของ Windows ตามสี่ระดับจาก[หัวข้อ Secure Defaults](#secure-defaults)
 
 เลขอย่าง CAN-2003-0533 เป็นเลข CVE ซึ่งเป็นรหัสสาธารณะของช่องโหว่ ตอนยังเป็นเลข "candidate" ที่รอรับรอง ปัจจุบันเขียนเป็น CVE-2003-0533
 
 | ช่องโหว่ | ผลกระทบ | Windows 2000 | Windows XP | Windows Server 2003 |
 | --- | --- | --- | --- | --- |
 | LSASS — CAN-2003-0533 | Remote Code Execution | Critical | Critical | Low |
+
+<Detail label="อีก 10 ช่องโหว่ใน MS04-011">
+| ช่องโหว่ | ผลกระทบ | Windows 2000 | Windows XP | Windows Server 2003 |
+| --- | --- | --- | --- | --- |
 | LDAP — CAN-2003-0663 | Denial of Service | Important | None | None |
 | PCT — CAN-2003-0719 | Remote Code Execution | Critical | Important | Low |
 | Winlogon — CAN-2003-0806 | Remote Code Execution | Moderate | Moderate | None |
@@ -727,8 +780,9 @@ MS04-011 คือ bulletin ที่แก้ช่องโหว่หลา�
 | Local Descriptor Table — CAN-2003-0910 | Privilege Elevation | Important | None | None |
 | H.323 — CAN-2004-0117 | Remote Code Execution | Important | Important | Important |
 | Virtual DOS Machine — CAN-2004-0118 | Privilege Elevation | Important | None | None |
+</Detail>
 
-นับทั้งตาราง ช่องโหว่ที่กระทบแต่ละรุ่น (ระดับไม่ใช่ None) คือ Windows 2000 **9 ตัว** Windows XP **7 ตัว** และ Windows Server 2003 **4 ตัว**
+นับทั้ง 11 ตัว ช่องโหว่ที่กระทบแต่ละรุ่น (ระดับไม่ใช่ None) คือ Windows 2000 **9 ตัว** Windows XP **7 ตัว** และ Windows Server 2003 **4 ตัว**
 
 ใน 4 ตัวของ Windows Server 2003 เป็น Critical แค่ตัวเดียว ส่วน Windows 2000 และ XP มี Critical รุ่นละ 3 ตัว
 
@@ -791,5 +845,29 @@ MS04-011 คือ bulletin ที่แก้ช่องโหว่หลา�
 - bulletin ใน 455 วัน: Windows 2000 Servers **55** กับ Windows Server 2003 **17**
 - **MS04-011**: ใน 11 ช่องโหว่ของตาราง กระทบ Windows 2000 9 ตัว XP 7 ตัว Server 2003 4 ตัว
 - **Every design should be secure from the ground up.**
+
+<Quiz question="เว็บหนึ่งตอบ 'รหัสผิด' ใน 1 ms เมื่อไม่มีชื่อนี้ในระบบ และใน 200 ms เมื่อมีชื่อนี้ เป็นภัยชนิดไหนใน STRIDE และแก้ยังไง">
+ข้อความที่ตอบเหมือนกันทุกกรณี แต่เวลาต่างกัน ผู้โจมตีที่จับเวลาจึงรู้ว่าชื่อไหนมีอยู่จริง แบบเดียวกับ Prog 2 สิ่งที่เสียไปคือข้อมูลที่เขาไม่ควรรู้
+
+คำตอบคือ **Information Disclosure แก้แบบ Prog 3** คือถ้าไม่มีชื่อนี้ ก็เทียบรหัสกับค่าสุ่มด้วย hash ตัวเดียวกัน ทุกกรณีจึงใช้เวลาใกล้กัน
+
+คำตอบที่ผิดบ่อยคือ "Spoofing" แต่ยังไม่มีใครปลอมเป็นใคร ผู้โจมตีแค่ได้รายชื่อบัญชีที่มีอยู่จริง ซึ่งเป็นขั้นก่อนจะ spoofing
+</Quiz>
+
+<Quiz question="DFD ของแอปหนึ่งมีผู้ใช้ 1 คน process 2 ตัว data store 1 ที่ และ data flow 5 เส้น work list จะมีภัยที่ต้องตรวจกี่ข้อ">
+ผู้ใช้เป็น interactor จึงโดน S กับ R สองข้อ process โดนครบหกข้อ ส่วน data store และ data flow โดน T, I, D ชิ้นละสามข้อ
+
+คำตอบคือ 2 + 2×6 + 3 + 5×3 = **32 ข้อ**
+
+คำตอบที่ผิดบ่อยคือนับหกข้อให้ทุกชิ้น ได้ 9×6 = 54 ข้อ แต่ภัยบางชนิดไม่มีความหมายกับของบางอย่าง เช่น data flow ปลอมตัวเป็นใครไม่ได้
+</Quiz>
+
+<Quiz question="ช่องกรอกอายุรับเลข 1 ถึง 120 จะตีกลับ 25; DROP TABLE users และ 999 ด้วยการตรวจแบบไหน">
+`25; DROP TABLE users` มีอักขระที่ไม่ใช่ตัวเลข จึงตกตั้งแต่ type check ส่วน `999` เป็นตัวเลขล้วนและยาวสามหลักเท่ากับ `120` จึงผ่าน length check แต่เกิน 120
+
+คำตอบคือ **type check กับ range check**
+
+คำตอบที่ผิดบ่อยคือ "ลบคำว่า DROP ทิ้ง" แต่ถ้ากรอก `25; DRDROPOP TABLE users` ตัวกรองที่ลบรอบเดียวจะเหลือ `25; DROP TABLE users` พอดี และตัวกรองนี้ปล่อย `999` ผ่านไปด้วย
+</Quiz>
 
 </Recap>

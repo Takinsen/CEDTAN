@@ -52,7 +52,7 @@ export function JsInjection() {
       <text x="529" y="142" textAnchor="middle" fontSize="12" fontWeight="600">คนร้าย</text>
       <text x="529" y="162" textAnchor="middle" fontSize="11" fontFamily={mono} opacity="0.85">pkrerk / •••••</text>
 
-      <text x="18" y="282" fontSize="11" opacity="0.74">สคริปต์รันในเบราว์เซอร์ของเหยื่อเอง จึงมีสิทธิ์เท่าหน้าเว็บนั้น อ่านทุกอย่างที่เหยื่อพิมพ์และเซสชันที่เบราว์เซอร์ถืออยู่</text>
+      <text x="18" y="282" fontSize="11" opacity="0.74">สคริปต์รันในเบราว์เซอร์ของเหยื่อเอง จึงมีสิทธิ์เท่าหน้าเว็บนั้น อ่านทุกอย่างที่เหยื่อพิมพ์ในหน้านั้นได้</text>
 
       <defs>
         <marker id="js-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">

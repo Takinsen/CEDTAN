@@ -50,6 +50,12 @@ job and stays unmarked, like material carried over from the deck, which the sour
 the `credit` field already cover. `scripts/content.test.mjs` fails a prose line that labels
 itself `ข้อมูลเสริม` or `คำอธิบายเสริม`: such a sentence speaks to a reviewer, not the student.
 
+## Main path
+
+The text a reader meets without opening anything: the page minus every `<Detail>` body and every
+`<Quiz>` answer. Quiz questions and Detail labels are on it. `readingMinutes` measures it, so
+folding a block shortens a page and adding a Quiz answer does not.
+
 ## Inherited gap
 
 A topic the deck names but never explains, which the page also names but never explains,

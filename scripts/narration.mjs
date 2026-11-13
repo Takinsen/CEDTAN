@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { proseWarnings } from './prose.mjs';
 
 // words that usually end a sentence about the deck rather than the material
 const WORDS = [
@@ -30,3 +31,13 @@ for (const file of files) {
   });
 }
 console.log(`${hits} line(s) to justify as a boundary marker or rewrite`);
+
+// advice, not a failure: split long or crowded paragraphs, and offer a split point for a long page
+let advice = 0;
+for (const file of files) {
+  for (const { line, kind, detail } of proseWarnings(readFileSync(file, 'utf8'))) {
+    advice += 1;
+    console.log(`${file}:${line} [${kind}] ${detail}`);
+  }
+}
+console.log(`${advice} prose warning(s): split a long or crowded paragraph; for a long page, offer the owner a split point`);
