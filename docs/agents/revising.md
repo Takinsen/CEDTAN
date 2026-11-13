@@ -5,8 +5,9 @@ this before editing a page under `content/` that is already in `meta.json`.
 
 ## Before the first edit
 
-Copy the page to a folder outside the repo. Every later check compares against that copy, and
-`page-fact-checker` takes it as the earlier version.
+Copy the page to `~/.cache/cedtan-work/<course>/lecture-<n>/`, where the reviewers' reports
+are saved too. Every later check compares against that copy, and `page-fact-checker` takes it as
+the earlier version.
 
 ## Steps
 
@@ -33,10 +34,10 @@ Copy the page to a folder outside the repo. Every later check compares against t
 7. **Account for every difference**: extract every number, code span, quotation, English token
    and URL from the saved copy and from the page, and give a reason for each one that is gone.
    A reorganisation moves facts; it never drops one.
-8. **Measure length both ways.** `readingMinutes` counts the whole page, folds included, so
-   folding never lowers it. Report the Thai characters outside `<Detail>` and `<Quiz>` before
-   and after as well: in the CSY 8–13 revision, folds and added explanations cancelled out and
-   the main path stayed the same length.
+8. **Measure the main path before and after** (CONTEXT.md, _main path_). Set `readingMinutes`
+   to the value `scripts/content.test.mjs` prints. Folding shortens it and every added
+   explanation lengthens it: in the CSY 8–13 revision the two cancelled out. Past 40 minutes,
+   offer the owner a split point rather than folding further.
 9. Run AGENTS.md step 7.3: `page-fact-checker` with the saved copy.
 
 ## Several pages at once

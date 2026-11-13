@@ -52,6 +52,8 @@ Report findings; the parent agent edits.
    `<Analogy>`, `<Pitfall>` and `<Quiz>` has its shape, every `##` part that teaches a mechanism
    has a quiz, the `<Recap>` holds two or three quizzes on the page's main mechanisms, and every
    output a student would guess wrong has a guess before it, or is a finding.
+9. **Check the fast path.** Done when every `##` part ends on a `<KeyIdea>` or a `<Quiz>`, and the
+   frontmatter `description` asks the question the page answers, or each is an `ending` finding.
 
 ## Before reporting
 
@@ -109,6 +111,8 @@ Kinds:
   from a mechanism part or from the `<Recap>`, or whose answer skips the reasoning or the likely
   wrong answer.
 - `predict`: an output a student would guess wrong, shown with no guess asked first.
+- `ending`: a `##` part that stops without a `<KeyIdea>` or `<Quiz>`, or a `description` that lists
+  topics instead of asking the page's question. Give the KeyIdea sentence or the question.
 
 End with a count for every kind, zeros included. Stay under 1000 words: past that, list every
 `order`, `why`, `unexplained`, `unclear`, `crammed`, `coined`, `added`, `analogy` and `pitfall`, and give the rest as

@@ -19,7 +19,7 @@ slides — and understand better than the slides.
 
 A better explanation of the same material, not a shorter copy of it. The words in italics
 below (_narration_, _boundary marker_, _added material_, _inherited gap_, _image-carried
-slide_) are defined in `CONTEXT.md`.
+slide_, _main path_) are defined in `CONTEXT.md`.
 
 ## Guardrails
 
@@ -47,18 +47,23 @@ follow `docs/agents/courses.md`, then come back here.
    A missing file is dropped silently, so a typo in the name is invisible.
 7. Review with two fresh subagents defined in `.claude/agents/`. Confirm each finding against
    the deck, the tool, or the page before acting on it: a reviewer can be wrong. Done when every
-   finding is fixed or rejected with a reason.
+   finding is fixed or rejected with a reason. Save each report to
+   `~/.cache/cedtan-work/<course>/lecture-<n>/`, outside the repo since a report quotes the
+   deck: the fixes often run in a later session. To revise from findings, follow
+   `docs/agents/revising.md`.
    1. `page-fact-checker`: is the page true and complete? Fix what it finds.
    2. `page-editor`: does the page teach? Save a copy of the page outside the repo first, then
       fix what it finds.
    3. `page-fact-checker` again, passing that copy, so the edits dropped no fact.
 8. Run `pnpm check`. Done when it passes.
-9. Build and serve with `pnpm build && PORT=3101 pnpm start`. `pnpm dev` runs out of memory
-   on lecture pages. Read the page end to end. Done when all of these hold:
-   - every section read in light mode and in dark mode
-   - every figure's text readable in both
-   - at a 400px-wide window, the page body has no sideways scroll
-   - every coverage-list item ticked, and every name in a list found somewhere else on the page
+9. Run `pnpm build`, then `PAGES="<course>/lecture-<n>" pnpm test:pages`: it checks both
+   themes load without errors, the Recap holds its quizzes, and a 400px window has no sideways
+   scroll, and it saves every figure in both themes to a folder it names. `pnpm dev` runs out of
+   memory on lecture pages. Done when all of these hold:
+   - `pnpm test:pages` passes
+   - every saved figure's text readable in both themes
+   - the page read end to end on `PORT=3101 pnpm start`, every coverage-list item ticked, and
+     every name in a list found somewhere else on the page
 
 When revising a page that already exists, follow `docs/agents/revising.md`.
 
@@ -111,7 +116,11 @@ it stops, is in `docs/research/writing-rules-evidence.md`.
   is the everyday word, such as ช่องโหว่ or หน่วยความจำ. Wrap the first use of each term in
   `<Term en="..." th="..." />`. `th` is its meaning in a few natural Thai words
   (`เขียนข้อมูลเกินขนาด buffer`), since the page prints it inline in brackets; the sentence
-  around it does the defining.
+  around it does the defining. `scripts/content.test.mjs` fails the coined Thai names listed in `scripts/prose.mjs`.
+- **Talk to the reader.** Address the reader as `คุณ` or `เรา` where it reads naturally, as
+  `content/2110413-csy/lecture-3.mdx` does. Tell a mechanism that runs in steps as events with
+  actors (ผู้โจมตีส่ง… เซิร์ฟเวอร์ตอบ…); explain the rest directly, since telling every paragraph
+  as a story makes it longer.
 - **One point per paragraph.** A paragraph makes one point in one to three sentences. A term
   that needs explaining gets its own sentence where the reader first needs it. Name only what
   the reader meets again or needs for the exam; describe the rest in plain words. Open each
@@ -121,6 +130,9 @@ it stops, is in `docs/research/writing-rules-evidence.md`.
   from the ones before it. The deck's order is one candidate; follow it where it is already
   the best teaching order, as a decision. Walking the deck splits topics that belong together
   and copies its _inherited gaps_ — step 9's name check catches the second.
+- **End each part on its point.** Every `##` part ends with a `<KeyIdea>` or a `<Quiz>`, so a
+  reader short of time can read those and the Recap and still keep the core. When
+  `pnpm narration` reports a _main path_ over 40 minutes, offer the owner a split point.
 - **End with `<Recap>`.** Bullets a student can read the night before an exam, then two or
   three `<Quiz>` blocks inside it that make the reader recall the page's main mechanisms:
   recalling an answer fixes it in memory, rereading a bullet barely does. The table of
@@ -169,7 +181,8 @@ the `credit` field already say where the material came from.
 
 When a page is done, run `pnpm narration content/<course>/lecture-<n>.mdx`. It lists lines
 holding words that usually end a narrating sentence; each hit is a boundary marker, named by
-kind, or a rewrite.
+kind, or a rewrite. It then warns on paragraphs over 300 Thai characters, paragraphs with more
+than two glosses, and a main path over 40 minutes: split the paragraph, or say why it stays.
 
 ## Frontmatter
 
@@ -191,7 +204,11 @@ The schema lives in `lib/source.ts`; a wrong type fails the build.
   `N · Short topic` for a lecture and a plain Thai phrase for a course index page.
 - `credit` tells a stranger this is a student's summary, not the real slides.
 - `source` renders nowhere. It is a repo path for the next agent to find the PDF.
-- `readingMinutes`: other pages run about 350–550 Thai characters per minute.
+- `description` is the question the page answers, asked concretely enough that a student
+  recognises it (`ทำไมพิมพ์ชื่อยาวเกินแค่ช่องเดียว โปรแกรมถึงถูกยึดได้`), not a list of topics.
+  It renders under the title.
+- `readingMinutes` is measured, not estimated: the _main path_ at 450 Thai characters a
+  minute (`scripts/prose.mjs`). `scripts/content.test.mjs` prints the value when it is off.
 
 ## Components
 
