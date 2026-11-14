@@ -134,6 +134,7 @@ test('a lecture split into parts numbers each part to match its file', () => {
     if (field('lecture') !== Number(n)) wrong.push(`${lecture.path}: lecture ${field('lecture')}`);
     if (split && field('part') !== Number(k ?? 1)) wrong.push(`${lecture.path}: part ${field('part')}, file says ${k ?? 1}`);
     if (!split && /^part:/m.test(lecture.text)) wrong.push(`${lecture.path}: part set on an unsplit lecture`);
+    if (split && k === undefined && !/^lectureTitle: "[^"]+"/m.test(lecture.text)) wrong.push(`${lecture.path}: part 1 needs lectureTitle, which names the sidebar entry`);
   }
   assert.deepEqual(wrong, []);
 });

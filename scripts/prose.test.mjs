@@ -88,9 +88,10 @@ test('proseWarnings leaves two glosses, tables, lists and code alone', () => {
   assert.deepEqual(proseWarnings(mdx), []);
 });
 
-test('proseWarnings flags a page whose main path runs over 40 minutes', () => {
-  const mdx = 'ก'.repeat(450 * 41);
-  assert.deepEqual(proseWarnings(mdx).filter((w) => w.kind === 'length'), [{ line: 1, kind: 'length', detail: 'main path 41 min, over 40' }]);
+// page length has no fixed limit (owner's decision, 2026-11-14); page-editor looks for a natural split instead
+test('proseWarnings says nothing about how long a page is', () => {
+  const mdx = Array.from({ length: 300 }, () => 'ก'.repeat(200)).join('\n\n');
+  assert.deepEqual(proseWarnings(mdx), []);
 });
 
 test('englishWords counts the English words a reader reads', () => {

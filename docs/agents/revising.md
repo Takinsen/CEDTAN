@@ -38,19 +38,22 @@ the earlier version.
    part by part (CONTEXT.md, _main path_). Set `readingMinutes` to the value
    `scripts/content.test.mjs` prints. Folding shortens it and every added explanation
    lengthens it: in the CSY 8–13 revision the two cancelled out. A part that grew names the
-   addition that grew it. Past 40 minutes, offer the owner a split point rather than folding
-   further.
+   addition that grew it. A `split` finding from `page-editor` goes to the owner with the
+   minutes of each side; folding further does not replace it.
 9. Run AGENTS.md step 7.3: `page-fact-checker` with the saved copy.
 
 ## Splitting a page
 
-A page whose main path stays over 40 minutes after its safe cuts splits at a `##` boundary
-where the second half can open on its own problem. Splitting saves no reading time; it makes
-each sitting shorter and spaces the two.
+A page splits at a natural seam, which `page-editor` reports as a `split` finding and the owner
+approves: a `##` boundary after which the rest answers a question of its own, opens on its own
+problem, and needs from what came before only what a three-sentence bridge carries. No minute
+count decides it; research gives no ideal length (`docs/research/concise-reading-evidence.md`,
+section 8). Splitting saves no reading time; it makes each sitting shorter and spaces the two.
 
 - Part 1 keeps `lecture-<n>.mdx`, so links to it still work; part 2 is `lecture-<n>-2.mdx`.
   Both set `lecture: <n>` and `part: 1` or `part: 2`; titles read `Lecture <n>.1 — …` and
-  sidebar titles `<n>.1 · …`. `scripts/content.test.mjs` checks the numbers match the files.
+  sidebar titles `<n>.1 · …`; part 1 also sets `lectureTitle`, since the sidebar shows the
+  lecture as one entry with its parts folded under it. `scripts/content.test.mjs` checks these.
 - Each half is a whole lesson: its own opening problem, its own `description`, its own
   `<Recap>` with 2–3 quizzes. Part 2 opens with a bridge of at most three sentences that links
   to part 1.

@@ -16,7 +16,8 @@ import { gitConfig } from '@/lib/shared';
 import { Legend } from '@/components/lecture/legend';
 import { ReadingProgress } from '@/components/lecture/reading-progress';
 import { ReadingTools, ReadingToolsProvider } from '@/components/lecture/reading-tools';
-import { lectureNumber } from '@/lib/lecture-order';
+import { lectureNumber, neighboursOf } from '@/lib/lecture-order';
+import { flattenTree, getPageTreeRoots } from 'fumadocs-core/page-tree';
 
 export default async function Page(props: PageProps<'/[...slug]'>) {
   const params = await props.params;
@@ -24,6 +25,13 @@ export default async function Page(props: PageProps<'/[...slug]'>) {
   if (!page) notFound();
 
   const MDX = page.data.body;
+
+  // previous and next within the course, each page once (a split lecture lists part 1 twice in the tree)
+  const readingOrder =
+    getPageTreeRoots(source.getPageTree())
+      .map((root) => flattenTree(root.children))
+      .find((list) => list.some((item) => item.url === page.url)) ?? [];
+  const neighbours = neighboursOf(readingOrder, page.url);
   const markdownUrl = getPageMarkdownUrl(page).url;
 
   // where this page came from and how long it takes to read
@@ -63,6 +71,7 @@ export default async function Page(props: PageProps<'/[...slug]'>) {
       <DocsPage
         toc={toc}
         full={page.data.full}
+        footer={{ items: neighbours }}
         tableOfContent={{ header: rail }}
         tableOfContentPopover={{ header: <div className="pb-2">{rail}</div> }}
       >

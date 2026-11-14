@@ -1,9 +1,8 @@
 import { courses, courseLectures } from '@/lib/courses';
-import { countClasses } from '@/lib/lecture-order';
+import { countClasses, stripNumber } from '@/lib/lecture-order';
 import { coverThumb } from '@/lib/cover-thumb';
 import { CourseHero } from '@/components/home/course-hero';
 import { CourseDirectory } from '@/components/home/course-directory';
-import { stripNumber } from '@/components/home/strip';
 import '@/components/home/home.css';
 
 export default async function HomePage() {

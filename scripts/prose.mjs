@@ -93,7 +93,6 @@ export function coinedTerms(text) {
 
 export const MAX_PARAGRAPH_THAI_CHARS = 300;
 export const MAX_GLOSSES_PER_PARAGRAPH = 2;
-export const MAX_MAIN_PATH_MINUTES = 40;
 
 // a paragraph a reader reads as running prose: not a heading, table, list, quote, code or block tag
 function isProse(firstLine) {
@@ -101,13 +100,9 @@ function isProse(firstLine) {
   return !firstLine.startsWith('<') || firstLine.startsWith('<Term');
 }
 
-// advice for pnpm narration: long paragraphs, paragraphs crowded with glosses, pages past the length budget
+// advice for pnpm narration: long paragraphs and paragraphs crowded with glosses
 export function proseWarnings(mdx) {
   const warnings = [];
-  const minutes = readingMinutes(mdx);
-  if (minutes > MAX_MAIN_PATH_MINUTES) {
-    warnings.push({ line: 1, kind: 'length', detail: `main path ${minutes} min, over ${MAX_MAIN_PATH_MINUTES}` });
-  }
   const lines = mdx.split('\n');
   let start = 0;
   if (lines[0] === '---') start = lines.indexOf('---', 1) + 1;

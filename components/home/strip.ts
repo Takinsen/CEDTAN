@@ -19,11 +19,6 @@ export function nearestIndex(centers: number[], middle: number): number {
   return best;
 }
 
-// sidebar labels start with the lecture number, which the landing page shows in its own column
-export function stripNumber(label: string): string {
-  return label.replace(/^\d+(?:\.\d+)?\s*·\s*/, '');
-}
-
 // ease-in-out cubic for the glide down to the directory
 export function easeInOutCubic(t: number): number {
   const k = Math.min(1, Math.max(0, t));

@@ -56,7 +56,12 @@ Report findings; the parent agent edits. Run Bash only for `pnpm measure`.
    that adds text costs reading time the student does not have; done when each one names the
    cut on the same page that pays for it, or says why the page must grow. In the longest parts,
    hunt `repeat`, `cut` and `added` findings first.
-10. **Check the fast path.** Done when every `##` part ends on a `<KeyIdea>` or a `<Quiz>`, and the
+10. **Look for a seam.** A page is one lesson. Find each `##` boundary after which the rest
+    answers a question of its own, could open on its own problem, and needs from what came
+    before only what a three-sentence bridge carries. Done when every such boundary is a
+    `split` finding giving the minutes of each side from `pnpm measure`, or the report says the
+    page is one lesson and why.
+11. **Check the fast path.** Done when every `##` part ends on a `<KeyIdea>` or a `<Quiz>`, and the
    frontmatter `description` asks the question the page answers, or each is an `ending` finding.
 
 ## Before reporting
@@ -118,6 +123,8 @@ Kinds:
   from a mechanism part or from the `<Recap>`, or whose answer skips the reasoning or the likely
   wrong answer.
 - `predict`: an output a student would guess wrong, shown with no guess asked first.
+- `split`: a seam where the page holds two lessons. Name the boundary, the question each side
+  answers, what the bridge must carry, and the minutes of each side.
 - `ending`: a `##` part that stops without a `<KeyIdea>` or `<Quiz>`, or a `description` that lists
   topics instead of asking the page's question. Give the KeyIdea sentence or the question.
 
