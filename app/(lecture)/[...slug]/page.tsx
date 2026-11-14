@@ -16,6 +16,7 @@ import { gitConfig } from '@/lib/shared';
 import { Legend } from '@/components/lecture/legend';
 import { ReadingProgress } from '@/components/lecture/reading-progress';
 import { ReadingTools, ReadingToolsProvider } from '@/components/lecture/reading-tools';
+import { lectureNumber } from '@/lib/lecture-order';
 
 export default async function Page(props: PageProps<'/[...slug]'>) {
   const params = await props.params;
@@ -27,7 +28,7 @@ export default async function Page(props: PageProps<'/[...slug]'>) {
 
   // where this page came from and how long it takes to read
   const meta = [
-    page.data.lecture ? `เลกเชอร์ ${page.data.lecture}` : null,
+    page.data.lecture ? `เลกเชอร์ ${lectureNumber(page.data)}` : null,
     page.data.readingMinutes ? `อ่าน ${page.data.readingMinutes} นาที` : null,
     page.data.credit,
   ].filter(Boolean);

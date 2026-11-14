@@ -1,0 +1,504 @@
+---
+title: "Lecture 8.2 — Secure Bit: Hardware Buffer Overflow Protection"
+description: "ถ้าวิธีป้องกัน buffer overflow ที่ใช้กันอยู่ทุกแบบพลาดได้ ต้องกันอะไรถึงจะพิสูจน์ได้ว่าพอ และทำไมบิตเดียวต่อหนึ่ง word ถึงกันได้"
+sidebarTitle: "8.2 · Secure Bit"
+lecture: 8
+part: 2
+source: "data/2110413-CSY/Lecture-8.pdf"
+credit: "เรียบเรียงจากสไลด์ Secure Bit: Buffer Overflow Protection ของ Krerk Piromsopa, Ph.D."
+readingMinutes: 30
+---
+
+import { SecureBitFlow } from '@/components/figures/2110413-csy/secure-bit-flow';
+
+[Lecture 8.1](/2110413-csy/lecture-8) แสดงว่า buffer overflow ยึดโปรแกรมได้เมื่อมันเขียนทับ **control data** คือค่าที่เก็บ address ของโค้ดที่โปรแกรมจะกระโดดไปรัน เช่น return address และ function pointer แล้วไล่ดูวิธีป้องกันที่ใช้กันอยู่ ตั้งแต่ canary ซึ่ง compiler วางไว้หน้า return address แล้วตรวจก่อนฟังก์ชันกลับ ไปจนถึงการกัก process ไว้ใน sandbox ทุกวิธีพลาดได้ หน้านี้หาว่าทำไม พิสูจน์ว่าต้องกันอะไรถึงจะพอ แล้วสร้างวิธีที่ใช้แค่บิตเดียว
+
+<KeyIdea>
+การโจมตี control data ทุกแบบต้องเปลี่ยน address ด้วยข้อมูลที่มาจากนอก process ถ้ากันข้อนี้ได้ก็พอ <Term en="Secure Bit" th="บิตบอกว่าข้อมูลมาจากข้างนอก" /> ติดบิตหนึ่งบิตให้ทุกค่าที่เข้ามาจากข้างนอก แล้วให้ CPU ไม่ยอมกระโดดไปตาม address ที่มีบิตนั้น
+</KeyIdea>
+
+<Callout type="info" title="ข้อมูลในหน้านี้มาจากไหน">
+เนื้อหามาจากสไลด์หน้า 31–65 จาก 65 หน้า หน้าก่อนหน้านั้นคือ [Lecture 8.1](/2110413-csy/lecture-8) ส่วนคำอธิบาย รูป และกล่องที่ติดป้าย "เสริม" เขียนขึ้นใหม่ สไลด์ลงวันที่ 25 มกราคม 2006
+</Callout>
+
+<Callout type="warn" title="หน้านี้อธิบายการโจมตีแค่ระดับแนวคิด">
+หน้านี้เล่าการโจมตีแค่ว่าค่าไหนถูกเขียนทับ พอให้เห็นว่าวิธีป้องกันแต่ละแบบจับหรือพลาดตรงไหน ไม่มีขั้นตอนการโจมตีจริง
+</Callout>
+
+---
+
+## ส่วนที่ 1 — ทำไมยังไม่มีวิธีไหนปิดเรื่องนี้ได้
+
+### สี่จุดที่วิธีป้องกันพลาด
+
+วิธีป้องกันใน [Lecture 8.1](/2110413-csy/lecture-8) พลาดได้สี่ทาง
+
+- **Pitfalls** — ช่องโหว่ในตัววิธีเอง มีสองแบบ
+  - **ข้อสมมติไม่พอ (insufficient assumptions)** — canary สมมติว่าการล้นเขียนต่อเนื่องจาก buffer แต่ worm [SLAPPER](/2110413-csy/lecture-8#ทับ-pointer-ธรรมดา--ล้นสองขั้น) เขียนผ่าน pointer ซึ่งไม่ได้ล้นต่อเนื่องไปหาเป้าหมาย canary จึงยังเป็นค่าเดิมทุกไบต์
+  - **ปกป้อง metadata ไม่พอ (insufficient protection of metadata)** — metadata คือข้อมูลที่วิธีป้องกันเก็บเพิ่มไว้ตรวจ เช่น canary หรือสำเนาของ address ถ้าผู้โจมตีอ่านหรือเขียนทับมันได้ การตรวจก็ไม่มีความหมาย เช่นสำเนาของ return address ที่อยู่ในหน่วยความจำที่เขียนได้ ถูกการเขียนผ่าน pointer แบบ SLAPPER ทับได้ทั้งของจริงและสำเนา
+- **Performance** — [bounds checking](/2110413-csy/lecture-8#bounds-checking--ทุกการเข้าถึงต้องรู้ขอบ) ซึ่งตรวจทุกการเขียนว่าไม่เกินขอบ buffer ช้าลงกว่า 30 เท่า
+- **Compatibility และ transparency** — ต้องใช้กับโปรแกรมเดิมได้โดยไม่ต้องแก้ รวมถึงโปรแกรมที่ไหลแบบ non-LIFO ในหัวข้อโปรแกรมที่ไม่ได้กลับตามลำดับข้างล่าง
+- **Deployment และ cost** — ต้อง compile ใหม่ ติดตั้งไลบรารีใหม่ หรือเปลี่ยนฮาร์ดแวร์แค่ไหน
+
+SLAPPER หลุดวิธีกลุ่ม [copy of address](/2110413-csy/lecture-8#copy-of-address--เก็บ-return-address-ไว้อีกที่) ที่เก็บสำเนา return address ไว้อีกที่ด้วย วิธีอย่าง split stack จับการเขียนผ่าน pointer ได้เฉพาะเมื่อเป้าหมายคือ return address แต่ SLAPPER เขียนลง jump slot ใน GOT ซึ่งเป็น function pointer ที่โปรแกรมใช้เรียกฟังก์ชันในไลบรารี
+
+### metadata ต้องใช้ที่เท่าไร
+
+ทุกวิธีที่ตรวจตอนโปรแกรมรัน (dynamic solution) ต้องเก็บ metadata เพิ่ม และขนาดของมันต่างกันมาก
+
+| วิธี | metadata | จ่ายเมื่อไร |
+| --- | --- | --- |
+| Segmentation | descriptor ขนาด 64 บิตบน IA-32 และ 128 บิตบน I-432 ตัวแปรละหนึ่ง descriptor | ทุกตัวแปร |
+| StackGuard | canary หนึ่ง word | ทุกครั้งที่เรียกฟังก์ชัน |
+| Secure Bit | 1 บิตต่อหนึ่ง word (ส่วนที่ 3) ซึ่งอาจเป็นขั้นต่ำที่เป็นไปได้ | ครั้งเดียว ตอนเพิ่มบิตเข้าไปในฮาร์ดแวร์ |
+
+สำหรับ Secure Bit ยังต้องตอบอีกสองข้อ คือหนึ่งบิตพอจะได้ผลจริงไหม (effectiveness) และทำให้ช้าลงแค่ไหน (run-time penalty) ส่วนที่ 4 ตอบทั้งสองข้อ
+
+### โปรแกรมที่ไม่ได้กลับตามลำดับ
+
+ในสายตาของวิธีที่เฝ้า return address โค้ดบางแบบดูเหมือนการโจมตีทุกประการ เพราะ return address ถูกยกออกแล้วใส่กลับ หรือถูกใช้กระโดดโดยไม่ได้มาจาก `CALL`
+
+โค้ดพวกนี้คือ non-LIFO control flow ที่ call กับ return ไม่จับคู่ตามลำดับ ซึ่ง [SRAS ใน Lecture 8.1](/2110413-csy/lecture-8#copy-of-address--เก็บ-return-address-ไว้อีกที่) รับมือไม่ได้ ตัวอย่างจาก x86 แบบ 16 บิตคือ routine ที่ถูกเรียกได้ทั้งแบบ near และแบบ far
+
+ต้องรู้จัก register สองตัวก่อน IP (instruction pointer) คือ address ของคำสั่งถัดไป ส่วน CS (code segment) บอกว่าโค้ดอยู่ใน segment ไหน การเรียกแบบ near เก็บแค่ IP ไว้บน stack ส่วนแบบ far เก็บทั้ง IP และ CS
+
+```asm
+NEAR_ENTRY:
+    POP  AX      ; POP instruction pointer (IP) from the top of stack into AX
+    PUSH CS      ; PUSH CS
+    PUSH AX      ; PUSH IP back onto stack
+FAR_ENTRY:
+    ...
+    RETF         ; POP IP and CS off stack
+```
+
+ทางเข้าแบบ near หยิบ return address ออกมา ใส่ CS ลงไปใต้มัน แล้วใส่ return address กลับคืน stack จึงหน้าตาเหมือนการเรียกแบบ far และทั้งสองทางเข้าใช้ `RETF` ตัวเดียวกันได้
+
+อีกแบบที่พบบ่อยคือการ optimize ให้โค้ดสั้นลงด้วย `RET` แทน `JMP` คือ `PUSH` address ปลายทางลง stack แล้วสั่ง `RET` โดยไม่มี `CALL` คู่กัน
+
+วิธีที่มีอยู่จึงทำได้สองทางกับโค้ดพวกนี้ คือ **ไม่สนใจ (ignore)** ซึ่งเปิดช่องให้ผู้โจมตี หรือ **รับมือไม่ได้ (cannot handle)** ซึ่งทำให้โปรแกรมที่ถูกต้องพัง
+
+### สองข้อเท็จจริงที่ทำให้เรื่องนี้ยาก
+
+- **buffer overflow เกิดได้ใน Java, Perl และภาษาที่ type-safe ทั้งหลาย** แม้ตัวภาษาจะตรวจขอบเขตให้ แต่ virtual machine, interpreter และไลบรารีที่มันเรียกใช้ส่วนใหญ่เขียนด้วย C
+- **ไม่มีวิธีป้องกันไหนสมบูรณ์** วิธีที่ดูเหมือนจะสมบูรณ์ต้องเขียนโค้ดใหม่ทั้งหมด ตั้งแต่ BIOS, kernel, ไลบรารีทั้งแบบ static และ dynamic, driver ไปจนถึงแอปพลิเคชัน ซึ่งแทบเป็นไปไม่ได้
+
+ทางที่ไม่ต้องเขียนซอฟต์แวร์ใหม่ทั้งหมดคือให้ฮาร์ดแวร์กำกับข้อมูลทีละ word ปี 1972 มีคนทำนายว่าคอมพิวเตอร์ทั่วไปในปี 2000 จะมีการป้องกันแบบนี้ และปี 2003 ก็ยังมีคนถามหาเทคนิคที่ทำให้ buffer overrun เป็นไปไม่ได้
+
+<Detail label="สองข้อความที่ยกมา">
+บทความใน Microprogramming เดือนเมษายน 1972 เขียนว่า
+
+> I believe that the average computer of the year 2000 will: …. Have word by word protection and data description, …
+>
+> ผมเชื่อว่าคอมพิวเตอร์ทั่วไปในปี 2000 จะ … มีการป้องกันและการบรรยายข้อมูลทีละ word …
+
+และใน ACM SIGARCH เดือนกรกฎาคม 2003 ก็ยังมีคนถามว่า
+
+> Is anyone up for a discussion of capabilities, segments, 2-dimensional memory? Techniques which, among other things, render buffer overrun impossible.
+>
+> มีใครอยากคุยเรื่อง capability, segment, หน่วยความจำสองมิติไหม เทคนิคพวกนี้ทำให้ buffer overrun เป็นไปไม่ได้ ท่ามกลางข้อดีอื่น ๆ
+</Detail>
+
+สามสิบเอ็ดปีผ่านไป คำทำนายแรกก็ยังไม่เป็นจริง เพราะวิธีพวกนี้ต้องเปลี่ยนทั้งระบบ คำถามของ Secure Bit คือ **เปลี่ยนให้น้อยที่สุดได้แค่ไหน** โดยยังพิสูจน์ได้ว่าพอ
+
+<Quiz question="โปรแกรมหนึ่ง compile ด้วย StackGuard แบบ random canary และมีช่องโหว่ printf อยู่อีกจุด ผู้โจมตีใช้ format specifier อ่านค่า canary ออกมาก่อน แล้วส่ง input ที่ล้นทับ return address โดยใส่ canary ค่าเดิมไว้ตรงตำแหน่งของมัน StackGuard พลาดเพราะจุดไหนในสี่จุดข้างบน">
+การล้นครั้งนี้ยังเขียนต่อเนื่องจาก buffer ขึ้นไปทับ canary ตรงตามข้อสมมติของ StackGuard ทุกอย่าง ที่พังคือตัว canary ถูกอ่านออกไปได้ ผู้โจมตีจึงเขียนค่าเดิมกลับลงไป และการตรวจตอน return ก็ผ่าน
+
+คำตอบคือ **ปกป้อง metadata ไม่พอ**
+
+คำตอบที่ผิดบ่อยคือ "ข้อสมมติไม่พอ" แบบ SLAPPER แต่ SLAPPER หลุดเพราะมันไม่ได้ล้นต่อเนื่อง ส่วนเคสนี้ล้นต่อเนื่องจริง ข้อสมมติจึงยังถูก ที่ผิดคือ metadata ไม่เป็นความลับ
+</Quiz>
+
+---
+
+## ส่วนที่ 2 — พิสูจน์ว่ากันอะไรถึงจะพอ
+
+### address ที่ไม่ถูกแตะคือเงื่อนไขที่พอ
+
+<Why>
+ทุกวิธีที่ผ่านมาถูกออกแบบจากการโจมตีที่รู้จัก แล้วก็พลาดให้กับการโจมตีแบบถัดไป ถ้าจะหลุดจากวงจรนี้ ต้องหาสิ่งที่ **การโจมตีทุกแบบ** ต้องทำ แล้วพิสูจน์ว่ากันสิ่งนั้นได้ก็พอ
+</Why>
+
+ทฤษฎีเริ่มจากสองนิยามใน [Lecture 8.1](/2110413-csy/lecture-8) Definition 1 บอกว่า buffer overflow คือข้อมูลที่เกินขนาด buffer ล้นเข้าไปใน buffer อื่น Definition 2 บอกว่าการโจมตี control data คือการล้นจน address ถูกเปลี่ยนให้ชี้ไปหาโค้ดอันตรายหรือโค้ดที่ไม่ควรถูกรัน
+
+ข้อสังเกตที่ใช้คู่กันคือ ของที่ล้นเข้ามามาจาก domain อื่น คือจากนอก process เสมอ ทฤษฎีนิยามเพิ่มอีกข้อ
+
+> **Definition 3:** Maintaining the integrity of an address means that the address has not been modified by overflowing with a buffer passed from another domain.
+>
+> การรักษา integrity ของ address หมายถึง address นั้นไม่ได้ถูกเปลี่ยนด้วยการล้นจาก buffer ที่ส่งมาจาก domain อื่น
+
+ข้อถัดไปเป็น <Term en="Postulate" th="สัจพจน์" /> คือข้อที่ทฤษฎียอมรับว่าจริงโดยไม่พิสูจน์
+
+> **Postulate 1:** In buffer-overflow attacks on control data, the generic buffer/memory-manipulating operations are used by the vulnerable routine to overflow the address (e.g. a return address or a function pointer).
+>
+> ในการโจมตี control data โปรแกรมที่มีช่องโหว่ใช้คำสั่งจัดการ buffer หรือหน่วยความจำทั่วไปเป็นตัวล้นทับ address เช่น return address หรือ function pointer
+
+Postulate 1 บอกว่าผู้โจมตีไม่ได้เขียนลงหน่วยความจำเอง โปรแกรมเป็นคนเขียน ด้วยคำสั่งอย่าง `strcpy` ที่ใช้คัดลอกข้อมูลธรรมดาทุกวัน
+
+ผลที่ตามมาคือ ถ้าฮาร์ดแวร์ทำให้คำสั่งคัดลอกทุกคำสั่งยกบิตไปพร้อมข้อมูล บิตนั้นจะตามข้อมูลจากข้างนอกไปถึง address ที่ถูกทับได้ทุกครั้ง ส่วนที่ 3 ใช้ข้อนี้
+
+> **Theorem 1:** Modifying an address by replacing ("overflowing") it using a buffer passed from another domain is a necessary condition for buffer-overflow attack on control data.
+>
+> **Restatement:** If there is to be a buffer-overflow attack on control data, an address must be modified using a buffer passed from another domain.
+
+พูดง่าย ๆ คือ ถ้าจะมีการโจมตี control data ด้วย buffer overflow ต้องมี address ตัวหนึ่งถูกเปลี่ยนด้วย buffer ที่มาจาก domain อื่น
+
+บทพิสูจน์บอกว่าตามมาจาก Definition 1 และ 2 ตรง ๆ เพราะการโจมตีตามนิยามต้องเปลี่ยน address ด้วยการล้น buffer ส่วนคำว่า "จาก domain อื่น" มาจากข้อสังเกตข้างบน
+
+ข้อถัดไปเป็น <Term en="Corollary" th="บทแทรก" /> คือข้อที่ตามมาจาก theorem ก่อนหน้าแทบทันที
+
+> **Corollary 1.1:** Preserving the integrity of an address is a sufficient condition for preventing a buffer-overflow attack.
+>
+> **Restatement:** If the integrity of an address is preserved, that is a sufficient condition for preventing a buffer-overflow attack.
+
+การรักษา integrity ของ address ไว้ได้เป็นเงื่อนไขที่ **พอ** สำหรับกันการโจมตี บทพิสูจน์ใช้ <Term en="Contrapositive" th="ประพจน์แย้งสลับที่" /> ของ Theorem 1
+
+ถ้าประโยค "ถ้า A แล้ว B" จริง ประโยค "ถ้าไม่ B แล้วไม่ A" ก็จริงด้วยเสมอ เช่น "ถ้าฝนตก ถนนเปียก" จริง ก็ได้ว่า "ถ้าถนนไม่เปียก ฝนไม่ได้ตก"
+
+| | ประโยค |
+| --- | --- |
+| Theorem 1 | ถ้ามีการโจมตี แล้ว address ต้องถูกเปลี่ยนด้วย buffer จากข้างนอก |
+| Contrapositive | ถ้าไม่มี address ไหนถูกเปลี่ยนด้วย buffer จากข้างนอก แล้วการโจมตีเกิดไม่ได้ |
+
+ประโยคที่สองคือ Corollary 1.1
+
+บทพิสูจน์เขียนเงื่อนไขนี้ว่า address "cannot be modified (or such modification can be detected)" คือถูกเปลี่ยนไม่ได้ หรือการเปลี่ยนถูกจับได้ก่อนถูกใช้ ซึ่งนับว่าเท่ากับไม่ถูกเปลี่ยน
+
+ประโยคนี้คือเป้าหมายของ Secure Bit ไม่ต้องรู้ว่าการล้นมาทางไหน ขอแค่จับได้ว่า address ถูกเปลี่ยนด้วยข้อมูลจากข้างนอก
+
+### ระบบที่ปลอดภัยต่อ buffer overflow
+
+เพื่อพูดคำว่า "ปลอดภัย" ให้แม่น ทฤษฎีใช้นิยามของ Bishop จาก [Lecture 4](/2110413-csy/lecture-4#security-policy-และ-secure-system)
+
+- **Definition 4:** security policy แบ่งสถานะทั้งหมดของระบบเป็นสถานะที่ได้รับอนุญาต (secure) กับไม่ได้รับอนุญาต (nonsecure)
+- **Definition 5:** secure system คือระบบที่เริ่มจากสถานะที่ได้รับอนุญาต และเข้าสู่สถานะที่ไม่ได้รับอนุญาตไม่ได้เลย
+
+ข้อถัดไปเป็น <Term en="Lemma" th="บทตั้ง" /> คือข้อที่พิสูจน์ไว้เพื่อใช้ต่อในข้ออื่น
+
+> **Lemma 2:** A system which preserves the integrity of an address (e.g. a return addresses or a function pointer) is a secure system with respect to buffer-overflow attacks.
+>
+> **Restatement:** A system that does not use input as a control data is a secure system with respect to buffer-overflow attacks on control data.
+
+บทพิสูจน์แบ่งสถานะของระบบเป็นสองกอง คือ **normal operation** กับ **buffer-overflow attack** แล้วเดินสามขั้น
+
+1. ทางเดียวที่จะเข้ากอง attack คือ address ถูกเขียนทับด้วย address ที่มากับ input ตาม Definition 2
+2. ถ้าการเขียนทับแบบนั้นถูกจับได้และถูกกันไว้ ระบบก็เข้ากอง attack ไม่ได้ ตาม Definition 3
+3. ระบบเริ่มจาก normal operation และเข้ากอง attack ไม่ได้ จึงเป็น secure system ตาม Definition 5
+
+<Quiz question="ระบบหนึ่งรักษา return address ได้สมบูรณ์ ไม่มีทางถูกเขียนทับ แต่ไม่ได้ดูแล function pointer เลย Corollary 1.1 รับรองว่าระบบนี้กันการโจมตี control data ได้ไหม">
+Theorem 1 บอกว่าการโจมตีต้องเปลี่ยน **address ตัวหนึ่ง** ตัวไหนก็ได้ที่โปรแกรมจะกระโดดตาม Corollary 1.1 จึงต้องการ integrity ของทุก address ที่ถูกใช้เป็นเป้าหมายของการกระโดด
+
+คำตอบคือ **ไม่รับรอง** การโจมตีทาง function pointer หรือทาง jump slot ใน GOT ยังเปลี่ยน address ได้ เงื่อนไขของ Corollary จึงไม่ครบ
+
+คำตอบที่ผิดบ่อยคือ "รับรอง เพราะ stack smashing ถูกกันแล้ว" ซึ่งเอาการโจมตีแบบที่ดังที่สุดมาเป็นทั้งหมด ช่องนี้เองที่ทำให้ split stack และวิธีในกลุ่ม copy of address ไม่พอ
+</Quiz>
+
+---
+
+## ส่วนที่ 3 — Secure Bit: บิตเดียวที่ติดไปกับทุก word
+
+> Give me a little Bit and I will solve buffer-overflow attacks.
+
+### สองกฎ
+
+<Why>
+Corollary 1.1 ต้องการ integrity ของ **ทุก** address ที่โปรแกรมจะกระโดดตาม แต่วิธีกลุ่ม [address protection](/2110413-csy/lecture-8#สี่แบบของ-address-protection) เฝ้าทีละตำแหน่ง และพลาดตำแหน่งที่ไม่ได้เฝ้า ทางที่ไม่ต้องรู้ว่า address อยู่ตรงไหน คือดูว่าค่านั้น **มาจากไหน** แทนที่จะดูว่ามันไปลงที่ไหน ซึ่งก็คือกฎของ [input protection](/2110413-csy/lecture-8#input-protection--ห้ามใช้-input-เป็น-control-data) ว่า input ห้ามถูกใช้เป็น control data ที่ย้ายมาทำในฮาร์ดแวร์
+</Why>
+
+Secure Bit ใช้บิตหนึ่งบิตต่อหนึ่ง word ของหน่วยความจำ บอกว่า word นั้นมาจาก domain อื่นหรือไม่
+
+ทุก word ใน process เริ่มที่บิต 0 คือ trustworthy ส่วน word ที่ input จากอุปกรณ์หรือผู้ใช้ผ่าน OS และ driver ลงไปอยู่ได้บิต 1 คือ untrustworthy แล้วบังคับด้วยสองกฎ
+
+- **Protocol 1:** การส่ง buffer ข้าม domain ซึ่งได้แก่อุปกรณ์ เครื่อง และ process ต้องตั้ง Secure Bit เสมอ พูดอีกแบบคือ **input ทุก word มี Secure Bit เป็น 1**
+- **Protocol 2 (Hardware Enforcement):** ข้อมูลจาก domain อื่นที่มี Secure Bit เป็น 1 ห้ามถูกใช้เป็นเป้าหมายของการกระโดด
+
+<Figure number={1} caption="ผู้โจมตีเขียนค่าใหม่ลงช่อง return address ได้ แต่บิต 1 ติดมาด้วย และ CPU ไม่ยอมกระโดดไปตามค่าที่มีบิต 1">
+  <SecureBitFlow />
+</Figure>
+
+แนวคิดนี้มีมาก่อนในรูปของหลักการเขียนโปรแกรม Howard และ LeBlanc เขียนไว้ว่า "All input is evil until proven otherwise" และ "Data must be validated as it crosses the boundary between untrusted and trusted environments" คือ input ทุกตัวอันตรายจนกว่าจะพิสูจน์ได้ว่าไม่ และข้อมูลต้องถูกตรวจตอนข้ามจากฝั่งที่ไม่น่าไว้ใจเข้ามาฝั่งที่ไว้ใจ
+
+หลักนี้คือ [Validation of Input ใน Lecture 2](/2110413-csy/lecture-2#validation-of-input--เชื่อ-input-ไม่ได้) Secure Bit เอามันไปไว้ในฮาร์ดแวร์ โปรแกรมเมอร์จึงลืมไม่ได้
+
+> **Lemma 3:** Secure Bit and Protocol 1 can preserve the integrity of an address, and result in a secure system with respect to buffer-overflow attacks.
+
+Protocol 1 ข้างบนทำให้ทุก word ที่ข้าม domain เข้ามามีบิต 1 Secure Bit กับ Protocol 1 จึงจับได้ว่า address ถูกล้นทับด้วย buffer จาก domain อื่น
+
+จับได้ก็รักษา integrity ได้ตาม Definition 3 แล้ว Lemma 2 ในส่วนที่ 2 ก็บอกว่าระบบนั้นปลอดภัย
+
+<Pitfall>
+ความเชื่อที่ผิดคือ **มีบทพิสูจน์แล้ว Secure Bit จึงกัน buffer overflow ได้ทุกแบบ**
+
+ข้อนี้ไม่จริง
+
+มันดูจริงเพราะ Corollary 1.1 เขียนสั้น ๆ ว่า "preventing a buffer-overflow attack" และ Lemma 3 ก็ใช้คำว่า secure system
+
+ที่ถูกคือ **ทุกบทพิสูจน์ปลอดภัยแค่ต่อการโจมตี control data** ตาม Definition 2 [ตัวอย่างอายุใน Lecture 8.1](/2110413-csy/lecture-8#ล้นคืออะไร--ชื่อที่ยาวเกินไปหนึ่งตัวอักษร) ชื่อที่ยาวเกินล้นทับ `age` ซึ่งเป็นตัวเลข ไม่มี address ไหนถูกเปลี่ยน Secure Bit จึงปล่อยผ่าน และโปรแกรมก็ยังตอบว่า 49 ตัวแปรอย่าง `is_admin` ก็เช่นกัน
+</Pitfall>
+
+### Protocol Enforcement — ใครเป็นคนตั้งบิต
+
+<Term en="sbit_write mode" th="โหมดที่ทุกการเขียนได้บิต 1" /> คือโหมดใหม่ของ CPU ระหว่างอยู่ในโหมดนี้ ทุก word ที่ถูกเขียนลงหน่วยความจำได้ Secure Bit เป็น 1
+
+kernel ใช้ sbit_write mode ทุกครั้งที่ย้ายข้อมูลข้าม domain ส่วนคำสั่ง Call, Jump และ Return ถูกแก้ให้ตรวจ Secure Bit ของ address ปลายทางก่อนกระโดด
+
+### ฮาร์ดแวร์ — หน่วยความจำ ชุดคำสั่ง และ register
+
+**หน่วยความจำ** มีบิตเพิ่มหนึ่งบิตต่อหนึ่ง word ฮาร์ดแวร์เก็บบิตได้สามแบบ
+
+- **Secure Bit Storage แยก** — processor คุยกับที่เก็บบิตผ่าน interface ข้างที่เก็บข้อมูลปกติ
+- **ขาเพิ่มที่ชิปหน่วยความจำ** — ชิปหน่วยความจำตัวเดิมมีขา Secure Bit เพิ่มอีกขาข้างขา Address, Data, CS และ R/W
+- **ช่วงหนึ่งของหน่วยความจำหลัก** — กันไว้เก็บบิต (SecureBits) และ **Base Register** เก็บ address เริ่มต้นของช่วงนั้น
+
+CS ในแบบที่สองคือ chip select ที่เลือกว่าจะคุยกับชิปไหน ไม่ใช่ code segment ในส่วนที่ 1
+
+การหา address ของบิตทำแบบนี้
+
+1. แบ่ง physical memory address เป็นบิตส่วนบน (high order bits) กับ 3 บิตล่าง
+2. บิตส่วนบนบวกกับ **Base Register** ได้ address ใน Secure Bit Storage
+3. 3 บิตล่างเข้า **8-1 Line Selector** เลือกหนึ่งในแปดบิตของไบต์นั้น
+
+ไบต์หนึ่งไบต์ใน Secure Bit Storage จึงเก็บบิตของแปดตำแหน่งติดกัน เช่นที่ตำแหน่ง `0x1234` ตัด 3 บิตล่างทิ้งได้ไบต์ที่ `0x246` และ 3 บิตล่างมีค่า 4 คือบิตที่ 4 ซึ่งมี mask `0x10`
+
+ตรงนี้สไลด์ขัดกันเอง หัวข้อบอกหนึ่งบิตต่อ **word** แต่บน x86 ที่ address นับทีละไบต์ การเลือกด้วย 3 บิตล่างได้หนึ่งบิตต่อ **ไบต์** และตัวจำลองในส่วนที่ 4 ก็เก็บแบบนั้น
+
+**ชุดคำสั่ง** เปลี่ยนสี่จุด
+
+- มี flag ใหม่ชื่อ `sbit_write`
+- `CALL`, `JUMP` และ `RET` ตรวจ Secure Bit ของเป้าหมายก่อนกระโดด เพราะ `RET` ก็คือการกระโดดไปตามค่าที่ดึงจาก stack
+- คำสั่งอื่นที่แตะหน่วยความจำ ยก Secure Bit ไปพร้อมกับ word ที่ย้ายเมื่อ sbit_write mode ปิดอยู่ และตั้ง Secure Bit ที่ปลายทางเมื่อ sbit_write mode เปิดอยู่
+- การคำนวณทุกแบบ ทั้ง shift, เลขคณิต และตรรกะ ถ้ามี operand ตัวไหนไม่ปลอดภัย ผลก็ไม่ปลอดภัย ส่วนค่าคงที่ที่ฝังในคำสั่ง (immediate) ถือว่าปลอดภัย
+
+ข้อสุดท้ายทำใน **ALU** ด้วย OR gate สามขา ขาเข้าคือบิตของ operand ตัวที่หนึ่ง บิตของ operand ตัวที่สอง และ flag `sbit_write` จาก FLAGS register ผลทุกตัวที่คำนวณระหว่างอยู่ใน sbit_write mode จึงได้บิต 1 ด้วย
+
+**register** ทุกตัว เช่น EAX ต้องมี Secure Bit ติดไปด้วย และ **Program Counter** ก็ต้องมี ส่วนว่า CPU จะยก exception ตอนไหนเมื่อบิตของ PC เป็น 1 ยังเป็นคำถามที่ต้องออกแบบ
+
+<Detail label="อีกแพลตฟอร์มที่ใช้ทดลองได้ — SimpleScalar">
+นอกจากตัวจำลอง x86 ที่ใช้สร้างจริงในส่วนที่ 4 อีกแพลตฟอร์มที่ใช้ทดลองได้คือ **SimpleScalar** สถาปัตยกรรม RISC ของมันมีชุดคำสั่งเรียบง่ายและออกแบบไม่ซับซ้อน แต่ยังมีเรื่องที่ต้องคิด คือ parallelism, hazard และ cache เพราะบิตต้องเดินทางไปกับค่าผ่านทุกส่วนเหล่านั้น
+</Detail>
+
+### ระบบปฏิบัติการ
+
+ฝั่ง OS มีงานสองอย่าง
+
+- **Domains and Buffer Manipulation** — ย้ายข้อมูลระหว่าง kernel กับ process ใน sbit_write mode ตามหัวข้อ protocol enforcement ข้างบน
+- **Virtual Memory** — Secure Bit ผูกกับ physical address ไม่ใช่ virtual address จัดการได้สามแบบ คือให้ firmware ดูแล ให้ซอฟต์แวร์จัดการ หรือใช้ paging ตามปกติบนฮาร์ดแวร์ที่แก้แล้ว
+
+เรื่อง virtual memory ต้องจัดการเพราะตำแหน่งของบิตคำนวณจาก physical address ถ้า OS ย้าย page ลง disk แล้วโหลดกลับมาที่ physical address อื่น บิตของ page นั้นต้องย้ายตามไปด้วย
+
+<Quiz question="โปรแกรมหนึ่งอ่านเลขเมนูจากผู้ใช้ แล้วเรียกฟังก์ชันผ่านตาราง handlers[n] ซึ่งเป็นตาราง function pointer ที่โปรแกรมสร้างเอง Secure Bit จะปล่อยให้เรียกได้ไหม">
+`n` มาจากผู้ใช้จึงมีบิต 1 แต่ `n` ถูกใช้แค่เลือกว่าจะอ่าน word ไหนจากตาราง word ที่ถูกอ่านออกมาเป็น address ที่โปรแกรมเขียนลงตารางเอง จึงมีบิต 0 คำสั่งโหลดยกบิตของ word นั้นมาด้วย และ `CALL` ตรวจบิตของเป้าหมาย ซึ่งก็คือค่าที่โหลดมา
+
+คำตอบคือ **เรียกได้ตามปกติ**
+
+คำตอบที่ผิดบ่อยคือ "ถูกบล็อก เพราะ input มีส่วนในการเลือกเป้าหมาย" Secure Bit ไม่ได้ห้าม input มีผลต่อทางเดินของโปรแกรม มันห้ามแค่ไม่ให้ **ค่าที่มาจาก input เอง** ถูกใช้เป็น address ถ้า `n` ใหญ่เกินตารางก็เป็นปัญหาอีกเรื่อง ซึ่ง bounds checking ต้องดูแล
+</Quiz>
+
+---
+
+## ส่วนที่ 4 — สร้างจริงและวัดผล
+
+### BOCHS — ตัวจำลอง x86
+
+Secure Bit ถูกสร้างบน **BOCHS** ซึ่งเป็นโปรแกรมจำลองเครื่อง x86 เขียนด้วย C++ แบ่งเป็น object คือ CPU, หน่วยความจำ, I/O peripheral, BIOS, disk และอื่น ๆ
+
+BOCHS มีขอบเขตของหน่วยความจำชัดเจน สร้างได้หลาย instance และจำลองชุดคำสั่งทั้งหมด มันมีมากกว่า 5,304 routine โดย 3,600 อยู่ใน object ของ CPU
+
+การตั้งหรือล้าง Secure Bit ของข้อมูลยาว `len` ไบต์ที่ตำแหน่ง `a20addr` เขียนแบบนี้
+
+```cpp
+// Set/Clear Secure Bit by KPR
+Bit32u a20addr_s;
+Bit8u sbyte;
+for (int i=0;i<len ;i++ )
+{
+  a20addr_s=(a20addr+i)>>3;
+  sbyte=(a20addr+i) & 0x00000007;
+  sbyte=1 << sbyte;
+  if (*sbit==1)
+  { // set
+    vector_s[a20addr_s]|=(sbyte&0xff);
+  }
+  else
+  { // clear
+    vector_s[a20addr_s]&=~(sbyte&0xff);
+  }
+  sbyte=sbyte<<1;
+}
+```
+
+`vector_s` คือ Secure Bit Storage `>>3` หาไบต์ และ `& 7` เลือกบิตในไบต์ ตามวิธีในส่วนที่ 3
+
+routine คู่กันชื่อ Read Secure Bit วนหาบิตแบบเดียวกัน แต่ OR บิตของทั้ง `len` ไบต์รวมเป็นค่าเดียว word ที่ยาวหลายไบต์จึงไม่ปลอดภัยทั้ง word ถ้ามีไบต์ไหนสักไบต์ไม่ปลอดภัย
+
+ส่วนอื่นที่ต้องแก้
+
+<Detail label="ส่วนอื่นที่ต้องแก้ใน BOCHS">
+- **Memory interface** — เพิ่ม `readPhysicalPage` และ `writePhysicalPage` รุ่นที่รับพารามิเตอร์ `sbit` เพิ่ม แบบ overload รุ่นเดิมที่ไม่สนใจ Secure Bit ยังอยู่ จึงไม่ต้องแก้ routine กว่า 3,000 ตัวที่เรียกมัน
+- **พารามิเตอร์ `ignore`** — รุ่นเขียนอีกรุ่นมี `ignore` ด้วย คอมเมนต์ในโค้ดบอกว่า `ignore=0` คือเขียนข้อมูลโดยปล่อย Secure Bit เดิมไว้ ซึ่งกลับกับที่ชื่อพารามิเตอร์ชวนให้เดา
+- **macro ของ ALU** — macro หนึ่งตัวต่อชนิดของคำสั่ง ALU เช่น `SBIT_ADD(sbit1,sbit2)` ให้ 0 เมื่อทั้งสองบิตเป็น 0 นอกนั้นให้ 1 ตามกฎ OR ในส่วนที่ 3 มีครบทั้ง SHX, ROX, XOR, AND, OR, NOT, ADD, SUB และ MUL ซึ่งใช้กับ DIV ด้วย SHX กับ ROX คือกลุ่มคำสั่ง shift และ rotate macro ของมันรับแค่บิตของค่าที่ถูกเลื่อน
+- **การตั้งบิต** — `sbit=(sbit_mode)? 1:sbit;`
+</Detail>
+
+- **การตรวจเป้าหมายของ call** — ถ้า `sbit != 0` ให้บันทึก log ว่า `call_ew: sbit of target is not secure` ส่วนการยก `BX_GP_EXCEPTION` อยู่ใน `#ifdef HAS_SBIT_EXCEPTION` จึงเกิดเฉพาะเมื่อ compile โดยกำหนดค่านี้ไว้ ถ้าไม่กำหนด โปรแกรมแค่บันทึก log แล้วทำงานต่อ
+- **ขนาดของงาน** — รวมแล้วแก้ประมาณ 2,410 บรรทัดใน 607 routine
+
+### Linux — ทางเข้าทุกทางผ่านจุดเดียว
+
+<Term en="Threat Surface" th="ทุกทางที่ input เข้ามาได้" /> คือ input ทุกทางที่ข้ามเข้ามาผ่าน interface ของซอฟต์แวร์
+
+ใน Linux ข้อมูลจากทุกแหล่งของ kernel ทั้ง input device, storage device, TCP/IP, standard input และอื่น ๆ เข้าถึง process ผ่านการ **คัดลอกลง buffer ของผู้ใช้** ใน `usercopy.c` threat surface จึงแคบลงเหลือฟังก์ชันไม่กี่ตัว แก้ตรงนั้นที่เดียว ทุก word ที่ลงไปใน buffer ของ process ก็ได้บิต 1
+
+```c
+#define SET_SBITMODE() \
+  asm volatile( \
+    " pushl %eax\n" \
+    " lahf\n" \
+    " orb $0x20, %ah\n" \
+    " sahf\n" \
+    " popl %eax" )
+
+unsigned long
+__generic_copy_to_user(void *to, const void *from, unsigned long n)
+{
+  SET_SBITMODE();
+  if (access_ok(VERIFY_WRITE, to, n))
+    __copy_user(to,from,n);
+  CLR_SBITMODE();
+  return n;
+}
+```
+
+<Detail label="แต่ละบรรทัดของ SET_SBITMODE">
+`lahf` คัดลอก 8 บิตล่างของ FLAGS ลง `AH` แล้ว `orb $0x20` ตั้งบิตที่ 5 ก่อน `sahf` เขียนคืน `CLR_SBITMODE` ทำกลับกันด้วย `andb $0xdf`
+
+บิตที่ 5 ของ FLAGS เป็นบิตที่ x86 สงวนไว้และไม่ได้ใช้ Secure Bit จึงเอามาเป็น flag `sbit_write` ได้โดยไม่ชนกับ flag เดิม
+</Detail>
+
+### ทดสอบสี่ด้าน
+
+| การทดสอบ | ทดสอบอะไร |
+| --- | --- |
+| **บูต Linux** | ความเข้ากันได้ในมุมของ OS ซึ่งเป็นการทดสอบที่ซับซ้อน |
+| **รันแอปพลิเคชันเดิม** | ใช้กับ binary เก่าได้โดยไม่ต้องแก้ และแอปไม่รู้ตัวว่ามี Secure Bit |
+| **Hacking test** | กันการโจมตีได้จริงไหม |
+| **คำสั่งที่ถูกแก้** | ผลกระทบต่อชุดคำสั่ง |
+
+แอปที่รันทดสอบครอบคลุม thread, garbage collector ของ JVM, SSL, แอปเครือข่ายรุ่นเก่า และ Apache ที่มีช่องโหว่ของ SLAPPER
+
+<Detail label="รายชื่อแอปที่รันทดสอบ">
+- **gzip, bzip2, gcc** จาก SPEC CPU2000 — การบีบอัดแบบ LZ77, การบีบอัดแบบ Burrows-Wheeler กับ Huffman coding และ compiler ที่ใช้โครงสร้างข้อมูลหลากหลาย
+- **Perl และ shell script** — ภาษาสคริปต์ที่นิยม
+- **OpenSSL** — ไลบรารีเข้ารหัส
+- **Apache 1.3.12 กับ mod_ssl** — เซิร์ฟเวอร์แบบหลาย thread ที่มี SSL และมีช่องโหว่ที่ worm SLAPPER ใช้
+- **Telnetd และ WUFTPD** — แอปเครือข่ายและโปรโตคอลรุ่นเก่า
+- **OpenSSH** — แอป client-server ที่เข้ารหัส
+- **Java Virtual Machine** ทั้ง Sun JVM และ Kaffe — มี garbage collector, virtual machine และ lightweight process (thread)
+</Detail>
+
+Hacking test ครอบคลุม stack smashing และการโจมตี return address, การโจมตี function pointer, การโจมตี GOT และ worm Apache SLAPPER
+
+การสาธิตใช้การโจมตีสองขั้นกับ [โปรแกรม `vulnerable` ใน Lecture 8.1](/2110413-csy/lecture-8#ทับ-pointer-ธรรมดา--ล้นสองขั้น) ซึ่งเรียก `strcpy` สองครั้ง และมี pointer `ptr` อยู่ติดกับ buffer ขั้นแรกทับ `ptr` ให้ชี้ไปที่ช่องของ `printf` ใน GOT ขั้นที่สอง `strcpy` ครั้งที่สองเขียน address ของ `residentcode()` ลงในช่องนั้น
+
+`residentcode()` เป็นฟังก์ชันที่มีอยู่แล้วในโปรแกรมและเปิด `/bin/sh` พอโปรแกรมเรียก `printf` ครั้งถัดไปจึงกระโดดไปเปิด shell แทน โดยไม่ต้องฉีดโค้ดใหม่เลย
+
+บนตัวจำลองที่ไม่มี Secure Bit ผู้โจมตีได้ shell ไป ส่วนบนตัวจำลองที่มี Secure Bit (รุ่นที่เรียกว่า Secure Bit2) โปรแกรมจบด้วย `Segmentation fault` และคอนโซลของตัวจำลองรายงานว่า
+
+```text
+Event type: PANIC
+Device: [CPU ]
+Message: jmp_ed: sbit of target is not secure
+```
+
+`jmp_ed` คือการตรวจที่คำสั่ง `JMP` ไม่ใช่ `call_ew` ข้างบน เพราะโปรแกรมเรียก `printf` ผ่านโค้ดสั้น ๆ ที่สั่ง `JMP` ไปตาม address ในช่องของ GOT ช่องนั้นถูกเขียนด้วย input จึงมีบิต 1
+
+<Detail label="การตรวจที่ JMP ถูก compile แบบไหน">
+โค้ดของการตรวจ `call_ew` ข้างบนแค่บันทึก log ถ้าไม่ได้กำหนด `HAS_SBIT_EXCEPTION` แต่ในการสาธิต การตรวจที่ `JMP` รายงานเป็น `PANIC` และโปรแกรมจบด้วย `Segmentation fault` สไลด์ไม่ได้แสดงโค้ดของการตรวจที่ `JMP` จึงบอกไม่ได้ว่าตัวจำลองในการสาธิตถูก compile แบบไหน
+</Detail>
+
+### ผลการวิเคราะห์ และตัวเลขที่ต้องระวัง
+
+- **Space และ memory interface** — แก้น้อยมาก ในฮาร์ดแวร์จริงคือชิปหน่วยความจำเพิ่มหนึ่งตัวต่อแผง ใช้ที่น้อยที่สุดเมื่อเทียบกับ segmentation และอ้างว่า Moore's law ชดเชยที่ที่เพิ่มได้ใน 3 วัน
+- **Backward compatibility** — ใช้กับ binary ของผู้ใช้รุ่นเก่าได้ 100%
+- **Deployment** — แก้แค่ตัว CPU
+- **Performance** — ไม่ช้าลงอย่างมีนัยสำคัญ
+
+<Detail label="ตัวเลข 3 วันไม่ตรงกับการคำนวณ">
+<Callout type="warn" title="เสริม — ที่มาของตัวเลข 3 วันที่สไลด์ไม่ได้แสดง และไม่ตรงกับการคำนวณ">
+ถ้าความจุเพิ่มเป็นสองเท่าทุก 18–24 เดือน หน่วยความจำที่เพิ่ม 3.1% (1 บิตต่อ word 32 บิต) ต้องใช้ราว 24–32 วัน และ 12.5% (1 บิตต่อไบต์ แบบที่ BOCHS เก็บ) ต้องใช้ราว 93–124 วัน ไม่มีแบบไหนได้ 3 วัน ถ้าเป็น 3 เดือนจะใกล้กรณี 1 บิตต่อไบต์ ซึ่งตรงกับชิปที่เก้าบนแผงที่มีชิปข้อมูลแปดตัวด้วย
+</Callout>
+</Detail>
+
+ข้อสรุปของงานมีสามข้อ
+
+- **Compatibility และ transparency** — ใช้กับ binary เดิม thread การไหลแบบ non-LIFO และการสื่อสารระหว่าง process ได้ เพราะ Secure Bit ดูแค่ว่าค่ามาจากข้างนอกหรือไม่
+- **Effectiveness** — จับการโจมตี control data ด้วย buffer overflow ได้ทุกแบบ
+- **Simple** — แก้ฮาร์ดแวร์น้อยมาก
+
+<Detail label="สิทธิบัตรและบทความที่ตีพิมพ์">
+งานนี้ยื่นจดสิทธิบัตรไว้ในเดือนตุลาคม 2005 และตีพิมพ์โดย Piromsopa และ Enbody หลายฉบับ
+
+- "Secure Bit: Transparent, Hardware Buffer-Overflow Protection" ใน IEEE Transactions on Dependable and Secure Computing
+- "Buffer-Overflow Protection: The Theory" และ "Arbitrary Copy: Bypassing Buffer-Overflow Protections" ใน EIT2006
+- "Defeating Buffer-Overflow Prevention Hardware" ใน WDDD 2006 หน้า 56–65
+- "Architecting Security: A Secure Implementation of Hardware Buffer-Overflow Protection" ใน ACST 2007
+
+รายละเอียดอยู่ที่ https://www.cp.eng.chula.ac.th/~krerk/sbit2/
+</Detail>
+
+<Quiz question="ไดรเวอร์การ์ดเครือข่ายตัวใหม่ตัวหนึ่ง คัดลอก packet ลงหน่วยความจำของ process ตรง ๆ โดยไม่ผ่าน usercopy.c บนเครื่องที่มี Secure Bit packet ที่ทำให้ล้นจากไดรเวอร์นี้จะถูกจับไหม">
+Secure Bit ตรวจตอนกระโดดก็จริง แต่บิตที่มันตรวจถูกตั้งตอนข้อมูลข้าม domain ตาม Protocol 1 ไดรเวอร์นี้ไม่ได้เขียนใน sbit_write mode ข้อมูลจากเครือข่ายจึงลงไปพร้อมบิต 0 เหมือนข้อมูลของ process เอง
+
+คำตอบคือ **จับไม่ได้** address ที่ถูกทับด้วยข้อมูลนี้มีบิต 0 และ `CALL` หรือ `RET` ก็ปล่อยผ่าน
+
+คำตอบที่ผิดบ่อยคือ "จับได้ เพราะ Lemma 3 พิสูจน์แล้ว" บทพิสูจน์ตั้งอยู่บน Protocol 1 ซึ่งต้องจริงสำหรับ **ทุก** ทางเข้า ทางเข้าที่หลุดไปหนึ่งทางทำให้ข้อสมมติไม่จริง นี่คือข้อบกพร่องแบบ insufficient assumptions ในส่วนที่ 1 ที่ย้ายมาอยู่ใน kernel
+</Quiz>
+
+---
+
+<Recap>
+
+**[ทำไมยังไม่จบ](#ส่วนที่-1--ทำไมยังไม่มีวิธีไหนปิดเรื่องนี้ได้)**
+
+- จุดพลาด: assumptions ไม่พอ, ปกป้อง metadata ไม่พอ, performance, compatibility (non-LIFO), deployment
+- metadata: descriptor 64 บิต (IA-32) / 128 บิต (I-432) ต่อตัวแปร, canary ต่อการเรียก, Secure Bit 1 บิตต่อ word
+- overflow เกิดใน Java และ Perl ได้ เพราะชั้นล่างเขียนด้วย C
+
+**[ทฤษฎี](#ส่วนที่-2--พิสูจน์ว่ากันอะไรถึงจะพอ)**
+
+- Theorem 1: การเปลี่ยน address ด้วย buffer จาก domain อื่นเป็นเงื่อนไข **จำเป็น** ของการโจมตี control data
+- Corollary 1.1: รักษา integrity ของ address ได้เป็นเงื่อนไข **พอ** พิสูจน์ด้วย contrapositive
+- Lemma 2: ระบบที่ไม่ใช้ input เป็น control data คือ secure system (นิยามของ Bishop)
+
+**[Secure Bit](#ส่วนที่-3--secure-bit-บิตเดียวที่ติดไปกับทุก-word)**
+
+- Protocol 1: input ทุก word มีบิต 1 · Protocol 2: ห้ามใช้ค่าบิต 1 เป็นเป้าหมายของการกระโดด
+- kernel ย้ายข้อมูลข้าม domain ใน sbit_write mode; Call, Jump, Return ตรวจบิต
+- ALU: operand ไม่ปลอดภัยตัวเดียว ผลก็ไม่ปลอดภัย (OR); immediate ปลอดภัย
+- Lemma 3: Secure Bit กับ Protocol 1 รักษา integrity ได้ — ปลอดภัยต่อการโจมตี **control data** เท่านั้น
+- address ของบิต = base register + บิตส่วนบน, 3 บิตล่างเลือกบิตในไบต์
+
+**[สร้างจริง](#ส่วนที่-4--สร้างจริงและวัดผล)**
+
+- BOCHS: มากกว่า 5,304 routine, แก้ประมาณ 2,410 บรรทัดใน 607 routine, overload memory interface เลี่ยงการแก้ 3,000+ routine
+- Linux: ตั้ง sbit_write ใน `usercopy.c` ด้วย `orb $0x20, %ah`
+- ทดสอบ: บูต Linux, แอปเดิม (SPEC, Apache + mod_ssl, OpenSSH, JVM ฯลฯ), hacking test, คำสั่งที่แก้
+- ผล: เข้ากันได้กับ binary เดิม 100%, แก้แค่ CPU, ไม่ช้าลงอย่างมีนัยสำคัญ
+
+<Quiz question="บนเครื่องที่มี Secure Bit โปรแกรมหนึ่งเอา address ของฟังก์ชันที่มันรู้จัก บวกกับ offset ที่ผู้ใช้พิมพ์เข้ามา แล้ว CALL ไปที่ผลบวกนั้น CPU ยอมให้กระโดดไหม">
+offset มาจากผู้ใช้จึงมีบิต 1 ALU ทำ OR บิตของ operand สองตัว ผลบวกจึงได้บิต 1 ด้วย แม้ address ตั้งต้นจะมีบิต 0 พอ `CALL` ตรวจบิตของเป้าหมายก็เจอบิต 1
+
+คำตอบคือ **ไม่ยอม** CPU ปฏิเสธการกระโดด
+
+คำตอบที่ผิดบ่อยคือ "ยอม เพราะ address ตั้งต้นมาจากโปรแกรมเอง" ต่างจาก `handlers[n]` ในส่วนที่ 3 ตรงที่ตรงนั้น `n` แค่เลือกว่าจะอ่าน word ไหน ค่าที่ถูกใช้เป็นเป้าหมายไม่ได้ถูกคำนวณจาก input แต่ตรงนี้ input เข้าไปอยู่ในตัว address เอง
+</Quiz>
+
+<Quiz question="เครื่องหนึ่งเปิดทั้ง NX และ ASLR ผู้โจมตีรู้ address ของฟังก์ชันหนึ่งในไลบรารีอยู่แล้ว และล้นทับ return address ด้วย address นั้น ระหว่าง NX, ASLR และ Secure Bit อันไหนจับได้">
+NX ห้ามรันโค้ดจากส่วนข้อมูล แต่ฟังก์ชันในไลบรารีอยู่ในส่วนโค้ดที่รันได้อยู่แล้ว ASLR ซ่อน address แต่ผู้โจมตีรู้ address นั้นแล้ว ส่วน Secure Bit ดูที่มาของค่า address ใหม่มากับ input จึงมีบิต 1 และ `RET` ไม่ยอมกระโดด
+
+คำตอบคือ **Secure Bit อย่างเดียว**
+
+คำตอบที่ผิดบ่อยคือ "NX" ซึ่งลืมว่าการโจมตีนี้ไม่ได้ฉีดโค้ดเลย ตาม [pitfall ใน Lecture 8.1](/2110413-csy/lecture-8#ทำให้ฉีดโค้ดไม่ได้--isr-และ-spef)
+</Quiz>
+
+</Recap>

@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { useEffect } from 'react';
+import { countClasses, lectureNumber } from '@/lib/lecture-order';
 
 export type DirectoryCourse = {
   slug: string;
   code: string;
   name: string;
   nameTh?: string;
-  lectures: { url: string; label: string; lecture?: number }[];
+  lectures: { url: string; label: string; lecture?: number; part?: number }[];
 };
 
 const LAST_COURSE = 'cedtan:last-course';
@@ -17,7 +18,7 @@ const ROW = 'grid grid-cols-[1fr_auto_auto] items-baseline gap-x-4 py-3.5 sm:gri
 
 // every course folded, except the one this browser opened last
 export function CourseDirectory({ courses }: { courses: DirectoryCourse[] }) {
-  const total = courses.reduce((sum, course) => sum + course.lectures.length, 0);
+  const total = courses.reduce((sum, course) => sum + countClasses(course.lectures), 0);
 
   useEffect(() => {
     let saved: string | null = null;
@@ -71,7 +72,7 @@ export function CourseDirectory({ courses }: { courses: DirectoryCourse[] }) {
                 className={`${ROW} -mx-2 cursor-pointer px-2 list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-primary [&::-webkit-details-marker]:hidden`}
               >
                 <CourseHeading course={course} />
-                <span className="text-sm tabular-nums text-fd-muted-foreground">{course.lectures.length} คาบ</span>
+                <span className="text-sm tabular-nums text-fd-muted-foreground">{countClasses(course.lectures)} คาบ</span>
                 <ChevronRight
                   aria-hidden
                   className="size-3.5 self-center text-fd-muted-foreground transition-transform duration-200 group-open:rotate-90 motion-reduce:transition-none"
@@ -86,8 +87,8 @@ export function CourseDirectory({ courses }: { courses: DirectoryCourse[] }) {
                         href={lecture.url}
                         className="flex items-baseline gap-3 border-b border-fd-border py-2 transition-colors hover:text-fd-primary"
                       >
-                        <span className="w-5 shrink-0 text-sm tabular-nums text-fd-muted-foreground">
-                          {lecture.lecture}
+                        <span className="w-8 shrink-0 text-sm tabular-nums text-fd-muted-foreground">
+                          {lectureNumber(lecture)}
                         </span>
                         <span>{lecture.label}</span>
                       </Link>

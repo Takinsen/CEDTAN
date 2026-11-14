@@ -10,6 +10,8 @@ const docs = defineDocs({
   docs: {
     schema: pageSchema.extend({
       lecture: z.number().int().positive().optional(),
+      // a lecture split into parts: each part's page sets 1, 2, ...
+      part: z.number().int().positive().optional(),
       source: z.string().optional(),
       credit: z.string().optional(),
       readingMinutes: z.number().int().positive().optional(),

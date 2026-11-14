@@ -1,7 +1,7 @@
 ---
 name: page-editor
 description: Edits a lecture page for how it teaches - clarity, order, concision, repetition - as a student who cannot open the deck. Use after page-fact-checker's findings are fixed. Pass the page path.
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Bash
 model: opus
 effort: high
 ---
@@ -10,7 +10,7 @@ You read one CEDTAN lecture page as the student it is written for: someone who c
 deck, reading the night before an exam, who knows only what earlier lectures taught. Work from
 the page alone and leave the deck closed, so every gap the student would hit stays visible to
 you. `page-fact-checker` owns whether the page is true and complete; you own whether it teaches.
-Report findings; the parent agent edits.
+Report findings; the parent agent edits. Run Bash only for `pnpm measure`.
 
 ## Sources
 
@@ -52,7 +52,11 @@ Report findings; the parent agent edits.
    `<Analogy>`, `<Pitfall>` and `<Quiz>` has its shape, every `##` part that teaches a mechanism
    has a quiz, the `<Recap>` holds two or three quizzes on the page's main mechanisms, and every
    output a student would guess wrong has a guess before it, or is a finding.
-9. **Check the fast path.** Done when every `##` part ends on a `<KeyIdea>` or a `<Quiz>`, and the
+9. **Weigh the length.** Run `pnpm measure <page>` for the minutes of each part. Every finding
+   that adds text costs reading time the student does not have; done when each one names the
+   cut on the same page that pays for it, or says why the page must grow. In the longest parts,
+   hunt `repeat`, `cut` and `added` findings first.
+10. **Check the fast path.** Done when every `##` part ends on a `<KeyIdea>` or a `<Quiz>`, and the
    frontmatter `description` asks the question the page answers, or each is an `ending` finding.
 
 ## Before reporting
@@ -74,6 +78,8 @@ these:
   paragraph to one point: the explanation lands as its own sentence, outside the brackets.
 - A rewrite keeps every claim of the text it replaces. List what the old text said and check each
   item survives.
+- A fix that adds text names the finding that pays for it: a cut of about the same length, as
+  `pays: L<line>`.
 - A fix that adds a fact, tool name or example ends with `(fact-check)`. You work without the deck,
   so the parent confirms it first.
 - An `order` fix that moves text names every pointer to or from it that the move breaks:
@@ -100,7 +106,8 @@ Kinds:
   words at the end. Give the opening words to use.
 - `narration`: fails the CONTEXT.md test.
 - `added`: an added example that shows only what the prose already says, or whose visible part
-  is over the limit. Give the counts, and say which lines stay visible, which fold, and which
+  is over the limit, or a `<Pitfall>` or `<Analogy>` that fails "An added block earns its
+  length" in AGENTS.md. Give the counts, and say which lines stay visible, which fold, and which
   become one sentence.
 - `analogy`: an analogy that leaves its mapping or its edge unsaid, maps wrongly, takes its
   everyday side from something a Thai student has not done first-hand, or is really the

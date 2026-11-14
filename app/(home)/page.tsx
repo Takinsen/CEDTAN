@@ -1,4 +1,5 @@
 import { courses, courseLectures } from '@/lib/courses';
+import { countClasses } from '@/lib/lecture-order';
 import { coverThumb } from '@/lib/cover-thumb';
 import { CourseHero } from '@/components/home/course-hero';
 import { CourseDirectory } from '@/components/home/course-directory';
@@ -28,7 +29,7 @@ export default async function HomePage() {
           nameTh: course.nameTh,
           cover: course.cover,
           thumb: course.thumb,
-          lectureCount: course.lectures.length,
+          lectureCount: countClasses(course.lectures),
         }))}
         lectureTitles={catalog.flatMap((course) => course.lectures.map((lecture) => lecture.label))}
       />

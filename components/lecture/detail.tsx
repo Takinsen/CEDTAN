@@ -5,7 +5,8 @@ export function Detail({ label, children }: { label: string; children: ReactNode
   return (
     <details data-fold className="my-4 [&[open]>summary]:mb-1">
       <summary className="cursor-pointer py-1 text-sm text-fd-muted-foreground marker:text-fd-muted-foreground hover:text-fd-foreground">
-        {label}
+        {/* tells a reader short of time the main thread does not need what is inside */}
+        <span className="font-medium">ลงลึก</span> · {label}
       </summary>
       <div className="border-l-2 border-fd-border pl-4 [&>:first-child]:mt-2 [&>:last-child]:mb-2">
         {children}
