@@ -32,7 +32,7 @@ for (const file of files) {
 }
 console.log(`${hits} line(s) to justify as a boundary marker or rewrite`);
 
-// advice, not a failure: split long or crowded paragraphs, and offer a split point for a long page
+// advice, not a failure: split long or crowded paragraphs
 let advice = 0;
 for (const file of files) {
   for (const { line, kind, detail } of proseWarnings(readFileSync(file, 'utf8'))) {

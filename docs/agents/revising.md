@@ -52,7 +52,8 @@ section 8). Splitting saves no reading time; it makes each sitting shorter and s
 
 - Part 1 keeps `lecture-<n>.mdx`, so links to it still work; part 2 is `lecture-<n>-2.mdx`.
   Both set `lecture: <n>` and `part: 1` or `part: 2`; titles read `Lecture <n>.1 — …` and
-  sidebar titles `<n>.1 · …`. `scripts/content.test.mjs` checks the numbers match the files.
+  sidebar titles `<n>.1 · …`; part 1 also sets `lectureTitle`, since the sidebar shows the
+  lecture as one entry with its parts folded under it. `scripts/content.test.mjs` checks these.
 - Each half is a whole lesson: its own opening problem, its own `description`, its own
   `<Recap>` with 2–3 quizzes. Part 2 opens with a bridge of at most three sentences that links
   to part 1.

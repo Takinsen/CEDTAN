@@ -210,6 +210,7 @@ The schema lives in `lib/source.ts`; a wrong type fails the build.
   `N · Short topic` for a lecture and a plain Thai phrase for a course index page.
 - `part` only on a lecture split into parts (`docs/agents/revising.md`, "Splitting a page"):
   `lecture-8.mdx` sets `part: 1`, `lecture-8-2.mdx` sets `part: 2`, and both keep `lecture: 8`.
+  Part 1 also sets `lectureTitle`, the short topic that names the lecture's one sidebar entry.
 - `credit` tells a stranger this is a student's summary, not the real slides.
 - `source` renders nowhere. It is a repo path for the next agent to find the PDF.
 - `description` is the question the page answers, asked concretely enough that a student

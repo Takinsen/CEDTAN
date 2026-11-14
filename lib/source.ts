@@ -1,6 +1,8 @@
 import { loader } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { docsContentRoute, docsImageRoute, docsRoute } from './shared';
+import { groupParts } from './lecture-order';
+import type { Folder, Item, Node } from 'fumadocs-core/page-tree';
 import { defineDocs } from 'fumadocs-mdx/macro';
 import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
 import * as z from 'zod';
@@ -12,6 +14,8 @@ const docs = defineDocs({
       lecture: z.number().int().positive().optional(),
       // a lecture split into parts: each part's page sets 1, 2, ...
       part: z.number().int().positive().optional(),
+      // part 1 of a split lecture: the lecture's short topic, which names its sidebar entry
+      lectureTitle: z.string().optional(),
       source: z.string().optional(),
       credit: z.string().optional(),
       readingMinutes: z.number().int().positive().optional(),
@@ -41,6 +45,35 @@ export const source = loader({
 
           const short = file.data.sidebarTitle;
           return typeof short === 'string' && short.length > 0 ? { ...node, name: short } : node;
+        },
+        // a lecture split into parts shows as one entry that opens part 1, its parts folded under it
+        folder(node) {
+          const entries = node.children.map((child) => {
+            const file = child.type === 'page' && child.$ref ? this.storage.read(child.$ref) : undefined;
+            const data = file?.format === 'page' ? file.data : undefined;
+            return {
+              node: child,
+              lecture: data?.lecture,
+              part: data?.part,
+              lectureTitle: data?.lectureTitle,
+              label: data?.sidebarTitle ?? data?.title,
+            };
+          });
+          const children = groupParts<Node>(entries).map((group): Node => {
+            if (group.kind === 'page') return group.node;
+            const parts = group.parts.map((part) => ({ ...(part.node as Item), name: part.name }));
+            const folder: Folder = {
+              $id: `${node.$id ?? ''}/${group.name}`,
+              type: 'folder',
+              name: group.name,
+              index: { ...parts[0], name: group.name },
+              collapsible: true,
+              defaultOpen: false,
+              children: parts,
+            };
+            return folder;
+          });
+          return { ...node, children };
         },
       },
     ],
