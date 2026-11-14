@@ -34,15 +34,18 @@ the earlier version.
 7. **Account for every difference**: extract every number, code span, quotation, English token
    and URL from the saved copy and from the page, and give a reason for each one that is gone.
    A reorganisation moves facts; it never drops one.
-8. **Measure the main path before and after** (CONTEXT.md, _main path_). Set `readingMinutes`
-   to the value `scripts/content.test.mjs` prints. Folding shortens it and every added
-   explanation lengthens it: in the CSY 8–13 revision the two cancelled out. Past 40 minutes,
-   offer the owner a split point rather than folding further.
+8. **Measure the main path before and after**: `pnpm measure <saved copy> <page>` prints both,
+   part by part (CONTEXT.md, _main path_). Set `readingMinutes` to the value
+   `scripts/content.test.mjs` prints. Folding shortens it and every added explanation
+   lengthens it: in the CSY 8–13 revision the two cancelled out. A part that grew names the
+   addition that grew it. Past 40 minutes, offer the owner a split point rather than folding
+   further.
 9. Run AGENTS.md step 7.3: `page-fact-checker` with the saved copy.
 
 ## Several pages at once
 
-One worker per page, each touching only its page, its figures and its own log. The parent
+One worker per page, each touching only its page, its figures and its own log. Workers measure
+with `pnpm measure`, not scripts of their own. The parent
 owns `scripts/content.test.mjs` (the `RECAP_QUIZ_PENDING` list) and runs the one build, since
 parallel builds run out of memory. A page with more than about 50 findings costs a worker
 twice the usual tokens; split its findings between two workers by part.

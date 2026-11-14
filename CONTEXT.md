@@ -54,7 +54,8 @@ itself `ข้อมูลเสริม` or `คำอธิบายเสร
 
 The text a reader meets without opening anything: the page minus every `<Detail>` body and every
 `<Quiz>` answer. Quiz questions and Detail labels are on it. `readingMinutes` measures it, so
-folding a block shortens a page and adding a Quiz answer does not.
+folding a block shortens a page and adding a Quiz answer does not. English words count, at a
+slower rate than Thai; code blocks do not.
 
 ## Inherited gap
 

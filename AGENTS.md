@@ -70,7 +70,8 @@ When revising a page that already exists, follow `docs/agents/revising.md`.
 ## Quality bar
 
 Every one of these is a blocker, not a preference. The research behind each rule, and where
-it stops, is in `docs/research/writing-rules-evidence.md`.
+it stops, is in `docs/research/writing-rules-evidence.md`; the evidence on shortening a page
+without losing understanding is in `docs/research/concise-reading-evidence.md`.
 
 - **Cover every topic, depth by weight.** Every topic on the slides appears on the page,
   minor-looking ones included, with enough left of each to carry its meaning. Depth follows
@@ -161,6 +162,10 @@ These blocks steer what the reader believes, so each has a shape. Every shape is
   reasoning, then the result, then the wrong answer a student most likely gives and why it
   fails. The component already asks the reader to answer before opening, so the question
   holds only the case.
+- **An added block earns its length.** A `<Pitfall>` refutes a belief the slides raise or an
+  exam question is likely to test, and that no nearby `<Quiz>` already tests. An `<Analogy>`
+  brings an image the prose does not already use. Delete a block that fails this rather than
+  fold it: readers rarely open a fold, and a fold still pulls attention.
 - **Predict before a surprising result.** When a student would guess an output wrong, ask for
   the guess on the line before it: `ลองทายก่อน: …`. Keep it for results that surprise; asking
   for the obvious is noise.
@@ -207,8 +212,9 @@ The schema lives in `lib/source.ts`; a wrong type fails the build.
 - `description` is the question the page answers, asked concretely enough that a student
   recognises it (`ทำไมพิมพ์ชื่อยาวเกินแค่ช่องเดียว โปรแกรมถึงถูกยึดได้`), not a list of topics.
   It renders under the title.
-- `readingMinutes` is measured, not estimated: the _main path_ at 450 Thai characters a
-  minute (`scripts/prose.mjs`). `scripts/content.test.mjs` prints the value when it is off.
+- `readingMinutes` is measured, not estimated: the _main path_'s Thai characters at 450 a
+  minute plus its English words at 238 a minute, code blocks left out (`scripts/prose.mjs`).
+  `scripts/content.test.mjs` prints the value when it is off; `pnpm measure` gives it per part.
 
 ## Components
 
@@ -221,7 +227,7 @@ Registered globally, used with no import line.
 | `<Analogy>` | Everyday comparison, mapped, with its edge. |
 | `<Example title="...">` | Concrete case with input and output. |
 | `<Example added>` | Same, for an example the slides did not have. |
-| `<Detail label="...">` | Folds away reference material: full command output, long tables. |
+| `<Detail label="...">` | Folds away depth the main thread does not need: full command output, long tables. It prints `ลงลึก` before the label. |
 | `<Pitfall>` | A wrong belief people hold here, refuted. |
 | `<Term en="Coupling" th="..." />` | First use of an English term. |
 | `<Figure number={1} caption="...">` | Wraps a diagram. |
@@ -239,7 +245,8 @@ clashes.
 
 - **Headings.** The page title is the `h1`. Use `##` for a part divider, `###` for a section,
   `####` for a subsection. Name a part divider `## ส่วนที่ N — หัวข้อ`; the progress line counts
-  those and reads `ส่วนที่ 3 จาก 6`.
+  those and reads `ส่วนที่ 3 จาก 6`. Open on the problem, not a list of the parts: the table
+  of contents and the progress line already show them.
 - **`<Compare>`** shows a red cross and a green check. Two quotes, two vendors, or two options
   of equal standing go in `<Callout>` blocks.
 - **`<StepThrough>`.** Keep its steps close to the same length; the card resizes to the step
