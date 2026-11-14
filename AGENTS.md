@@ -132,8 +132,9 @@ without losing understanding is in `docs/research/concise-reading-evidence.md`.
   the best teaching order, as a decision. Walking the deck splits topics that belong together
   and copies its _inherited gaps_ — step 9's name check catches the second.
 - **End each part on its point.** Every `##` part ends with a `<KeyIdea>` or a `<Quiz>`, so a
-  reader short of time can read those and the Recap and still keep the core. When
-  `pnpm narration` reports a _main path_ over 40 minutes, offer the owner a split point.
+  reader short of time can read those and the Recap and still keep the core.
+- **One lesson per page.** A page has no length limit, but a page that holds two lessons
+  splits at the seam between them. `page-editor` reports the seam; the owner decides.
 - **End with `<Recap>`.** Bullets a student can read the night before an exam, then two or
   three `<Quiz>` blocks inside it that make the reader recall the page's main mechanisms:
   recalling an answer fixes it in memory, rereading a bullet barely does. The table of
@@ -186,8 +187,8 @@ the `credit` field already say where the material came from.
 
 When a page is done, run `pnpm narration content/<course>/lecture-<n>.mdx`. It lists lines
 holding words that usually end a narrating sentence; each hit is a boundary marker, named by
-kind, or a rewrite. It then warns on paragraphs over 300 Thai characters, paragraphs with more
-than two glosses, and a main path over 40 minutes: split the paragraph, or say why it stays.
+kind, or a rewrite. It then warns on paragraphs over 300 Thai characters and paragraphs with
+more than two glosses: split the paragraph, or say why it stays.
 
 ## Frontmatter
 

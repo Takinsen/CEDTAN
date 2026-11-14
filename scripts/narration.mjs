@@ -40,4 +40,4 @@ for (const file of files) {
     console.log(`${file}:${line} [${kind}] ${detail}`);
   }
 }
-console.log(`${advice} prose warning(s): split a long or crowded paragraph; for a long page, offer the owner a split point`);
+console.log(`${advice} prose warning(s): split a long or crowded paragraph`);
