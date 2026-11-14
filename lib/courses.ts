@@ -1,4 +1,5 @@
 import { source } from '@/lib/source';
+import { compareLectures, countClasses } from '@/lib/lecture-order';
 
 export type Course = {
   slug: string;
@@ -13,6 +14,7 @@ export type CourseLecture = {
   url: string;
   label: string;
   lecture?: number;
+  part?: number;
 };
 
 export const courses: Course[] = [
@@ -81,10 +83,11 @@ export function courseLectures(slug: string): CourseLecture[] {
       url: page.url,
       label: page.data.sidebarTitle ?? page.data.title,
       lecture: page.data.lecture,
+      part: page.data.part,
     }))
-    .sort((a, b) => (a.lecture ?? 0) - (b.lecture ?? 0));
+    .sort(compareLectures);
 }
 
 export function countLectures(slug: string): number {
-  return courseLectures(slug).length;
+  return countClasses(courseLectures(slug));
 }

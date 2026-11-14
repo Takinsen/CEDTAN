@@ -16,7 +16,7 @@ const pages = process.env.PAGES
   : readdirSync('content', { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .flatMap((entry) => readdirSync(`content/${entry.name}`)
-        .filter((file) => /^lecture-\d+\.mdx$/.test(file))
+        .filter((file) => /^lecture-\d+(-\d+)?\.mdx$/.test(file))
         .map((file) => `${entry.name}/${file.replace(/\.mdx$/, '')}`));
 
 let server;

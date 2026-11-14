@@ -11,7 +11,7 @@ const courses = readdirSync('content', { withFileTypes: true })
 
 const lectures = courses.flatMap((course) =>
   readdirSync(`content/${course}`)
-    .filter((file) => /^lecture-\d+\.mdx$/.test(file))
+    .filter((file) => /^lecture-\d+(-\d+)?\.mdx$/.test(file))
     .map((file) => ({
       course,
       slug: file.replace(/\.mdx$/, ''),

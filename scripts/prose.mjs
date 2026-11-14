@@ -28,8 +28,40 @@ export function thaiChars(text) {
   return (text.match(/[฀-๿]/g) ?? []).length;
 }
 
+// English is read slower than Thai here; Brysbaert 2019 puts silent reading at 238 words a minute
+export const ENGLISH_WORDS_PER_MINUTE = 238;
+
+// the attributes a block prints on the page; the rest (type, added, number) only steer it
+const VISIBLE_ATTRS = /\b(?:title|caption|label|question|en|th)="([^"]*)"/g;
+
+// English words a reader reads: code blocks, imports, link targets, tag and attribute names left out
+export function englishWords(text) {
+  const visible = text
+    .replace(/^\s*```[\s\S]*?^\s*```/gm, ' ')
+    .replace(/^(import|export) .*$/gm, ' ')
+    .replace(/\]\([^)]*\)/g, ']')
+    .replace(/<\/?[A-Za-z][\w.]*((?:[^<>"]|"[^"]*")*?)\/?>/g, (_, attrs) => [...attrs.matchAll(VISIBLE_ATTRS)].map((a) => a[1]).join(' '));
+  return (visible.match(/[A-Za-z][A-Za-z0-9]*/g) ?? []).length;
+}
+
+function minutesOf(main) {
+  return thaiChars(main) / THAI_CHARS_PER_MINUTE + englishWords(main) / ENGLISH_WORDS_PER_MINUTE;
+}
+
 export function readingMinutes(mdx) {
-  return Math.round(thaiChars(mainPathText(mdx)) / THAI_CHARS_PER_MINUTE);
+  return Math.round(minutesOf(mainPathText(mdx)));
+}
+
+// main-path minutes for the opening and each `##` part, to one decimal, for pnpm measure
+export function partMinutes(mdx) {
+  const parts = [{ part: '(opening)', lines: [] }];
+  let inCode = false;
+  for (const line of mainPathText(mdx).split('\n')) {
+    if (line.trim().startsWith('```')) inCode = !inCode;
+    if (!inCode && line.startsWith('## ')) parts.push({ part: line.slice(3).trim(), lines: [] });
+    parts.at(-1).lines.push(line);
+  }
+  return parts.map(({ part, lines }) => ({ part, minutes: Math.round(minutesOf(lines.join('\n')) * 10) / 10 }));
 }
 
 // Thai words made up for, or spelled out from, terms Thai CS students say in English
