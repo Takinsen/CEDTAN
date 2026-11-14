@@ -117,3 +117,23 @@ test('no page or figure uses a coined Thai name for an English term', () => {
     coinedTerms(readFileSync(path, 'utf8')).map(({ found, use }) => `${path}: ${found} -> ${use}`));
   assert.deepEqual(found, [], `write the English term instead:\n${found.join('\n')}`);
 });
+
+// the table of contents and the progress line already list the parts (owner's decision, 2026-11-14)
+test('no page opens with a section that lists its parts', () => {
+  const found = lectures.filter((lecture) => /^## คาบนี้จะพาไปไหน/m.test(lecture.text)).map((lecture) => lecture.path);
+  assert.deepEqual(found, []);
+});
+
+// lecture-8.mdx is part 1 and lecture-8-2.mdx part 2: same lecture number, part numbers that match the files
+test('a lecture split into parts numbers each part to match its file', () => {
+  const wrong = [];
+  for (const lecture of lectures) {
+    const [, n, k] = lecture.slug.match(/^lecture-(\d+)(?:-(\d+))?$/);
+    const field = (name) => Number(lecture.text.match(new RegExp(`^${name}: (\\d+)`, 'm'))?.[1]);
+    const split = k !== undefined || lectures.some((other) => other.course === lecture.course && other.slug === `lecture-${n}-2`);
+    if (field('lecture') !== Number(n)) wrong.push(`${lecture.path}: lecture ${field('lecture')}`);
+    if (split && field('part') !== Number(k ?? 1)) wrong.push(`${lecture.path}: part ${field('part')}, file says ${k ?? 1}`);
+    if (!split && /^part:/m.test(lecture.text)) wrong.push(`${lecture.path}: part set on an unsplit lecture`);
+  }
+  assert.deepEqual(wrong, []);
+});

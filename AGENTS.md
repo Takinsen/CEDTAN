@@ -207,6 +207,8 @@ The schema lives in `lib/source.ts`; a wrong type fails the build.
 
 - `sidebarTitle` on every page. Full titles wrap over three lines in the sidebar. Use
   `N · Short topic` for a lecture and a plain Thai phrase for a course index page.
+- `part` only on a lecture split into parts (`docs/agents/revising.md`, "Splitting a page"):
+  `lecture-8.mdx` sets `part: 1`, `lecture-8-2.mdx` sets `part: 2`, and both keep `lecture: 8`.
 - `credit` tells a stranger this is a student's summary, not the real slides.
 - `source` renders nowhere. It is a repo path for the next agent to find the PDF.
 - `description` is the question the page answers, asked concretely enough that a student
@@ -246,7 +248,8 @@ clashes.
 - **Headings.** The page title is the `h1`. Use `##` for a part divider, `###` for a section,
   `####` for a subsection. Name a part divider `## ส่วนที่ N — หัวข้อ`; the progress line counts
   those and reads `ส่วนที่ 3 จาก 6`. Open on the problem, not a list of the parts: the table
-  of contents and the progress line already show them.
+  of contents and the progress line already show them, and `scripts/content.test.mjs` fails a
+  `คาบนี้จะพาไปไหน` section.
 - **`<Compare>`** shows a red cross and a green check. Two quotes, two vendors, or two options
   of equal standing go in `<Callout>` blocks.
 - **`<StepThrough>`.** Keep its steps close to the same length; the card resizes to the step

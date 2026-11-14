@@ -45,7 +45,8 @@ correctly the subject.
 
 Explanation, examples, or figures written for the page because the deck has none. An added
 case, story, number or example sits in `<Example added>`, whose badge marks it, or a `<Callout>`
-whose title names what the deck left out. An explanation of deck material is the page's own
+whose title names what the deck left out. Folded, it sits in a `<Detail>` whose label starts
+`เสริม — `. An explanation of deck material is the page's own
 job and stays unmarked, like material carried over from the deck, which the source callout and
 the `credit` field already cover. `scripts/content.test.mjs` fails a prose line that labels
 itself `ข้อมูลเสริม` or `คำอธิบายเสริม`: such a sentence speaks to a reviewer, not the student.
