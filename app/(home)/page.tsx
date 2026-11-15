@@ -37,7 +37,7 @@ export default async function HomePage() {
       <div className="min-h-[calc(100svh-3.5rem)]">
         <CourseDirectory courses={catalog} />
 
-        <footer className="mx-auto w-full max-w-5xl px-4 pb-16 pt-12">
+        <footer className="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-12">
           <div className="max-w-[72ch] rounded-xl border border-fd-border p-5 text-sm">
             <p className="text-pretty">
               <strong className="font-semibold">นี่เป็นเว็บสรุปที่นิสิตทำเอง</strong>{' '}
