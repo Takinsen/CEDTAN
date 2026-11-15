@@ -6,7 +6,7 @@ lecture: 8
 part: 2
 source: "data/2110413-CSY/Lecture-8.pdf"
 credit: "เรียบเรียงจากสไลด์ Secure Bit: Buffer Overflow Protection ของ Krerk Piromsopa, Ph.D."
-readingMinutes: 30
+readingMinutes: 31
 ---
 
 import { SecureBitFlow } from '@/components/figures/2110413-csy/secure-bit-flow';
@@ -116,12 +116,14 @@ FAR_ENTRY:
 ### address ที่ไม่ถูกแตะคือเงื่อนไขที่พอ
 
 <Why>
-ทุกวิธีที่ผ่านมาถูกออกแบบจากการโจมตีที่รู้จัก แล้วก็พลาดให้กับการโจมตีแบบถัดไป ถ้าจะหลุดจากวงจรนี้ ต้องหาสิ่งที่ **การโจมตีทุกแบบ** ต้องทำ แล้วพิสูจน์ว่ากันสิ่งนั้นได้ก็พอ
+ถ้าป้องกัน return address ได้ แต่ผู้โจมตียังล้นทับ function pointer แล้วเปลี่ยนทางเดินของโปรแกรมได้ เราจะรับรองว่ากันการโจมตี control data ได้ไหม? เราต้องหาสิ่งที่การโจมตีในขอบเขตนี้ต้องทำร่วมกัน แล้วพิสูจน์ว่ากันสิ่งนั้นได้ก็พอ
 </Why>
+
+ทั้ง return address และ function pointer เก็บ address ที่โปรแกรมอาจกระโดดไปหา ถ้ารักษา address ทุกตัวที่ใช้เป็นเป้าหมายไว้ได้ การโจมตีก็เปลี่ยนเป้าหมายเหล่านั้นไม่ได้ ส่วนนี้จะพิสูจน์เงื่อนไขนั้นตามนิยามของทฤษฎี
 
 ทฤษฎีเริ่มจากสองนิยามใน [Lecture 8.1](/2110413-csy/lecture-8) Definition 1 บอกว่า buffer overflow คือข้อมูลที่เกินขนาด buffer ล้นเข้าไปใน buffer อื่น Definition 2 บอกว่าการโจมตี control data คือการล้นจน address ถูกเปลี่ยนให้ชี้ไปหาโค้ดอันตรายหรือโค้ดที่ไม่ควรถูกรัน
 
-ข้อสังเกตที่ใช้คู่กันคือ ของที่ล้นเข้ามามาจาก domain อื่น คือจากนอก process เสมอ ทฤษฎีนิยามเพิ่มอีกข้อ
+ทฤษฎีใช้ข้อสังเกตของแบบจำลองนี้ว่า buffer ที่ผู้โจมตีใช้ล้นมาจาก domain อื่น คือจากนอก process แล้วนิยามเพิ่มอีกข้อ
 
 > **Definition 3:** Maintaining the integrity of an address means that the address has not been modified by overflowing with a buffer passed from another domain.
 >
@@ -185,12 +187,12 @@ Postulate 1 บอกว่าผู้โจมตีไม่ได้เข�
 2. ถ้าการเขียนทับแบบนั้นถูกจับได้และถูกกันไว้ ระบบก็เข้ากอง attack ไม่ได้ ตาม Definition 3
 3. ระบบเริ่มจาก normal operation และเข้ากอง attack ไม่ได้ จึงเป็น secure system ตาม Definition 5
 
-<Quiz question="ระบบหนึ่งรักษา return address ได้สมบูรณ์ ไม่มีทางถูกเขียนทับ แต่ไม่ได้ดูแล function pointer เลย Corollary 1.1 รับรองว่าระบบนี้กันการโจมตี control data ได้ไหม">
+<Quiz question="ระบบหนึ่งรักษา return address และ function pointer ในตัวแปรของโปรแกรมได้ แต่ไม่ได้ป้องกัน jump slot ใน GOT Corollary 1.1 รับรองว่าระบบนี้กันการโจมตี control data ได้ไหม">
 Theorem 1 บอกว่าการโจมตีต้องเปลี่ยน **address ตัวหนึ่ง** ตัวไหนก็ได้ที่โปรแกรมจะกระโดดตาม Corollary 1.1 จึงต้องการ integrity ของทุก address ที่ถูกใช้เป็นเป้าหมายของการกระโดด
 
-คำตอบคือ **ไม่รับรอง** การโจมตีทาง function pointer หรือทาง jump slot ใน GOT ยังเปลี่ยน address ได้ เงื่อนไขของ Corollary จึงไม่ครบ
+คำตอบคือ **ไม่รับรอง** address ใน jump slot ของ GOT ยังอาจถูกเปลี่ยนได้ เงื่อนไขของ Corollary จึงไม่ครบ
 
-คำตอบที่ผิดบ่อยคือ "รับรอง เพราะ stack smashing ถูกกันแล้ว" ซึ่งเอาการโจมตีแบบที่ดังที่สุดมาเป็นทั้งหมด ช่องนี้เองที่ทำให้ split stack และวิธีในกลุ่ม copy of address ไม่พอ
+คำตอบที่ผิดบ่อยคือ "รับรอง เพราะป้องกัน return address และ function pointer ในตัวแปรแล้ว" ซึ่งมองข้าม jump slot ที่โปรแกรมใช้เรียกฟังก์ชันได้เช่นกัน ช่องที่ไม่ได้ป้องกันจึงยังเปิดทางให้เปลี่ยนเป้าหมายการกระโดด
 </Quiz>
 
 ---
@@ -418,7 +420,7 @@ Message: jmp_ed: sbit of target is not secure
 
 ### ผลการวิเคราะห์ และตัวเลขที่ต้องระวัง
 
-- **Space และ memory interface** — แก้น้อยมาก ในฮาร์ดแวร์จริงคือชิปหน่วยความจำเพิ่มหนึ่งตัวต่อแผง ใช้ที่น้อยที่สุดเมื่อเทียบกับ segmentation และอ้างว่า Moore's law ชดเชยที่ที่เพิ่มได้ใน 3 วัน
+- **Space และ memory interface** — แก้น้อยมาก ในฮาร์ดแวร์จริงคือชิปหน่วยความจำเพิ่มหนึ่งตัวต่อแผง ใช้ที่น้อยที่สุดเมื่อเทียบกับ segmentation งานอ้างว่า Moore's law ชดเชยที่เพิ่มได้ใน 3 วัน แต่การคำนวณด้านล่างไม่ตรงกับตัวเลขนี้
 - **Backward compatibility** — ใช้กับ binary ของผู้ใช้รุ่นเก่าได้ 100%
 - **Deployment** — แก้แค่ตัว CPU
 - **Performance** — ไม่ช้าลงอย่างมีนัยสำคัญ
