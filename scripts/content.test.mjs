@@ -124,6 +124,24 @@ test('no page opens with a section that lists its parts', () => {
   assert.deepEqual(found, []);
 });
 
+// the progress line reads "ส่วนที่ 3 จาก 6" from these headings, so every h2 must be one, numbered from 1
+test('every h2 on a lecture page is a part divider, numbered from 1 in order', () => {
+  const wrong = [];
+  for (const lecture of lectures) {
+    let inCode = false;
+    const parts = [];
+    for (const line of lecture.text.split('\n')) {
+      if (/^\s*```/.test(line)) inCode = !inCode;
+      else if (!inCode && /^## /.test(line)) parts.push(line);
+    }
+    parts.forEach((line, i) => {
+      if (!line.startsWith(`## ส่วนที่ ${i + 1} — `)) wrong.push(`${lecture.path}: "${line}" should open "## ส่วนที่ ${i + 1} — "`);
+    });
+    if (parts.length === 0) wrong.push(`${lecture.path}: no "## ส่วนที่ 1 — " part divider`);
+  }
+  assert.deepEqual(wrong, []);
+});
+
 // lecture-8.mdx is part 1 and lecture-8-2.mdx part 2: same lecture number, part numbers that match the files
 test('a lecture split into parts numbers each part to match its file', () => {
   const wrong = [];
