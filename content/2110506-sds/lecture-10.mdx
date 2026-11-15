@@ -1,0 +1,740 @@
+---
+title: "Lecture 10 — Software-Defined Network (SDN)"
+description: "ถ้าเครือข่ายหนึ่งมี switch หลายร้อยตัว จะเปลี่ยนวิธีที่ทุกตัวส่ง packet ได้อย่างไร โดยไม่ต้องเข้าไปตั้งทีละตัว"
+sidebarTitle: "10 · SDN"
+lecture: 10
+source: "data/2110506-SDS/Lecture-10.pdf"
+credit: "เรียบเรียงจากสไลด์ Lecture 10 ของ รศ.ดร.กุลธิดา โรจน์วิบูลย์ชัย และสไลด์ use case ของ Kiattikun Kawila, JongWon Kim และ Kultida Rojviboonchai"
+readingMinutes: 44
+---
+
+import { OpenflowSwitch } from '@/components/figures/2110506-sds/openflow-switch';
+import { SdnPlanes } from '@/components/figures/2110506-sds/sdn-planes';
+import { MultipathSteering } from '@/components/figures/2110506-sds/multipath-steering';
+
+<KeyIdea>
+ใน SDN switch ไม่ได้คิดเอง มันเปิด **flow table** หาแถวที่ตรงกับ packet แล้วทำตาม action ของแถวนั้น ส่วนการตัดสินใจว่าตารางควรมีแถวอะไร ย้ายไปอยู่ที่ **controller** ซึ่งเขียนแถวลงทุก switch ผ่านโปรโตคอล **OpenFlow** เปลี่ยนพฤติกรรมของทั้งเครือข่ายจึงเท่ากับเปลี่ยนโปรแกรมที่เดียว
+</KeyIdea>
+
+<Callout type="info" title="ข้อมูลในหน้านี้มาจากไหน">
+เนื้อหามาจากสไลด์ Lecture 10 ทั้ง 20 หน้า และสไลด์ use case อีก 10 หน้าในไฟล์ `Lecture-10-2.pdf` ซึ่งสรุปงานวิจัยที่ตีพิมพ์ใน IEEE Access ปี 2022 ส่วนที่ 7 ของหน้านี้คือ use case นั้น ส่วนคำอธิบาย รูป และกล่องที่ติดป้าย "เสริม" เขียนขึ้นใหม่
+</Callout>
+
+<Why>
+data center ของ cloud รายใหญ่มี switch หลายร้อยตัว ถ้าวันหนึ่งต้องปิด port 22 ทั้งเครือข่าย หรือย้าย traffic หนีลิงก์ที่แน่น การเข้าไปตั้งค่าทีละตัวทั้งช้าและพลาดง่าย SDN ทำให้งานนี้เป็นการแก้โปรแกรมที่ controller ตัวเดียว
+
+เรื่องนี้ใกล้ตัว เพราะ AWS, Google Cloud และ Microsoft กำลังสร้าง data center ในไทย
+</Why>
+
+<Detail label="cloud รายใหญ่ประกาศอะไรไว้บ้าง">
+
+AWS ประกาศเมื่อพฤษภาคม 2024 ว่าจะเปิด region ในไทยภายในต้นปี 2025 และลงทุน 190,000 ล้านบาท (5 พันล้านดอลลาร์) ภายในปี 2037 Google Cloud ประกาศ region ไทยไว้ตั้งแต่ปี 2022 และ Microsoft ประกาศ data center แห่งแรกในไทยเมื่อพฤษภาคม 2024
+
+</Detail>
+
+---
+
+## ส่วนที่ 1 — SDN ย้ายการตัดสินใจออกจาก switch
+
+### เครือข่ายแบบเดิมกับแบบ SDN ต่างกันตรงไหน
+
+ในเครือข่ายแบบเดิม อุปกรณ์ทุกตัวคำนวณเส้นทางเองแล้วคุยกับเพื่อนบ้าน ส่วนใน SDN control ย้ายไปรวมที่ controller ตัวเดียวซึ่งต่อสายควบคุมไปหาอุปกรณ์ทุกตัว อุปกรณ์เหลือแค่ส่ง packet ตามที่ถูกสั่ง เหตุผลที่แยกแบบนี้อยู่ใน [Lecture 1](/2110506-sds/lecture-1#แยก-control-plane-ออกจาก-data-plane)
+
+ในเครือข่ายแบบเดิม firewall ต้องเป็น <Term en="middlebox" th="กล่องที่แทรกกลางทาง" /> อีกกล่องที่ต่อพ่วงเข้าไป แต่ใน SDN middlebox หลายชนิดไม่ต้องเป็นกล่องแยกอีกต่อไป firewall ที่บล็อก SSH กลายเป็นแค่หนึ่งแถวในตารางของ switch ที่สั่งว่า "packet ไป port 22 ให้ทิ้ง" ส่วนที่ 2 จะเห็นแถวนี้จริง
+
+### สามชิ้นที่ทำงานด้วยกัน
+
+SDN แบบง่ายที่สุดมีสามชิ้น แต่ละชิ้นมีงานเดียว
+
+- <Term en="Controller" th="โปรแกรมที่ตัดสินใจแทน switch" /> ตัดสินว่า switch แต่ละตัวควรทำอะไรกับ packet แบบไหน
+- <Term en="OpenFlow" th="โปรโตคอลที่ controller ใช้สั่ง switch" /> คือภาษาที่ controller ใช้เพิ่ม ลบ หรือแก้แถวในตารางของ switch และขอดูตัวนับ
+- **OpenFlow switch** มีส่วนที่รับคำสั่งจาก controller เรียกว่า OpenFlow client คอยเขียนลง <Term en="flow table" th="ตารางที่บอกว่า packet แบบไหนให้ทำอะไร" /> แล้วส่ง packet ออกทาง port ตามตารางนั้น
+
+<Figure number={1} caption="controller เขียนแถวลง flow table ผ่าน OpenFlow ส่วน switch แค่หาแถวที่ตรงกับ packet แล้วทำตาม ตัวเลขในช่อง stats มาจากการลองส่ง packet จริงในส่วนที่ 2 ช่อง priority, rule และ stats อธิบายในส่วนที่ 2">
+  <OpenflowSwitch />
+</Figure>
+
+<KeyIdea>
+switch ใน SDN ไม่ได้คำนวณเส้นทางเอง มันหาแถวที่ตรงกับ packet ใน flow table แล้วทำตาม ใครคุม controller ก็คุมว่าทั้งเครือข่ายทำอะไร
+</KeyIdea>
+
+---
+
+## ส่วนที่ 2 — Flow table: switch ตัดสินใจจากตารางอย่างไร
+
+<Why>
+switch ต้องตัดสินใจกับ packet นับล้านตัวต่อวินาที การตัดสินใจกับแต่ละ packet จึงต้องเป็นแค่การเปิดตารางที่เร็วมาก ส่วนการคิดว่าตารางควรมีอะไรเกิดนาน ๆ ครั้งที่ controller แต่ละแถวจึงต้องตอบให้ครบสามเรื่อง คือ packet แบบไหน ทำอะไรกับมัน และนับไว้ว่าเกิดขึ้นกี่ครั้ง เพื่อให้ controller ดูทีหลังได้
+</Why>
+
+### หนึ่งแถวมีสามช่อง
+
+แถวหนึ่งใน flow table เรียกว่า <Term en="flow entry" th="หนึ่งแถวในตาราง" /> มีสามช่องตามสามเรื่องข้างบน คือ **rule**, **action** และ **stats** ส่วนคำว่า flow rule ที่ใช้กันทั่วไปหมายถึงทั้งแถว ไม่ใช่แค่ช่อง rule
+
+#### Rule: ดูช่องไหนของ packet
+
+rule บอกว่า packet แบบไหนตรงกับแถวนี้ OpenFlow ดูได้ 12 ช่อง ไล่จาก port ที่ packet เข้ามา ขึ้นไปจนถึงเลข port ของ TCP หรือ UDP
+
+<Term en="VLAN" th="การแบ่งเครือข่ายเดียวออกเป็นหลายวง" /> ซึ่งเจอในตารางนี้ คือการแบ่ง switch ชุดเดียวกันให้ทำงานเหมือนเครือข่ายแยกหลายวง packet แต่ละตัวพก VLAN ID ไว้ใน header
+
+| ชั้น | ช่องที่ดูได้ | หมายถึง |
+| --- | --- | --- |
+| port | Switch Port | packet เข้ามาทาง port ไหนของ switch |
+| Ethernet | VLAN ID, VLAN pcp | VLAN ID ของ packet และระดับความสำคัญใน VLAN นั้น |
+| Ethernet | MAC src, MAC dst | ที่อยู่ MAC ต้นทางและปลายทาง |
+| Ethernet | Eth type | ข้างในเป็นอะไร เช่น IPv4 หรือ ARP |
+| IP | IP src, IP dst | ที่อยู่ IP ต้นทางและปลายทาง |
+| IP | IP ToS, IP Prot | ระดับบริการที่ขอ และข้างในเป็น TCP หรือ UDP |
+| TCP/UDP | L4 sport, L4 dport | เลข port ต้นทางและปลายทาง เช่น 22 คือ SSH |
+
+ไม่จำเป็นต้องดูครบทุกช่อง แถวหนึ่งเลือกเองว่าจะสนใจช่องไหน ช่องที่ไม่สนใจเขียนเป็น `*` แปลว่าค่าอะไรก็ได้ การเลือกนี้เรียกว่า <Term en="mask" th="การบอกว่าดูช่องไหน ไม่ดูช่องไหน" />
+
+#### Action: เจอแล้วทำอะไร
+
+action ที่ OpenFlow กำหนดไว้มีห้าแบบ
+
+1. **ส่งออกไปศูนย์ port หรือมากกว่า** ส่งออก port เดียวก็คือส่งต่อปกติ หลาย port คือกระจาย และศูนย์ port ก็คือทิ้ง (drop)
+2. **ห่อ packet ส่งให้ controller** ใช้เมื่อ switch ไม่รู้จะทำอะไร แล้วต้องถาม
+3. **ส่งเข้าทางประมวลผลปกติของ switch** ให้ switch ทำตัวเป็น switch ธรรมดาเหมือนไม่มี OpenFlow
+4. **แก้ค่าใน header** เช่น เปลี่ยน VLAN หรือที่อยู่ปลายทางก่อนส่งต่อ
+5. **action ที่ผู้ผลิตเพิ่มเอง** มาตรฐานเปิดช่องให้ใส่ส่วนขยายได้
+
+#### Stats: นับว่าเกิดอะไรขึ้น
+
+ทุกแถวมีตัวนับจำนวน packet และจำนวน byte ที่ตรงกับแถวนั้น พร้อมเวลาที่แถวนี้อยู่มา controller จึงรู้ว่าแต่ละแถวมี traffic ผ่านไปเท่าไหร่
+
+นอกจากตัวนับของแต่ละแถว OpenFlow switch ยังนับ packet และ byte ที่เข้าและออกแต่ละ port ด้วย ตัวนับของ port นี้เองที่บอกว่าลิงก์ไหนแน่น เพราะมันนับทุก packet ที่วิ่งผ่านสายเส้นนั้น ไม่ว่าจะตรงแถวไหน ส่วนที่ 7 ใช้ตัวนับของ port เลือกเส้นทาง
+
+#### อีกสองอย่างที่ทุกแถวมี: priority และ timeout
+
+<Term en="Priority" th="ลำดับความสำคัญของแถว" /> ใช้ตัดสินเมื่อ packet หนึ่งตรงกับหลายแถวพร้อมกัน แถวที่ priority สูงกว่าชนะ
+
+<Term en="Timeout" th="เวลาหมดอายุของแถว" /> มีสองแบบ **idle timeout** ลบแถวทิ้งเมื่อไม่มี packet มาตรงเลยครบเวลาที่ตั้ง ส่วน **hard timeout** ลบแถวทิ้งเมื่อครบเวลา ไม่ว่าจะยังมี packet วิ่งอยู่หรือไม่ ทั้งสองแบบทำให้ตารางไม่บวมไปด้วยแถวที่ไม่ได้ใช้แล้ว
+
+### ตารางเดียวทำงานแทนสามกล่อง
+
+ตัวอย่างนี้มีสามแถว แต่ละแถวทำงานของอุปกรณ์คนละชนิด
+
+| บริการ | rule (ช่องที่ไม่ได้เขียนคือ `*`) | action |
+| --- | --- | --- |
+| IP routing | IP dst = `5.6.7.8` | ส่งออก port 6 |
+| VLAN multicast | MAC dst = `00:1f..` และ VLAN ID = `vlan1` | ส่งออก port 6, 7 และ 9 |
+| Firewall | TCP dport = `22` | drop |
+
+แถวแรกทำงานแบบ router แถวที่สองกระจาย packet ให้หลายเครื่องในวง VLAN เดียวกัน และแถวที่สามคือ firewall ที่บล็อก SSH ในเครือข่ายแบบเดิม สามงานนี้มักเป็นสามกล่อง แต่ใน SDN มันคือสามแถวในตารางเดียว
+
+<Example added title="ลองส่ง packet เข้าตารางนี้บน Open vSwitch">
+
+ใส่ตารางข้างบนลง <Term en="Open vSwitch" th="switch ที่เป็นซอฟต์แวร์ พูด OpenFlow ได้" /> 3.7.1 โดยให้ firewall priority สูงกว่าเพราะตารางไม่ได้กำหนดไว้ และเติมแถว priority 0 ที่ส่ง packet ที่เหลือให้ controller
+
+```text
+$ ovs-ofctl dump-flows s1 --no-stats
+ priority=200,tcp,tp_dst=22 actions=drop
+ priority=100,dl_vlan=1,dl_dst=00:1f:00:00:00:01 actions=output:6,output:7,output:9
+ priority=100,ip,nw_dst=5.6.7.8 actions=output:6
+ priority=0 actions=CONTROLLER:65535
+```
+
+ลองทายก่อน: packet TCP ไป `5.6.7.8` port 22 ตรงทั้งแถว routing และแถว firewall มันจะออก port 6 หรือถูกทิ้ง
+
+```text
+$ ovs-appctl ofproto/trace s1 "in_port=1,tcp,nw_src=10.0.0.1,nw_dst=5.6.7.8,tp_dst=80"
+ 0. ip,nw_dst=5.6.7.8, priority 100
+    output:6
+$ ovs-appctl ofproto/trace s1 "in_port=1,tcp,nw_src=10.0.0.1,nw_dst=5.6.7.8,tp_dst=22"
+ 0. tcp,tp_dst=22, priority 200
+    drop
+$ ovs-appctl ofproto/trace s1 "in_port=1,tcp,nw_src=10.0.0.1,nw_dst=9.9.9.9,tp_dst=80"
+ 0. priority 0
+    CONTROLLER:65535
+```
+
+packet ไป port 22 ถูกทิ้ง เพราะแถว firewall มี priority 200 สูงกว่าแถว routing ส่วน packet ไป `9.9.9.9` ไม่ตรงแถวไหนจึงตกลงแถวสุดท้าย ซึ่งส่ง packet ขึ้นไปให้ controller โดยตัดไว้ไม่เกิน 65535 byte เลขนี้ไม่ใช่เลข port
+
+<Detail label="ดูตัวนับหลังส่ง packet จริง และ timeout">
+
+Open vSwitch ที่เพิ่งสร้างขึ้นมามีแถวเดียวคือ `priority=0 actions=NORMAL` ซึ่งเป็น action ข้อ 3 ให้ทุก packet ทำตามปกติ ตัวอย่างนี้ลบแถวนั้นก่อนติดตั้งตาราง
+
+ตารางในสไลด์เขียน MAC ปลายทางไว้แค่ `00:1f..` ที่นี่จึงเติมให้ครบเป็น `00:1f:00:00:00:01`
+
+ส่ง packet จริงเข้า port 1 สี่ตัว ไป `5.6.7.8` port 80 สามตัว และ port 22 หนึ่งตัว แล้วอ่านตัวนับ แถว routing นับได้ 3 packet 354 byte ส่วนแถว firewall นับได้ 1 packet
+
+```text
+$ ovs-ofctl dump-flows s1
+NXST_FLOW reply (xid=0x4):
+ cookie=0x0, duration=2.015s, table=0, n_packets=1, n_bytes=118, idle_age=2, priority=200,tcp,tp_dst=22 actions=drop
+ cookie=0x0, duration=2.015s, table=0, n_packets=0, n_bytes=0, idle_age=2, priority=100,dl_vlan=1,dl_dst=00:1f:00:00:00:01 actions=output:6,output:7,output:9
+ cookie=0x0, duration=2.015s, table=0, n_packets=3, n_bytes=354, idle_age=2, priority=100,ip,nw_dst=5.6.7.8 actions=output:6
+ cookie=0x0, duration=2.015s, table=0, n_packets=0, n_bytes=0, idle_age=2, priority=0 actions=CONTROLLER:65535
+```
+
+ส่ง packet สี่ตัวเดิมซ้ำบน switch ใหม่ แล้วอ่านตัวนับของ port แทน port 1 รับเข้ามาครบ 4 packet 472 byte รวมตัวที่ถูกทิ้งด้วย ส่วน port 6 ส่งออกไป 3 packet 354 byte
+
+```text
+$ ovs-ofctl dump-ports s1 1
+OFPST_PORT reply (xid=0x2): 1 ports
+  port  1: rx pkts=4, bytes=472, drop=?, errs=?, frame=?, over=?, crc=?
+           tx pkts=0, bytes=0, drop=?, errs=?, coll=?
+$ ovs-ofctl dump-ports s1 6
+OFPST_PORT reply (xid=0x2): 1 ports
+  port  6: rx pkts=0, bytes=0, drop=?, errs=?, frame=?, over=?, crc=?
+           tx pkts=3, bytes=354, drop=?, errs=?, coll=?
+```
+
+เพิ่มแถว `idle_timeout=2` ไป `7.7.7.7` กับแถว `hard_timeout=60` ไป `8.8.8.8` แล้วรอ 4 วินาทีโดยไม่ส่งอะไรเลย แถว idle หายไป แถว hard ยังอยู่
+
+```text
+$ ovs-ofctl dump-flows s1 "ip" --no-stats
+ priority=200,tcp,tp_dst=22 actions=drop
+ priority=100,ip,nw_dst=5.6.7.8 actions=output:6
+ idle_timeout=2, priority=100,ip,nw_dst=7.7.7.7 actions=output:2
+ hard_timeout=60, priority=100,ip,nw_dst=8.8.8.8 actions=output:3
+$ sleep 4; ovs-ofctl dump-flows s1 "ip" --no-stats
+ priority=200,tcp,tp_dst=22 actions=drop
+ priority=100,ip,nw_dst=5.6.7.8 actions=output:6
+ hard_timeout=60, priority=100,ip,nw_dst=8.8.8.8 actions=output:3
+```
+
+</Detail>
+
+</Example>
+
+<Detail label="เสริม — เขียนแค่ dport 22 โดยไม่บอกว่าเป็น TCP">
+
+แถว firewall ในตารางข้างบนกำหนดแค่ช่อง TCP dport = 22 ส่วน Eth type และ IP Prot เป็น `*` ถ้าพิมพ์ตามนั้นตรง ๆ ลงใน Open vSwitch จะได้ผลที่ไม่คาดคิด
+
+```text
+$ ovs-ofctl add-flow s1 "priority=200,tp_dst=22,actions=drop"
+2026-11-15T15:53:43Z|00001|ofp_match|INFO|normalization changed ofp_match, details:
+2026-11-15T15:53:43Z|00002|ofp_match|INFO| pre: tp_dst=22
+2026-11-15T15:53:43Z|00003|ofp_match|INFO|post: 
+$ ovs-ofctl dump-flows s1 --no-stats
+ priority=200 actions=drop
+```
+
+Open vSwitch บอกเองว่ามันแก้ match ให้ (`normalization changed ofp_match`) จาก `tp_dst=22` เหลือว่างเปล่า เงื่อนไข port 22 จึงหายไป เหลือแถวที่ทิ้ง packet ทุกตัว เพราะเลข port มีความหมายก็ต่อเมื่อรู้แล้วว่า packet เป็น TCP หรือ UDP เวลาเขียน flow rule จริงจึงต้องบอกชั้นล่างให้ครบ เช่น `tcp,tp_dst=22`
+
+ผลอีกด้านคือแถว `tcp,tp_dst=22` ตรงเฉพาะ packet ที่เป็น TCP packet UDP ไป `5.6.7.8` port 22 จึงไม่ตรงแถว firewall แล้วตกลงแถว routing ผลจาก `ofproto/trace` คือ `0. ip,nw_dst=5.6.7.8, priority 100` ตามด้วย `output:6`
+
+</Detail>
+
+### packet แรกที่ไม่มีแถวรองรับ
+
+แถว priority 0 ที่ส่งให้ controller เรียกว่า <Term en="table-miss" th="แถวที่รับ packet ซึ่งไม่ตรงแถวอื่นเลย" /> มันเปิดทางให้ controller เขียนแถวตอนที่ต้องใช้จริง แทนที่จะต้องรู้ทุกอย่างล่วงหน้า
+
+<StepThrough>
+<Step title="switch ไม่รู้จัก packet">
+
+packet ตัวแรกของการเชื่อมต่อใหม่มาถึง switch ไม่มีแถวไหนตรงนอกจาก table-miss switch จึงห่อ packet ส่งไปให้ controller ข้อความนี้เรียกว่า <Term en="Packet-In" th="ข้อความที่ switch ส่ง packet ไปถาม controller" />
+
+</Step>
+<Step title="controller ตัดสินใจ">
+
+controller ดูว่า packet นี้มาจากไหนจะไปไหน คำนวณเส้นทางจากภาพรวมของเครือข่ายที่มันรู้ แล้วสั่งติดตั้งแถวใหม่ลง switch ทุกตัวบนเส้นทางนั้น พร้อมบอกให้ส่ง packet ตัวแรกออกไปด้วย
+
+</Step>
+<Step title="packet ถัดไปไม่ต้องถาม">
+
+packet ตัวที่สองเป็นต้นไปของการเชื่อมต่อเดียวกันตรงกับแถวที่เพิ่งติดตั้ง switch ส่งต่อเองได้ทันทีโดยไม่ต้องถาม controller อีก จนกว่าแถวนั้นจะหมด timeout
+
+</Step>
+</StepThrough>
+
+packet ชุดที่ตรงแถวเดียวกัน เช่นทุกตัวของการเชื่อมต่อหนึ่ง นับเป็นหนึ่ง <Term en="flow" th="ชุดของ packet ที่ตรงแถวเดียวกัน" /> controller จึงเห็นแค่ packet แรกของแต่ละ flow ไม่ได้เห็นทุก packet ซึ่งตรงกับที่ [Lecture 1](/2110506-sds/lecture-1) สรุปไว้ว่าสิ่งที่รวมศูนย์คือการตัดสินใจเรื่องตาราง ไม่ใช่ตัว packet
+
+<Quiz question="ใช้ตารางสี่แถวในกล่องตัวอย่าง แต่ลด priority ของแถว firewall จาก 200 เหลือ 50 ตอนนี้ packet TCP port 22 ไป 5.6.7.8 และไป 9.9.9.9 ไปทางไหน">
+แถว firewall ตอนนี้ priority 50 ต่ำกว่าแถว routing ที่ 100 packet ไป `5.6.7.8` port 22 ตรงทั้งสองแถว แถวที่ชนะคือแถว routing ส่วน packet ไป `9.9.9.9` port 22 ไม่ตรงแถว routing จึงเหลือแถว firewall ที่สูงกว่าแถว table-miss
+
+คำตอบคือ ไป `5.6.7.8` **ออก port 6** และไป `9.9.9.9` **ถูกทิ้ง** ผลจาก `ofproto/trace` บน Open vSwitch ตรงกัน คือ `0. ip,nw_dst=5.6.7.8, priority 100` ตามด้วย `output:6` และ `0. tcp,tp_dst=22, priority 50` ตามด้วย `drop` firewall จึงมีรูรั่วเฉพาะเครื่องที่มีแถว routing ของตัวเอง
+
+คำตอบที่ผิดบ่อยคือ "ถูกทิ้งทั้งคู่ เพราะ firewall บล็อก port 22" OpenFlow ไม่ได้ดูว่าแถวไหนเป็น firewall มันดูแค่ว่าแถวไหนตรงและ priority สูงสุด
+</Quiz>
+
+---
+
+## ส่วนที่ 3 — SDN ในระบบจริงแบ่งเป็นสามชั้น
+
+<Why>
+พอใช้ SDN จริง แอปหลายตัวอยากคุม switch ชุดเดียวกัน ทั้งแอปเฝ้าดูเครือข่าย แอปกระจายโหลด และแอปความปลอดภัย และ controller ตัวเดียวก็เป็นจุดที่ถ้าล่มทีเดียวเครือข่ายหยุดทั้งหมด จึงต้องมีหลาย controller
+
+ทั้งสองเรื่องต้องการคำตอบเดียวกัน คือแบ่งระบบเป็นชั้น แล้วกำหนดให้ชัดว่าแต่ละชั้นคุยกันด้วยอะไร
+</Why>
+
+### สามชั้นและหน้าที่
+
+| ชั้น | อยู่ที่ไหน | ตัวอย่าง |
+| --- | --- | --- |
+| <Term en="Management plane" th="ชั้นของแอปที่บอกว่าเครือข่ายควรทำอะไร" /> หรือ application layer | แอปที่บอกว่าเครือข่ายควรทำอะไร | network monitoring, network virtualization, mobility management, security, traffic control, load balancing |
+| **Control plane** | controller ที่แปลงความต้องการเป็นแถวในตาราง | POX, Floodlight, Ryu, OpenDaylight, ONOS |
+| **Data plane** หรือ infrastructure layer | อุปกรณ์ที่ส่ง packet จริง | อุปกรณ์จริง อุปกรณ์เสมือนอย่าง Open vSwitch และ access point |
+
+### API สามทิศ
+
+<Figure number={2} caption="แอปคุยกับ controller ทาง northbound controller เขียนลงอุปกรณ์ทาง southbound และ controller หลายชุดคุยกันเองทาง east-west">
+  <SdnPlanes />
+</Figure>
+
+ชื่อ API ตั้งตามทิศในรูป ชั้นบนอยู่ทิศเหนือ ชั้นล่างอยู่ทิศใต้
+
+- <Term en="Northbound API" th="ทางที่แอปสั่ง controller" /> แอปส่งคำขอขึ้นไปหา controller ส่วนใหญ่เป็น REST API ที่รับส่ง JSON แบบที่เจอใน [Lecture 4](/2110506-sds/lecture-4) หรือภาษาเฉพาะทางอย่าง Frenetic
+- <Term en="Southbound API" th="ทางที่ controller สั่งอุปกรณ์" /> controller เขียนลงอุปกรณ์ OpenFlow คือตัวที่ใช้มากที่สุด และยังมีทางเลือกอื่น เช่นสามตัวในกล่องด้านล่าง
+- <Term en="East-West API" th="ทางที่ controller คุยกันเอง" /> controller หลายตัวแลกข้อมูลกัน เพื่อให้ทุกตัวเห็นสภาพเครือข่ายตรงกัน ใช้เครื่องมืออย่าง Zookeeper ซึ่งเป็นบริการช่วยให้หลายเครื่องประสานงานกัน
+
+<Detail label="ทางเลือกอื่นของ southbound และ east-west">
+
+| ชื่อ | ทิศ | ทำอะไร |
+| --- | --- | --- |
+| POF (Protocol-Oblivious Forwarding) | southbound | ชุดคำสั่งให้ switch ประมวลผล packet โดยไม่ผูกกับโปรโตคอลใด |
+| PCEP (Path Computation Element Communication Protocol) | southbound | อุปกรณ์ขอให้เครื่องคำนวณเส้นทาง (PCE) หาเส้นทางให้ |
+| ForCES (Forwarding and Control Element Separation) | southbound | มาตรฐานของ IETF ที่แยกส่วนควบคุมกับส่วนส่งต่อในอุปกรณ์เดียวกันแล้วให้คุยกันผ่านโปรโตคอลนี้ |
+| Raft | east-west | วิธีให้หลายเครื่องตกลงกันได้ว่าข้อมูลชุดไหนถูก (consensus) แม้บางเครื่องล่ม |
+| AMQP (Advanced Message Queuing Protocol) | east-west | โปรโตคอลมาตรฐานสำหรับส่งข้อความผ่านคิวระหว่างโปรแกรม |
+
+</Detail>
+
+East-west คือสิ่งที่ทำให้ controller หลายเครื่องดูจากข้างนอกเหมือนตัวเดียว ตามที่ [Lecture 1](/2110506-sds/lecture-1#สี่อย่างที่ทำให้เครือข่ายหนึ่งเป็น-sdn) เรียกว่ารวมศูนย์ทางตรรกะ
+
+### อุปกรณ์ data plane มีขายจริง
+
+switch ที่พูด OpenFlow ได้มีขายจากหลายผู้ผลิต ตั้งแต่ตัวใหญ่สำหรับแกนกลางของเครือข่ายไปจนถึงบอร์ดเล็กสำหรับทดลอง และยังมีแบบซอฟต์แวร์อย่าง Open vSwitch ที่ใช้ในตัวอย่างของส่วนที่ 2
+
+<Detail label="รายชื่อ switch ที่รองรับ OpenFlow">
+
+| ผู้ผลิต | รุ่น |
+| --- | --- |
+| HP | Procurve 5400zl หรือ 6600 |
+| NEC | IP8800 |
+| Brocade | MLX routers |
+| Pronto | 3290 |
+| Centec | V580 Series และ V350 Series |
+| NoviFlow | NoviSwitch 2122 (100 Gbps สำหรับขอบและแกนของ WAN) และ NoviSwitch 21100 (Ethernet access และ aggregation) |
+| Northbound Networks | Zodiac GX และ Zodiac FX |
+
+</Detail>
+
+<Quiz question="ทีม security เขียนแอปที่ตรวจเจอเครื่องหนึ่งยิง traffic แปลก ๆ แล้วต้องบล็อกเครื่องนั้นทั้งเครือข่าย องค์กรนี้รัน controller สองชุดเพื่อกันล่ม คำสั่งบล็อกเดินผ่าน API ทิศไหนบ้าง ตามลำดับ">
+แอปอยู่ชั้นบนสุด มันจึงไม่ได้แตะ switch เอง แต่ส่งคำขอขึ้นไปหา controller ทาง northbound controller แปลงคำขอเป็นแถว drop แล้วเขียนลง switch ทาง southbound ด้วย OpenFlow และต้องบอก controller อีกชุดทาง east-west ให้รู้ว่ามีกฎใหม่
+
+คำตอบคือ **northbound แล้ว southbound และ east-west** ระหว่างสองชุด controller
+
+คำตอบที่ผิดบ่อยคือ "แอปส่งคำสั่งตรงไปที่ switch" ถ้าทำแบบนั้น controller จะไม่รู้ว่ามีแถวนี้ แล้วอาจเขียนทับหรือลบทิ้งตอนคำนวณตารางใหม่
+</Quiz>
+
+---
+
+## ส่วนที่ 4 — Controller ที่ใช้จริง: Ryu และ ONOS
+
+จาก controller ในตารางของส่วนที่ 3 สองตัวที่ควรรู้จักละเอียดคือ Ryu ซึ่งเน้นให้เขียน controller เอง และ ONOS ซึ่งเน้นความทนทาน
+
+### Ryu: ชุดเครื่องมือสำหรับเขียน controller เอง
+
+ถ้าเขียน controller เองตั้งแต่ศูนย์ คุณต้องเขียนตัวแปลง OpenFlow ทุกรุ่นและตัวหาว่าอะไรต่อกับอะไรเอง <Term en="Ryu" th="ชุดเครื่องมือสำหรับเขียน controller" /> ให้ชิ้นเหล่านี้สำเร็จรูป มันไม่ใช่ controller สำเร็จรูป แต่เป็น framework ที่ให้ชิ้นส่วนพร้อมใช้ แล้วคุณเขียนแอปของตัวเองต่อ
+
+ผู้ที่สั่ง Ryu ได้รายหนึ่งคือ <Term en="OpenStack" th="ซอฟต์แวร์สำหรับสร้าง cloud ของตัวเอง" /> ซึ่งเป็นชุดซอฟต์แวร์ที่องค์กรใช้สร้าง cloud ในห้องเครื่องของตัวเอง
+
+| ชั้นของ Ryu | มีอะไร |
+| --- | --- |
+| ด้านบน: ใครสั่ง Ryu ได้ | ผู้ดูแลระบบผ่าน RESTful management API, OpenStack ผ่าน REST API สำหรับ Quantum, แอปของผู้ใช้ผ่าน REST หรือ RPC ที่กำหนดเอง |
+| แอปที่ให้มา | L2 switch และตัวอย่างอื่นในโฟลเดอร์ `ryu/app` |
+| library | OF REST, topology discovery (หาว่าอะไรต่อกับอะไร), firewall, topology viewer |
+| ตัวแปลงโปรโตคอล OpenFlow | OpenFlow 1.0 กับส่วนขยายของ Nicira, 1.2, 1.3 และ OF-Config 1.1 |
+| ตัวแปลงโปรโตคอลอื่น | NETCONF, VRRP, NetFlow/xFlow, SNMP, OVSDB และ packet library สำหรับอ่านเขียน packet |
+| ด้านล่าง | OpenFlow switch ผ่าน OpenFlow และเครือข่าย IP เดิมผ่านโปรโตคอลอื่น |
+
+ชื่อในตารางนี้แบ่งได้สามกลุ่มตามงาน
+
+- **OpenFlow** เขียนแถวลง flow table ส่วน **OF-Config**, **NETCONF** และ **OVSDB** ใช้ตั้งค่าตัวอุปกรณ์ เช่น สร้าง port หรือบอกว่าให้ต่อกับ controller ตัวไหน OVSDB มาจาก Open vSwitch
+- **ส่วนขยายของ Nicira** คือ match และ action เพิ่มเติมที่ Open vSwitch ใส่ไว้นอกมาตรฐาน ซึ่งก็คือ action ข้อ 5 ในส่วนที่ 2 Nicira เป็นบริษัทที่เริ่มสร้าง Open vSwitch
+- **VRRP, NetFlow และ SNMP** เป็นโปรโตคอลของเครือข่ายแบบเดิม Ryu พูดได้เพื่อให้ทำงานร่วมกับอุปกรณ์ที่ยังไม่เป็น SDN
+
+Ryu ผ่านการทดสอบร่วมกับ Open vSwitch และผู้ผลิต switch บางรายอ้างอิง Ryu
+
+Ryu ยังต่อเข้ากับระบบอื่นได้ เช่น ใช้ Zookeeper ให้ Ryu หลายตัวสำรองกัน ตัวหนึ่งล่มอีกตัวทำงานต่อ (high availability หรือ HA) ต่อกับ IDS ที่ตรวจจับการบุกรุก และต่อกับ Quantum ซึ่งเป็นส่วนจัดการเครือข่ายของ OpenStack
+
+เมื่อผู้ใช้สั่งสร้างเครือข่ายเสมือนใน OpenStack Quantum จะส่งคำขอต่อมาให้ Ryu จัดการ switch จริงให้
+
+### ONOS: controller ที่ออกแบบให้กระจายตั้งแต่แรก
+
+<Term en="ONOS" th="controller ที่รันกระจายบนหลายเครื่อง" /> ตอบโจทย์ controller ตัวเดียวล่มทั้งวงจากส่วนที่ 3 ด้วยการรันแกนกลางบนหลายเครื่อง ชื่อย่อจาก Open Network Operating System และแบ่งเป็นชั้นชัดเจน
+
+| ชั้น | มีอะไร |
+| --- | --- |
+| network control apps | แอปที่เขียนแยกจากตัว controller |
+| northbound abstractions | REST API และ <Term en="Intent" th="คำขอที่บอกผลลัพธ์ ไม่บอกวิธี" /> |
+| distributed core | ข้อมูลของเครือข่าย: hosts, devices, links, paths, topology, flow rules, statistics |
+| southbound abstractions | มองอุปกรณ์เป็น device, link, host, flow และ packet แล้วพูดกับมันด้วย OpenFlow, NETCONF หรือ OVSDB |
+
+แนวคิดหลักของ ONOS มีสามข้อ
+
+- **แอปแยกจาก controller** แอปเพิ่มหรือถอดได้โดยไม่ต้องแตะแกนกลาง
+- **distributed core** แกนกลางรันบนหลายเครื่อง ข้อมูลถูกจำลองไว้หลายชุด จึงเชื่อถือได้ และขยายรับงานได้มากขึ้นเมื่อเพิ่มเครื่อง
+- **intent framework** แอปบอกแค่ผลที่ต้องการ ไม่ต้องบอกวิธีทำ
+
+Intent คือคำขอระดับสูง เช่น "ให้เครื่อง h1 คุยกับเครื่อง h2 ได้" ONOS รับไปหาเส้นทางเองจากข้อมูล topology ใน core แล้วแปลงเป็น flow rule ลงทุก switch บนเส้นทางนั้น คนเขียนแอปไม่ต้องรู้ว่าทางผ่าน switch ตัวไหนบ้าง
+
+นี่คือแนวคิด declarative แบบเดียวกับ manifest ของ Kubernetes ใน [Lecture 5](/2110506-sds/lecture-5#สามแนวคิดที่ต้องเข้าใจก่อนแตะคำสั่ง) คุณบอกสถานะที่อยากได้ แล้วระบบหาทางทำให้เป็นจริง
+
+### ลงมือกับ Mininet และ ONOS
+
+<Term en="Mininet" th="โปรแกรมจำลองเครือข่ายทั้งวงบนเครื่องเดียว" /> สร้างเครื่องและ switch เสมือนหลายตัวบนคอมพิวเตอร์เครื่องเดียว switch ในนั้นเป็น Open vSwitch ที่ต่อเข้ากับ controller ได้จริง
+
+ใน Mininet คุณสร้างเครือข่าย OpenFlow ให้ ONOS เป็น controller แล้วแก้ปัญหาเครือข่ายด้วยการเขียน flow rule ผ่าน ONOS แทนการตั้ง switch ทีละตัว
+
+<Quiz question="เครือข่ายมีสองเส้นทาง A และ B ระหว่าง h1 กับ h2 คุณใช้วิธีหนึ่งติดตั้ง flow rule เองทีละ switch ให้ผ่านเส้นทาง A อีกวิธีหนึ่งส่ง intent ว่า h1 คุยกับ h2 ได้ แล้วลิงก์บนเส้นทาง A ขาด สองวิธีต่างกันอย่างไร">
+flow rule ที่ติดตั้งเองบอกแค่ว่า "packet แบบนี้ออก port นี้" มันไม่รู้ว่าเป้าหมายคือให้ h1 ถึง h2 พอลิงก์ขาด packet ก็ยังถูกส่งไปทางเดิมแล้วหายไป จนกว่าคุณจะเขียน rule ใหม่เอง ส่วน intent เก็บเป้าหมายไว้ที่ ONOS ซึ่งเห็น topology เปลี่ยน ONOS จึงคำนวณเส้นทาง B แล้วติดตั้ง flow rule ชุดใหม่ให้เอง
+
+คำตอบคือ **แบบ flow rule เองหยุดทำงานจนกว่าคนจะแก้ แบบ intent ย้ายไปเส้นทาง B ได้เอง**
+
+คำตอบที่ผิดบ่อยคือ "เหมือนกัน เพราะสุดท้าย intent ก็กลายเป็น flow rule" ถูกครึ่งเดียว ปลายทางเป็น flow rule เหมือนกัน แต่ต่างกันที่ใครเก็บเป้าหมายไว้ และใครคำนวณใหม่เมื่อเครือข่ายเปลี่ยน
+</Quiz>
+
+---
+
+## ส่วนที่ 5 — P4: เขียนโปรแกรมให้ data plane เอง
+
+<Why>
+OpenFlow switch ดู packet ได้แค่ช่องที่มาตรฐานกำหนดไว้ ถ้าบริษัทคิด header ใหม่ขึ้นมาใช้เอง switch จะไม่รู้จักช่องนั้น ต้องรอมาตรฐานรุ่นใหม่และรอผู้ผลิตทำชิปรุ่นใหม่
+
+ปัญหานี้เห็นได้จากตัวมาตรฐานเอง OpenFlow แต่ละรุ่นต้องเพิ่มช่องที่ดูได้เข้าไปอีก และทุกครั้งที่มีโปรโตคอลใหม่ ก็ต้องรอรุ่นถัดไป
+</Why>
+
+<Callout type="info" title="เสริม — จำนวนช่องที่ OpenFlow ดูได้">
+บทความที่เปิดตัว P4 นับไว้ว่า OpenFlow 1.0 (ธันวาคม 2009) ดูได้ 12 ช่อง และ OpenFlow 1.4 (ตุลาคม 2013) ดูได้ 41 ช่อง
+</Callout>
+
+### P4 คืออะไร
+
+<Term en="P4" th="ภาษาเขียนโปรแกรมให้ data plane" /> ย่อจาก Programming Protocol-independent Packet Processors คือภาษาเฉพาะทางสำหรับบอกว่าอุปกรณ์ data plane ประมวลผล packet อย่างไร อุปกรณ์ที่ว่ารวมถึง switch, การ์ดเครือข่าย, router และตัวกรอง packet
+
+P4 ต่างจาก OpenFlow ตรงที่ ใน OpenFlow มาตรฐานกำหนดว่า switch ดูช่องไหนได้ ส่วนใน P4 คนเขียนโปรแกรมกำหนดเอง
+
+P4 ออกมาในบทความของ SIGCOMM CCR ปี 2014 และตอนนี้ดูแลโดย Linux Foundation
+
+เป้าหมายของ P4 มีสามข้อ
+
+- **Reconfigurability** เปลี่ยนวิธีที่อุปกรณ์อ่านและจัดการ packet ได้หลังติดตั้งไปแล้ว
+- **Protocol independence** ตัวภาษาไม่ผูกกับโปรโตคอลไหน โปรแกรมประกาศเองว่า header มีช่องอะไร
+- **Target independence** โปรแกรมเดียวกันไม่ต้องรู้ว่าจะไปรันบนฮาร์ดแวร์ยี่ห้อไหน compiler เป็นคนแปลงให้
+
+### อ่านโปรแกรม P4 หนึ่งท่อน
+
+```text
+control ingress () {
+    table routing {
+        key = { hdr.ipv4.dstAddr : lpm; }
+        actions = { drop; route; }
+        size = 2048;
+    }
+    apply {
+        routing.apply();
+    }
+}
+```
+
+- `control ingress` คือขั้นที่จัดการ packet ขาเข้า
+- `table routing` ประกาศตารางชื่อ routing ซึ่ง `key` บอกว่าตารางนี้ดูช่อง IPv4 ปลายทาง แบบ `lpm`
+- `actions` บอกว่าแต่ละ entry ในตารางเลือกได้แค่ `drop` หรือ `route` และ `size` บอกว่าตารางจุได้ 2048 entry
+- `apply` สั่งให้ packet ผ่านตาราง routing
+
+<Term en="lpm" th="เลือก prefix ที่ตรงยาวที่สุด" /> ย่อจาก longest prefix match เป็นวิธีจับคู่แบบที่ router ใช้ ถ้า packet ไป `10.1.2.3` และตารางมีทั้ง `10.0.0.0/8` และ `10.1.0.0/16` ทั้งสองตรง แต่ตัวที่เลือกคือ `/16` เพราะตรงยาวกว่า จึงเจาะจงกว่า
+
+สังเกตว่าโปรแกรมนี้ไม่มี entry ใดเลย มันกำหนดแค่ **รูปร่าง** ของตาราง ว่าดูช่องไหน และเลือก action อะไรได้
+
+### จากโปรแกรมถึงอุปกรณ์
+
+1. เขียนโปรแกรม P4 ตัวอย่างเช่น pipeline ที่ผ่าน packet classifier แล้วแยกไป L3 routing หรือ L2 forwarding ก่อนเข้า ACL ซึ่ง ACL คือรายการกฎที่ตัดสินว่าจะส่งต่อ ทิ้ง หรือส่งขึ้นไปถาม control plane
+2. P4 compiler แปลงโปรแกรมเป็นสองอย่าง อย่างแรกคือไฟล์สำหรับฮาร์ดแวร์รุ่นนั้น ผ่าน compiler backend ของแต่ละผู้ผลิต แล้วโหลดลงอุปกรณ์ผ่าน driver อย่างที่สองคือไฟล์ `p4info` ที่บอกว่าโปรแกรมมีตารางและ action อะไรบ้าง ไฟล์นี้เป็นสัญญาระหว่าง data plane กับ control plane
+3. control plane ใช้ <Term en="P4Runtime" th="API ที่ control plane ใช้เติม entry ลงตารางของ P4" /> โดยมี client ฝั่ง control plane คุยกับ server บนอุปกรณ์ ตามรูปแบบข้อความที่กำหนดไว้ใน `p4runtime.proto` ไฟล์ `.proto` คือไฟล์ที่กำหนดรูปแบบข้อความของ gRPC ซึ่งเจอใน [Lecture 4](/2110506-sds/lecture-4)
+
+ฮาร์ดแวร์ที่รองรับ P4 มีจากหลายเจ้า เช่น NVIDIA (Mellanox), AMD (Xilinx), Intel Tofino, MoSys และ Peraso
+
+<Pitfall>
+"มี P4 แล้วก็ไม่ต้องมี controller เพราะโปรแกรมทั้งหมดอยู่ใน switch แล้ว"
+
+ข้อนี้ผิด ที่ดูเหมือนถูกเพราะทั้ง SDN และ P4 ถูกเรียกว่าการโปรแกรมเครือข่าย จึงฟังเหมือนเป็นเรื่องเดียวกัน แต่ทั้งสองโปรแกรมคนละอย่าง P4 กำหนดรูปร่างของตาราง ส่วน entry ในตารางยังมาจาก control plane ผ่าน P4Runtime เหมือนที่ OpenFlow controller เขียนแถวลง flow table
+
+ดูได้จากตาราง routing ข้างบน ตอนโหลดโปรแกรมเสร็จ ตารางนี้ยังไม่มี entry เลย ไม่มี prefix ไหนถูกส่งต่อ จนกว่า control plane จะเติม entry เข้าไป
+</Pitfall>
+
+<Quiz question="บริษัทหนึ่งคิด header ของตัวเองแทรกไว้หน้า IP และอยากให้ switch เลือก port ตามช่อง tenant_id ใน header นี้ switch OpenFlow 1.3 ทำได้ไหม และ switch ที่รัน P4 ทำได้ไหม">
+OpenFlow switch ดูได้แค่ช่องที่มาตรฐานรุ่นของมันรู้จัก ช่อง tenant_id ไม่อยู่ในรายการนั้น switch จึงไม่รู้ด้วยซ้ำว่า header นี้ยาวเท่าไหร่ ส่วนใน P4 คุณประกาศ header ใหม่ในโปรแกรม เขียน parser ซึ่งเป็นส่วนของโปรแกรม P4 ที่อ่าน header ของ packet แล้วแยกออกมาเป็นช่อง ๆ ให้อ่าน header ใหม่นี้ แล้วสร้างตารางที่ใช้ tenant_id เป็น key จากนั้น control plane เติม entry ผ่าน P4Runtime
+
+คำตอบคือ **OpenFlow 1.3 ทำไม่ได้ P4 ทำได้** ด้วยการแก้โปรแกรมแล้ว compile ใหม่ ไม่ต้องรอชิปใหม่
+
+คำตอบที่ผิดบ่อยคือ "OpenFlow ทำได้ เพราะ controller เขียน rule อะไรก็ได้" controller เลือกค่าใน rule ได้ แต่เลือกได้เฉพาะช่องที่ switch รู้จัก
+</Quiz>
+
+---
+
+## ส่วนที่ 6 — SDN ในโลกจริง: Google และเครือข่ายสำหรับวิจัย
+
+### เครือข่ายของ Google
+
+Google ใช้ SDN ทั้งใน data center และในเครือข่ายที่เชื่อม data center ทั่วโลก ข้อมูลส่วนนี้เป็นของปี 2021
+
+<Term en="WAN" th="เครือข่ายที่เชื่อมสถานที่ซึ่งอยู่ห่างกันมาก" /> ในที่นี้คือสายที่ลากข้ามประเทศและข้ามทวีประหว่าง data center สายแบบนี้แพงมาก จึงคุ้มที่จะคิดให้ดีว่า traffic ไหนควรวิ่งทางไหน
+
+<Term en="Traffic engineering" th="การเลือกเส้นทางให้ traffic เพื่อใช้ลิงก์ให้คุ้ม" /> หรือ TE คือการกระจาย traffic ไปหลายเส้นทาง แทนที่จะให้ทุกอย่างวิ่งทางที่สั้นที่สุดจนเส้นนั้นแน่นแต่เส้นอื่นว่าง ส่วนที่ 7 ทำเรื่องเดียวกันในขนาดที่เล็กลง
+
+| ชื่อ | คืออะไร |
+| --- | --- |
+| **B4** | WAN แบบ SDN ที่เชื่อม data center ของ Google เข้าด้วยกัน ใช้ controller กลางทำ traffic engineering ทั้งโลก จนใช้ลิงก์ได้เต็มขึ้นมาก |
+| **Jupiter** | เครือข่ายภายใน data center บทความ Jupiter Rising อธิบายฮาร์ดแวร์ของมัน |
+| **Orion** | control plane ของ SDN รุ่นที่สอง คุมการตั้งค่า การจัดการ และการควบคุมแบบ real-time ของ Jupiter, เครือข่ายใน campus และ B4 |
+
+<Detail label="เครือข่ายส่วนอื่นของ Google">
+
+| ชื่อ | คืออะไร |
+| --- | --- |
+| **B2** | เครือข่ายด้านที่หันหาผู้ใช้ ต่อกับ ISP เพื่อส่งบริการถึงผู้ใช้ปลายทาง |
+| **BwE** | Bandwidth Enforcer กำหนดว่าแต่ละบริการได้ bandwidth เท่าไหร่ มีบทบาทมากใน traffic engineering |
+| **Espresso** | SDN ที่ขอบของ B2 ตรงจุดที่ต่อกับเครือข่ายภายนอก |
+
+</Detail>
+
+#### Orion เทียบกับสามชั้นในส่วนที่ 3
+
+| ชิ้นส่วนของ Orion | ทำอะไร | อยู่ชั้นไหน |
+| --- | --- | --- |
+| Orion App และ Routing Engine | แอปที่บอกว่าเครือข่ายควรทำอะไร คุยลงมาผ่าน northbound interface | control |
+| Orion Core: NIB | Network Information Base ฐานข้อมูลสถานะของเครือข่ายทั้งหมด | control |
+| Orion Core: Flow, Topology, Config Manager | จัดการ flow, ติดตาม topology และจัดการการตั้งค่า | control |
+| OpenFlow Front End (OFE) | ฝั่ง controller ที่พูด OpenFlow ลงไปหา switch | control |
+| OpenFlow Agent (OFA) บน SDN switch | ฝั่ง switch ที่รับคำสั่ง OpenFlow แล้วเขียนลง data plane | data |
+| management plane ด้านข้าง | ทำสัญญา SLA, ตั้ง policy, เฝ้าดู และ provision อุปกรณ์ | ครอบทุกชั้น |
+
+โครงสร้างของ Orion คือรูปที่ 2 ในขนาดของ Google แอปอยู่บน controller อยู่กลาง และ switch อยู่ล่าง คุยกันด้วย OpenFlow
+
+แต่ Orion นับแอปและ Routing Engine เป็น control plane แม้จะทำงานแบบ application layer และใช้คำว่า management plane กับส่วนที่ดูแล SLA และการตั้งค่าอุปกรณ์เท่านั้น
+
+#### ข้างใน B4
+
+B4 แบ่งเป็นสามระดับ
+
+| ระดับ | มีอะไร | ทำอะไร |
+| --- | --- | --- |
+| global | Gateway และ Central TE Server | คำนวณว่า traffic ระหว่าง site ควรแบ่งไปทางไหนบ้าง แล้วส่งผลลงไปให้แต่ละ site |
+| site controllers | OFC, TE Agent, RAP, Quagga, Paxos บน NCS หลายเครื่อง | controller ของแต่ละ site |
+| switch hardware | OFA switch หลายตัวในแต่ละ site | ส่ง packet ตามแถวที่ OFC เขียนลงมา |
+
+ใน site controller ชิ้นที่สำคัญคือ OFC ซึ่งเป็น OpenFlow controller ของ site นั้น และ TE Agent ซึ่งรับผลจาก TE Server มาแปลงเป็นแถวในตาราง
+
+<Detail label="ข้างใน site controller ของ B4">
+
+OFC รันซ้ำไว้บน NCS (network control server) หลายเครื่อง โดยใช้ Paxos เลือกว่าเครื่องไหนเป็นตัวหลัก
+
+<Term en="BGP" th="โปรโตคอลที่เครือข่ายใช้แลกเส้นทางกัน" /> คือโปรโตคอลที่เครือข่ายใช้บอกกันว่าไปปลายทางไหนได้ทางไหน
+
+Quagga เป็นซอฟต์แวร์ routing ที่พูด BGP กับเครือข่ายรอบข้าง โดยมี RAP (Routing Application Proxy) เชื่อม Quagga เข้ากับ OFC
+
+BGP แบบ iBGP ใช้ระหว่าง site ของ B4 เอง ส่วน eBGP ใช้คุยกับ cluster ของ data center
+
+</Detail>
+
+### เครือข่ายสำหรับทดลองงานวิจัย
+
+<Why>
+ไอเดียใหม่ด้านเครือข่ายต้องทดสอบบนลิงก์จริงที่ข้ามระยะทางไกลจริง แต่ไม่มีใครยอมให้ทดลองบนอินเทอร์เน็ตที่คนใช้งานอยู่ เครือข่ายวิจัยและการศึกษาหลายแห่งจึงสร้าง testbed ที่นักวิจัยขอใช้ร่วมกันได้
+</Why>
+
+| ชื่อ | ที่ไหน | คืออะไร | ข้อมูลปี |
+| --- | --- | --- | --- |
+| **OF@TEIN+** | เอเชีย นำโดยเกาหลี | SDN testbed บน TEIN ซึ่งเชื่อมเครือข่ายวิจัยของประเทศในเอเชีย | 2019 |
+| **GENI** | สหรัฐอเมริกา | Global Environment for Network Innovations ตั้ง rack ของอุปกรณ์ทดลองไว้ตามมหาวิทยาลัย | 2015 และ 2024 |
+| **PlanetLab** | สหรัฐอเมริกาและทั่วโลก | overlay network ของเครื่องตามมหาวิทยาลัย | 2008 |
+| **GEANT** | ยุโรป | เครือข่ายวิจัยและการศึกษาที่เชื่อมประเทศในยุโรป | 2018 และ 2024 |
+
+แบบของ PlanetLab เรียกว่า <Term en="overlay network" th="เครือข่ายที่สร้างซ้อนบนอีกเครือข่ายหนึ่ง" /> เครื่องในวงมองกันเหมือนต่อกันตรง ทั้งที่ packet จริงวิ่งผ่านอินเทอร์เน็ตหลาย hop ส่วนที่ 7 ใช้แนวคิดนี้อีกครั้ง
+
+<Detail label="testbed แต่ละแห่งมีอะไรบ้าง">
+
+**OF@TEIN+** ตั้งศูนย์ควบคุมไว้ที่ GIST ในเกาหลี เรียกว่า playground tower ข้างในมีศูนย์ provisioning, orchestration, visibility และ security พร้อม cloud controller และ SDN controller ตามมหาวิทยาลัยปลายทางมีกล่อง SmartX ต่ออยู่ รวมถึงที่จุฬาฯ ผ่าน ThaiREN และที่อื่นในฟิลิปปินส์ ไต้หวัน เวียดนาม อินเดีย ปากีสถาน และมาเลเซีย
+
+**GENI** มี rack หลายแบบ ได้แก่ InstaGENI, ExoGENI, OpenGENI และ CiscoGENI ตั้งอยู่ตาม campus แล้วเชื่อมกันผ่านเครือข่ายระดับภูมิภาคและจุดให้บริการ Layer 2 บางจุดมีสถานีทดลอง WiMAX/LTE ด้วย
+
+**PlanetLab** มีเครื่องตั้งอยู่ตามมหาวิทยาลัย เช่น Stanford, Cambridge, U.Tokyo, U.C.Berkeley, CMU และ MIT ทุกเครื่องเชื่อมกันผ่านอินเทอร์เน็ตธรรมดา และมี PlanetLab Central (PLC) ที่ Princeton คอยจัดสรรทรัพยากรให้นักวิจัย
+
+**GEANT** ในปี 2018 มีลิงก์ความเร็ว 1–9 Gbps, หลายเท่าของ 10 Gbps และหลายเท่าของ 100 Gbps ส่วนในปี 2024 ลิงก์แบ่งตามชนิด คือ fibre, spectrum, เครือข่ายระดับภูมิภาคที่ต่อเข้ามา และ capacity ที่เช่า
+
+</Detail>
+
+<Quiz question="ทีมของคุณสร้างวิธีส่งข้อมูลหลายเส้นทางระหว่างกรุงเทพกับโซล ทดสอบบน Mininet ในเครื่องตัวเองแล้วได้ผลดี ผลนี้พอจะบอกได้ไหมว่าใช้งานจริงก็จะได้ผลเท่ากัน">
+Mininet จำลองทุกอย่างบนเครื่องเดียว ลิงก์ในนั้นมีความเร็วและ delay เท่าที่คุณตั้งไว้ และคงที่ตลอดการทดลอง ลิงก์จริงข้ามประเทศมี traffic ของคนอื่นวิ่งปนอยู่ ความเร็วจึงขึ้นลงตลอดเวลา สิ่งที่ Mininet บอกได้คือวิธีนี้ทำงานถูกต้องตามที่ออกแบบ แต่บอกไม่ได้ว่าลิงก์จริงจะให้ผลเท่ากัน
+
+คำตอบคือ **ไม่พอ** ต้องทดสอบซ้ำบน testbed ที่มีลิงก์จริงอย่าง OF@TEIN+ ซึ่งมีจุดต่อทั้งที่จุฬาฯ และเกาหลี
+
+คำตอบที่ผิดบ่อยคือ "พอ เพราะตั้ง bandwidth และ delay ใน Mininet ให้เหมือนของจริงได้" ตั้งได้แค่ค่าคงที่ ส่วนความผันผวนของลิงก์จริงตั้งไม่ได้ ส่วนที่ 7 จะเห็นว่าผลบนสองที่นี้ต่างกันจริง
+</Quiz>
+
+---
+
+## ส่วนที่ 7 — Use case: ใช้ SDN ส่ง big data หลายเส้นทาง
+
+### โจทย์: ย้าย big data ระหว่าง region
+
+ข้อมูลที่ถูกสร้างทั่วโลกโตจาก 79 zettabyte (10<sup>21</sup> byte) ในปี 2021 และคาดว่าจะถึงราว 181 zettabyte ในปี 2025
+
+<Detail label="มูลค่าตลาด big data">
+
+ตลาด big data ทั่วโลกมีมูลค่า 7.6 พันล้านดอลลาร์ในปี 2011 และคาดว่าจะถึง 103 พันล้านดอลลาร์ในปี 2027
+
+</Detail>
+
+ข้อมูลพวกนี้มักเก็บใน distributed storage ที่กระจายอยู่หลาย region เพราะข้อมูลเกิดขึ้นหลายที่ เช่น ข้อมูล GIS ข้อมูลสุขภาพเชิงพื้นที่ และข้อมูลของอุตสาหกรรมไฟฟ้า ตัวอย่างเช่นมี storage สี่ region ในไทย แถวกรุงเทพ เชียงใหม่ ภาคเหนือตอนล่าง และขอนแก่น
+
+คำถามคือจะย้ายข้อมูลก้อนใหญ่ระหว่าง region อย่างไรให้เร็ว และคำตอบที่งานนี้เลือกคือส่งพร้อมกันหลายเส้นทาง
+
+### Multipath TCP และปัญหาของเครือข่ายแบบเดิม
+
+<Term en="Multipath TCP" th="TCP ที่ส่งการเชื่อมต่อเดียวผ่านหลายเส้นทาง" /> หรือ MPTCP ทำให้การเชื่อมต่อ TCP หนึ่งเส้นแตกเป็นหลายสาย แต่ละสายเรียกว่า <Term en="subflow" th="สายย่อยหนึ่งสายของการเชื่อมต่อ MPTCP" /> เครื่องที่มีการ์ดเครือข่ายสองใบ ส่งได้สอง subflow ออกทางการ์ดคนละใบ
+
+<Why>
+subflow จะช่วยได้ก็ต่อเมื่อมันวิ่งคนละเส้นทาง ถ้าสอง subflow ไปแย่งลิงก์เดียวกัน แต่ละตัวได้แค่ครึ่งเดียว รวมกันแล้วเร็วเท่าเดิม
+
+ในเครือข่ายแบบเดิม router แต่ละตัวเลือกเส้นทางเองตามปลายทาง มันไม่รู้ว่าสอง subflow นี้เป็นของการเชื่อมต่อเดียวกัน จึงส่งทั้งคู่ไปทางที่สั้นที่สุดทางเดียวกัน
+</Why>
+
+SDN แก้ตรงนี้ได้ เพราะ controller เห็นทั้งเครือข่าย เห็นว่า subflow ไหนเป็นพี่น้องกัน และเห็นจากตัวนับว่าลิงก์ไหนว่าง มันจึงส่ง subflow แต่ละตัวไปคนละ <Term en="disjoint path" th="เส้นทางที่ไม่ใช้ลิงก์ร่วมกัน" /> ได้
+
+### วางลงเครือข่ายจริงได้สองแบบ
+
+**แบบ full-range** เปลี่ยน switch ทุกตัวใน <Term en="autonomous system" th="เครือข่ายที่อยู่ใต้ผู้ดูแลรายเดียว เช่น ISP หนึ่งราย" /> ที่ข้อมูลวิ่งผ่านให้เป็น OpenFlow switch แล้วให้ controller ต่อ secure channel ไปหาทุกตัว เครื่องปลายทางทุกเครื่องมีการ์ดเครือข่ายสองใบ ได้ควบคุมเต็มที่ แต่ต้องได้สิทธิ์คุมอุปกรณ์ของทุก ISP บนทาง ซึ่งทำได้ยากมาก
+
+**แบบ overlay** วาง Open vSwitch หรืออุปกรณ์ OpenFlow ไว้แค่ region ละหนึ่งตัว คือ S1, S2 และ S3 หลัง gateway router ของแต่ละ region แล้วเชื่อมทั้งสามตัวเข้าหากันด้วย tunnel ข้ามอินเทอร์เน็ต controller จึงเห็นกราฟเล็ก ๆ ที่เป็นสามเหลี่ยม S1–S2–S3 แทนที่จะเห็น router ทั้งหมดบนอินเทอร์เน็ต
+
+tunnel ที่ใช้คือ <Term en="VXLAN" th="การห่อ Ethernet frame ไว้ใน UDP packet" /> ซึ่งห่อ Ethernet frame ทั้งก้อนไว้ใน UDP packet แล้วส่งข้ามเครือข่าย IP สอง switch ที่อยู่คนละประเทศจึงเห็นกันเหมือนต่อสายตรง นี่คือ overlay network แบบเดียวกับ PlanetLab ในส่วนที่ 6
+
+<Figure number={3} caption="ซ้าย: ทั้งสอง subflow ไปทางที่สั้นที่สุดจึงแย่งลิงก์ S1–S2 เดียวกัน ขวา: controller เห็นทั้งวงจึงส่ง subflow ที่สองอ้อมผ่าน S3 ของ region 3">
+  <MultipathSteering />
+</Figure>
+
+### ข้างใน controller: สามโมดูลบน ONOS
+
+framework นี้เป็นแอปสามโมดูลที่รันบน ONOS แต่ละโมดูลมีงานเดียว
+
+- **Multipath Topology Manager** ดูแลกราฟของเครือข่าย ด้วย Graph Creation ที่สร้างกราฟ และ Graph Pruning ที่ปรับกราฟตามสถานะลิงก์ล่าสุด มันยังเรียก Query_MPTCP_Table เพื่ออ่านตาราง MPTCP ด้วย แต่สไลด์ไม่ได้บอกว่านำข้อมูลนั้นไปใช้ทำอะไร
+- **OpenFlow-Stats Analyzer** มี Timer Manager ที่อ่านตัวนับของ port เป็นรอบ ๆ แล้วเรียก Link Utilization Calculation ให้คำนวณว่าแต่ละลิงก์แน่นแค่ไหน
+- **Multipath Transmission Manager** ตัดสินใจเส้นทางของแต่ละ subflow ด้วย Subflow Identification, OpenFlow-Stats Routing และ Flow-Rule Builder โดยจดไว้ในตาราง MPTCP ว่า subflow ไหนเป็นของการเชื่อมต่อไหน
+
+โมดูลทั้งสามคุยกับ ONOS ผ่าน API หกตัว ลำดับข้างล่างไล่ตามที่ subflow ใหม่หนึ่งตัวเดินผ่าน
+
+<StepThrough>
+<Step title="รู้จักเครือข่ายก่อน">
+
+Graph Creation เรียก **Get_Topology** (API 2) จาก ONOS มาสร้าง topology graph และเมื่อ ONOS แจ้ง **Topology_Change** (API 3) เช่น มีลิงก์ขาดหรือเพิ่ม กราฟก็ถูกแก้ตาม
+
+</Step>
+<Step title="วัดว่าลิงก์ไหนแน่น">
+
+Timer Manager เรียก **Get_Port_Stats** (API 4) เป็นรอบเพื่ออ่านตัวนับของแต่ละ port แล้วเรียก Link Utilization Calculation ให้คำนวณว่าลิงก์ไหนแน่น ผลถูกแจ้งไปให้ Topology Manager ปรับกราฟ
+
+</Step>
+<Step title="subflow ใหม่มาถึง">
+
+packet แรกของ subflow ไม่มีแถวรองรับใน switch จึงขึ้นไปหา controller เป็น **Packet_In** (API 1) Subflow Identification ดูว่ามันเป็น subflow ของการเชื่อมต่อไหน แล้วบันทึกลงตาราง MPTCP
+
+</Step>
+<Step title="หาเส้นทางที่ไม่ซ้ำ">
+
+OpenFlow-Stats Routing ขอกราฟล่าสุดจาก Topology Manager เรียก **Get_Host_Location** (API 6) เพื่อหาว่าเครื่องปลายทางต่ออยู่ที่ switch ตัวไหน แล้วเลือกเส้นทางที่ไม่ซ้ำกับ subflow พี่น้องที่จดไว้ในตาราง MPTCP
+
+</Step>
+<Step title="ติดตั้งแถว">
+
+Flow-Rule Builder แปลงเส้นทางเป็น flow rule แล้วเรียก **Push_Flow_Rules** (API 5) ให้ ONOS ติดตั้งลง switch ทุกตัวบนทาง packet ถัดไปของ subflow นี้จึงวิ่งเองโดยไม่ต้องถาม controller
+
+</Step>
+</StepThrough>
+
+API ทั้งหกตัวคือสิ่งที่หน้านี้สอนมาแล้วทั้งหมด
+
+| API ของ framework | คือเรื่องไหนในหน้านี้ |
+| --- | --- |
+| Packet-In event | action ส่งให้ controller เมื่อ packet ตกแถว table-miss (ส่วนที่ 2) |
+| Topology information | ข้อมูล topology ใน distributed core ของ ONOS (ส่วนที่ 4) |
+| Topology-change event | ONOS แจ้งเมื่อ topology ใน core เปลี่ยน (ส่วนที่ 4) |
+| Port-stats information | ตัวนับ packet และ byte ของแต่ละ port (ส่วนที่ 2) |
+| Flow-rule installation | controller เขียนแถวลง flow table ทาง southbound (ส่วนที่ 1 และ 3) |
+| Host-location information | ข้อมูล hosts ใน ONOS core (ส่วนที่ 4) |
+
+แนวคิดนี้ใกล้กับ B4 ในส่วนที่ 6 ทั้งคู่ให้ controller ที่เห็นทั้งเครือข่ายเลือกเส้นทางเพื่อใช้ลิงก์ให้คุ้ม ต่างกันที่ B4 ทำกับ WAN ของ Google ทั้งหมด ส่วนงานนี้ทำกับ subflow ของการเชื่อมต่อแต่ละเส้น
+
+### ผลทดลองบน OF@TEIN+
+
+ทดลองส่งข้อมูล 500 MB จากต้นทางในเกาหลีใต้ไปปลายทางในเวียดนาม ซึ่งมีสามเส้นทางให้เลือก
+
+| เส้นทาง | ผ่าน | ความเร็ว | delay |
+| --- | --- | --- | --- |
+| Shortest Path | ตรงจากเกาหลี | 36 Mbps | 67 ms |
+| Alternative Path 1 | อ้อมผ่านไทย | 19 Mbps | 321 ms |
+| Alternative Path 2 | อ้อมผ่านไต้หวัน | 14 Mbps | 524 ms |
+
+เทียบสองวิธี วิธีเดิมที่ subflow ไปตามเส้นทางปกติ กับวิธีที่ส่ง subflow ไปคนละเส้นทาง (disjoint approach)
+
+ลองทายก่อน: ส่งสองเส้นทางแทนเส้นเดียว เวลาส่งเสร็จจะลดลงกี่เปอร์เซ็นต์
+
+ผลคือ **เวลาส่งเสร็จลดลง 26% บน OF@TEIN+ และลดลง 32% บน Mininet**
+
+ผลบนสองที่ต่างกันชัด บน Mininet ความเร็วนิ่ง วิธีเดิมอยู่ราว 37 Mbps ตลอดและเสร็จราววินาทีที่ 120 ส่วนแบบ disjoint อยู่ราว 57 Mbps และเสร็จราววินาทีที่ 80 บน OF@TEIN+ ความเร็วของทั้งสองวิธีขึ้นลงตลอด วิธีเดิมเสร็จราววินาทีที่ 160 ส่วนแบบ disjoint เสร็จราววินาทีที่ 118
+
+<Example added title="ทำไมได้ราว 30% ไม่ใช่ 50%">
+
+คำนวณด้วย Python โดยสมมติว่าวิธีเดิมได้แค่ Shortest Path และแบบ disjoint ได้ Shortest Path บวก Alternative Path 1 เต็มความเร็ว
+
+```text
+one path 36 Mbps: 111.1 s
+two disjoint 36+19=55 Mbps: 72.7 s, cut 35%
+```
+
+เส้นทางสำรองช้ากว่าเส้นหลักเกือบครึ่ง เวลาจึงลดได้ราวหนึ่งในสาม ไม่ใช่ครึ่งหนึ่ง ตัวเลข 35% นี้ใกล้กับ 32% ที่วัดได้บน Mininet และ 57 Mbps ที่วัดได้บน Mininet ก็ใกล้กับ 36 + 19 = 55 Mbps
+
+</Example>
+
+<Callout type="info" title="อ่านต่อ">
+K. Kawila, J. Kim and K. Rojviboonchai, "An SDN-Coordinated Steering Framework for Multipath Big Data Transfer Application," *IEEE Access*, vol. 10, pp. 95859–95875, 2022 ชื่อบทความนี้ต่างจากชื่อบนหน้าแรกของสไลด์ use case เล็กน้อย ซึ่งใช้ว่า "An SDN-Coordinated Multipath Transmission Steering Framework"
+</Callout>
+
+<Quiz question="ระหว่างส่งข้อมูล ลิงก์บน Alternative Path 1 ไม่ได้ขาด แต่ช้าลงมากเพราะมี traffic อื่นเข้ามาแย่ง framework นี้รู้ได้อย่างไร และรู้จาก API ตัวไหน">
+ลิงก์ที่ยังต่ออยู่ไม่ทำให้ topology เปลี่ยน ONOS จึงไม่ส่ง Topology_Change สิ่งที่เปลี่ยนคือตัวนับ byte ของ port ที่โตช้าลง หรือ port นั้นมี traffic อื่นเต็มอยู่ Timer Manager อ่าน port stats เป็นรอบ แล้วเรียก Link Utilization Calculation ซึ่งคำนวณแล้วเห็นว่าลิงก์แน่น จึงแจ้ง Topology Manager ให้ปรับกราฟ การหาเส้นทางครั้งต่อไปจึงเลี่ยงลิงก์นั้น
+
+คำตอบคือ **รู้จากการอ่าน Get_Port_Stats (API 4) เป็นรอบ ๆ**
+
+คำตอบที่ผิดบ่อยคือ "รู้จาก Topology_Change" event นั้นเกิดเมื่อลิงก์หรืออุปกรณ์หายไปหรือเพิ่มเข้ามา ลิงก์ช้าไม่ใช่ลิงก์หาย ระบบจึงต้องวัดเอง
+</Quiz>
+
+<Recap>
+- **SDN** แยก control ออกจากอุปกรณ์ไปไว้ที่ controller ซึ่งเขียนแถวลง **flow table** ของ switch ทุกตัวผ่าน **OpenFlow** switch แค่หาแถวที่ตรงแล้วทำตาม
+- หนึ่งแถวมี **rule** (ดูได้ 12 ช่อง ตั้งแต่ switch port, VLAN, MAC, Eth type, IP จนถึง port ของ TCP/UDP โดยช่องที่ไม่สนใจเป็น `*`), **action** (ส่งออก port, ส่งให้ controller, ส่งเข้าทางปกติ, แก้ header, ส่วนขยาย) และ **stats** (ตัวนับ packet และ byte)
+- packet ตรงหลายแถว แถวที่ **priority** สูงสุดชนะ **idle timeout** ลบแถวที่ไม่มีใครใช้ **hard timeout** ลบแถวเมื่อครบเวลา
+- packet ที่ไม่ตรงแถวไหนไปถาม controller เป็น **Packet-In** controller ติดตั้งแถวใหม่ แล้ว packet ถัดไปของ flow เดียวกันไม่ต้องถามอีก
+- router, multicast และ firewall กลายเป็นแถวคนละแถวในตารางเดียว middlebox จึงไม่ต้องเป็นกล่องแยก
+- SDN จริงมีสามชั้น **management, control, data** เชื่อมด้วย **northbound** (แอปสั่ง controller), **southbound** (controller สั่งอุปกรณ์ เช่น OpenFlow) และ **east-west** (controller คุยกันเอง)
+- **Ryu** เป็น framework ให้เขียน controller เอง รองรับ OpenFlow 1.0, 1.2, 1.3 และ OF-Config 1.1 ส่วน **ONOS** แยกแอปจาก controller มี distributed core และ **intent** ที่บอกผลลัพธ์ไม่บอกวิธี
+- **P4** ให้คนเขียนโปรแกรมกำหนดเองว่า data plane อ่านและจัดการ packet อย่างไร เป้าหมายคือ reconfigurability, protocol independence และ target independence แต่ entry ในตารางยังมาจาก control plane ผ่าน **P4Runtime**
+- Google ใช้ SDN ทั้งใน data center (Jupiter) และ WAN (**B4** ใช้ TE server กลางคำนวณเส้นทาง) โดย **Orion** เป็น control plane ที่คุมทั้ง Jupiter, campus และ B4 ส่วนนักวิจัยทดลองบน testbed อย่าง **OF@TEIN+**, GENI, PlanetLab และ GEANT
+- use case ใช้ **MPTCP** แยกการเชื่อมต่อเป็น subflow แล้วให้แอปสามโมดูลบน ONOS ส่งแต่ละ subflow ไปคนละเส้นทาง ส่งข้อมูลเสร็จเร็วขึ้น 26% บน OF@TEIN+ และ 32% บน Mininet
+
+<Quiz question="แอป security อยากให้ switch ที่รัน P4 ทิ้ง packet ที่ tenant_id = 7 คำสั่งเดินผ่านอะไรบ้างจากแอปถึงตาราง และใครกำหนดว่าตารางนี้มีอยู่">
+แอปอยู่ชั้นบนสุด มันส่งคำขอขึ้นไปหา controller ทาง northbound controller แปลงคำขอเป็น entry ที่มี key คือ tenant_id = 7 และ action คือ drop แล้วเติมลงตารางของ switch ทาง southbound ซึ่งในกรณีนี้คือ P4Runtime ส่วนตารางที่ใช้ tenant_id เป็น key ต้องมีอยู่ก่อนแล้ว เพราะโปรแกรม P4 ที่ compile และโหลดลง switch เป็นตัวประกาศมัน
+
+คำตอบคือ **แอป → northbound → controller → P4Runtime → entry ในตาราง** ส่วนตัวตารางมาจาก **โปรแกรม P4**
+
+คำตอบที่ผิดบ่อยคือ "แอปเขียนลง switch ตรง" แอปไม่ได้แตะ switch เอง และ controller ที่ไม่รู้ว่ามี entry นี้อาจเขียนทับตอนคำนวณตารางใหม่ อีกคำตอบที่ผิดคือ "โปรแกรม P4 รู้เองว่าต้องทิ้ง tenant 7" โปรแกรมจะรู้ได้ก็ต่อเมื่อฝัง entry นั้นไว้ในโค้ด ซึ่งต้อง compile ใหม่ทุกครั้งที่ tenant เปลี่ยน แบบที่ใช้กันทั่วไปจึงประกาศตารางเปล่าไว้ แล้วให้ controller เติมตอนระบบรัน
+</Quiz>
+
+<Quiz question="ในเครือข่าย SDN ที่ controller เขียนแถวเมื่อมี packet ใหม่มาถึง ทำไม ping ครั้งแรกไปเครื่องใหม่ถึงช้ากว่าครั้งที่สองชัดเจน">
+ping ครั้งแรกไม่มีแถวรองรับ switch จึงส่ง Packet-In ไปถาม controller ซึ่งต้องคำนวณเส้นทางแล้วติดตั้งแถวลง switch บนทางก่อน packet ถึงจะไปต่อได้ ping ครั้งที่สองตรงกับแถวที่เพิ่งติดตั้ง switch ส่งต่อเองทันที
+
+คำตอบคือ **ครั้งแรกต้องเดินทางไปกลับ controller และรอติดตั้งแถว ครั้งที่สองไม่ต้อง**
+
+คำตอบที่ผิดบ่อยคือ "เพราะทุก packet ต้องผ่าน controller" ถ้าเป็นอย่างนั้น ครั้งที่สองก็ต้องช้าเท่าครั้งแรก controller เห็นแค่ packet แรกของแต่ละ flow
+</Quiz>
+
+<Quiz question="ในการทดลองเดียวกัน ถ้า Alternative Path 1 ใช้ไม่ได้ และ disjoint approach ได้ Shortest Path (36 Mbps) กับ Alternative Path 2 (14 Mbps) เวลาส่ง 500 MB จะลดลงประมาณกี่เปอร์เซ็นต์">
+500 MB คือ 4000 Mb ส่งทางเดียวที่ 36 Mbps ใช้ 4000 / 36 ≈ 111.1 วินาที ส่งสองทางที่ไม่ซ้ำกันได้ 36 + 14 = 50 Mbps ใช้ 4000 / 50 = 80 วินาที
+
+คำตอบคือ **ลดลงราว 28%** น้อยกว่ากรณีใช้ Alternative Path 1 ที่ได้ราว 35% เพราะเส้นสำรองช้ากว่า
+
+คำตอบที่ผิดบ่อยคือ "ลดลงครึ่งหนึ่ง เพราะใช้สองเส้นทาง" สองเส้นทางให้ความเร็วรวมเท่ากับผลบวกของแต่ละเส้น ไม่ใช่สองเท่าของเส้นที่เร็วที่สุด
+</Quiz>
+
+</Recap>
