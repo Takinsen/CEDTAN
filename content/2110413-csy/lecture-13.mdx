@@ -169,8 +169,8 @@ CVE คือรหัสอย่าง `CVE-2021-44228` ที่ใช้อ�
 | A07 Authentication Failures | Authentication | [Lecture 3](/2110413-csy/lecture-3) |
 | A01 Broken Access Control | Authorization | [Lecture 4](/2110413-csy/lecture-4) |
 | A09 Logging & Alerting Failures | Auditing | [Lecture 5](/2110413-csy/lecture-5) |
-| A08 Integrity Failures | Integrity | [Lecture 6](/2110413-csy/lecture-6) |
-| A04 Cryptographic Failures | Cryptography | [Lecture 6](/2110413-csy/lecture-6) และ [Lecture 7](/2110413-csy/lecture-7) |
+| A08 Integrity Failures | Integrity | [Lecture 6.1](/2110413-csy/lecture-6), [6.3](/2110413-csy/lecture-6-3#digital-signature) |
+| A04 Cryptographic Failures | Cryptography | [Lecture 6.2](/2110413-csy/lecture-6-2), [Lecture 6.3](/2110413-csy/lecture-6-3) และ [Lecture 7](/2110413-csy/lecture-7) |
 | A06 Insecure Design, A10 Exceptional Conditions, A03 Supply Chain | Software Security | [Lecture 12](/2110413-csy/lecture-12) |
 | Prompt injection ในแอปที่ใช้ LLM | AI & ML Security | [Lecture 13.2](/2110413-csy/lecture-13-2) |
 | A05 Injection และ XXE ใน A02 | Input Validation | [Lecture 2](/2110413-csy/lecture-2#validation-of-input--เชื่อ-input-ไม่ได้), [Lecture 12.2 ส่วนที่ 2](/2110413-csy/lecture-12-2#ส่วนที่-2--input-ทุกตัวเป็นของร้าย), ส่วนที่ 6 ของหน้านี้ และ [Lecture 13.2](/2110413-csy/lecture-13-2) |
@@ -333,9 +333,9 @@ Software or Data Integrity Failures คือการเชื่อโค้�
 
 วิธีป้องกัน
 
-- **เซ็นโค้ดและข้อมูล แล้วตรวจลายเซ็นก่อนใช้** หลักเดียวกับ [digital signature ใน Lecture 6](/2110413-csy/lecture-6#digital-signature)
+- **เซ็นโค้ดและข้อมูล แล้วตรวจลายเซ็นก่อนใช้** หลักเดียวกับ [digital signature ใน Lecture 6.3](/2110413-csy/lecture-6-3#digital-signature)
 - **ไม่ deserialize ข้อมูลที่เชื่อไม่ได้ด้วยรูปแบบ native ของภาษา** ให้ใช้ JSON ที่ตรวจตาม schema แทน เพราะรูปแบบ native บางภาษาสร้าง object ชนิดไหนก็ได้ตามที่ข้อมูลสั่ง
-- **ใช้ <Term en="Subresource Integrity (SRI)" th="ใส่ hash ของสคริปต์ไว้ในหน้าเว็บ" /> กับสคริปต์จาก CDN** คือเขียนค่า hash ของสคริปต์ไว้ในแท็กที่โหลดมัน ถ้าไฟล์บน CDN ถูกแก้ hash จะไม่ตรง แล้วเบราว์เซอร์ไม่รันสคริปต์นั้น หลักเดียวกับ [การตรวจ integrity ด้วย hash](/2110413-csy/lecture-6#เอา-hash-ไปใช้ตรวจ-integrity)
+- **ใช้ <Term en="Subresource Integrity (SRI)" th="ใส่ hash ของสคริปต์ไว้ในหน้าเว็บ" /> กับสคริปต์จาก CDN** คือเขียนค่า hash ของสคริปต์ไว้ในแท็กที่โหลดมัน ถ้าไฟล์บน CDN ถูกแก้ hash จะไม่ตรง แล้วเบราว์เซอร์ไม่รันสคริปต์นั้น หลักเดียวกับ [การตรวจ integrity ด้วย hash](/2110413-csy/lecture-6-2#เอา-hash-ไปใช้ตรวจ-integrity)
 
 ### A03:2025 Software Supply Chain Failures
 
