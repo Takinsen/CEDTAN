@@ -1,48 +1,95 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
-import { useEffect } from 'react';
-import { countClasses, lectureNumber } from '@/lib/lecture-order';
+import { ArrowRight, Clock } from 'lucide-react';
+import { useEffect, useState, type CSSProperties, type MouseEvent } from 'react';
+import { countClasses, lectureCards, type CardLecture } from '@/lib/lecture-order';
 
 export type DirectoryCourse = {
   slug: string;
   code: string;
   name: string;
   nameTh?: string;
-  lectures: { url: string; label: string; lecture?: number; part?: number }[];
+  accent: { light: string; dark: string };
+  lectures: CardLecture[];
 };
 
+// the hero asks the directory to show a course with this event
+export const OPEN_COURSE = 'cedtan:open-course';
+
 const LAST_COURSE = 'cedtan:last-course';
-const ROW = 'grid grid-cols-[1fr_auto_auto] items-baseline gap-x-4 py-3.5 sm:grid-cols-[7.5em_1fr_auto_auto]';
+const HASH = /^#course-(.+)$/;
 
-// every course folded, except the one this browser opened last
+const accentOf = (course: DirectoryCourse) =>
+  ({
+    '--accent-light': course.accent.light,
+    '--accent-dark': course.accent.dark,
+  }) as CSSProperties;
+
+const still = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function remember(slug: string) {
+  history.replaceState(null, '', `#course-${slug}`);
+  try {
+    localStorage.setItem(LAST_COURSE, slug);
+  } catch {}
+}
+
+// the courses down the side, the chosen course's lectures as cards beside them
 export function CourseDirectory({ courses }: { courses: DirectoryCourse[] }) {
+  const ready = courses.filter((course) => course.lectures.length > 0);
+  const pending = courses.filter((course) => course.lectures.length === 0);
   const total = courses.reduce((sum, course) => sum + countClasses(course.lectures), 0);
+  const readySlugs = ready.map((c) => c.slug).join(' ');
 
+  const [picked, setPicked] = useState(ready[0]?.slug ?? '');
+  const course = ready.find((c) => c.slug === picked) ?? ready[0];
+
+  // on arrival: the course in the link, else the one this browser read last, else the first
   useEffect(() => {
+    const isReady = (slug: string | null | undefined): slug is string => !!slug && readySlugs.split(' ').includes(slug);
     let saved: string | null = null;
     try {
       saved = localStorage.getItem(LAST_COURSE);
-    } catch {
-      return;
-    }
-    const details = saved && document.getElementById(`course-${saved}`);
-    if (!(details instanceof HTMLDetailsElement)) return;
-    details.open = true;
-  }, []);
-
-  function remember(details: HTMLDetailsElement, slug: string) {
-    if (!details.open) return;
-    try {
-      localStorage.setItem(LAST_COURSE, slug);
     } catch {}
+    const linked = location.hash.match(HASH)?.[1];
+    const first = isReady(linked) ? linked : isReady(saved) ? saved : null;
+    // the server renders the first course; the saved one swaps in on the next frame
+    const frame = first ? requestAnimationFrame(() => setPicked(first)) : 0;
+    // a link to a course lands on the directory; no element carries that id, so the browser does not jump or focus
+    if (isReady(linked)) document.getElementById('lectures-title')?.scrollIntoView({ behavior: 'instant' });
+
+    // the hero's buttons pick a course and bring the directory into view
+    const onOpen = (event: Event) => {
+      const slug = (event as CustomEvent<string>).detail;
+      if (!isReady(slug)) return;
+      event.preventDefault();
+      setPicked(slug);
+      remember(slug);
+      document.getElementById('lectures-title')?.scrollIntoView({ behavior: still() ? 'instant' : 'smooth' });
+    };
+    window.addEventListener(OPEN_COURSE, onOpen);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener(OPEN_COURSE, onOpen);
+    };
+  }, [readySlugs]);
+
+  function pick(event: MouseEvent<HTMLAnchorElement>, slug: string) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    if (slug === picked) return;
+    setPicked(slug);
+    remember(slug);
   }
 
+  if (!course) return null;
+  const minutes = course.lectures.reduce((sum, l) => sum + (l.minutes ?? 0), 0);
+
   return (
-    <section aria-labelledby="lectures-title" className="mx-auto w-full max-w-5xl px-4 pt-10">
+    <section aria-labelledby="lectures-title" className="mx-auto w-full max-w-[1400px] px-4 pt-10">
       <div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1">
-        <h2 id="lectures-title" className="text-[22px] font-semibold">
+        <h2 id="lectures-title" className="scroll-mt-20 text-[22px] font-semibold">
           ทุกคาบ
         </h2>
         <p className="text-sm text-fd-muted-foreground">
@@ -50,68 +97,97 @@ export function CourseDirectory({ courses }: { courses: DirectoryCourse[] }) {
         </p>
       </div>
 
-      <div className="mt-5 border-t border-fd-border">
-        {courses.map((course) =>
-          course.lectures.length === 0 ? (
-            // a course whose pages are still being written has nothing to unfold
-            <div key={course.slug} id={`course-${course.slug}`} className={`${ROW} scroll-mt-20 border-b border-fd-border`}>
-              <CourseHeading course={course} />
-              <span className="rounded-full border border-fd-border px-2 text-xs text-fd-muted-foreground">
-                กำลังเรียบเรียง
-              </span>
-              <span aria-hidden className="size-3.5" />
-            </div>
-          ) : (
-            <details
-              key={course.slug}
-              id={`course-${course.slug}`}
-              onToggle={(event) => remember(event.currentTarget, course.slug)}
-              className="home-course group scroll-mt-20 border-b border-fd-border"
-            >
-              <summary
-                className={`${ROW} -mx-2 cursor-pointer px-2 list-none rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fd-primary [&::-webkit-details-marker]:hidden`}
-              >
-                <CourseHeading course={course} />
-                <span className="text-sm tabular-nums text-fd-muted-foreground">{countClasses(course.lectures)} คาบ</span>
-                <ChevronRight
-                  aria-hidden
-                  className="size-3.5 self-center text-fd-muted-foreground transition-transform duration-200 group-open:rotate-90 motion-reduce:transition-none"
-                />
-              </summary>
+      <div className="home-split mt-5">
+        <nav aria-label="วิชา" className="home-courses">
+          <ul>
+            {ready.map((c) => {
+              const on = c.slug === course.slug;
+              return (
+                <li key={c.slug}>
+                  <a
+                    href={`#course-${c.slug}`}
+                    aria-current={on || undefined}
+                    onClick={(event) => pick(event, c.slug)}
+                    className="home-banner is-small"
+                    style={accentOf(c)}
+                  >
+                    <span aria-hidden className="home-banner-glow" />
+                    <span aria-hidden className="home-pick" />
+                    <span className="home-banner-code">{c.code}</span>
+                    <span className="home-banner-text relative z-10 flex min-w-0 flex-col">
+                      <span className="text-[17px] leading-snug font-semibold text-pretty">{c.name}</span>
+                      <span className="text-sm text-fd-muted-foreground">{countClasses(c.lectures)} คาบ</span>
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+            {pending.map((c) => (
+              <li key={c.slug}>
+                <div id={`course-${c.slug}`} className="home-banner is-small is-empty" style={accentOf(c)}>
+                  <span aria-hidden className="home-banner-glow" />
+                  <span className="home-banner-code">{c.code}</span>
+                  <span className="home-banner-text relative z-10 flex min-w-0 flex-col">
+                    <span className="text-[15px] leading-snug font-semibold text-pretty">{c.name}</span>
+                    <span className="text-sm text-fd-muted-foreground">กำลังเรียบเรียง</span>
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-              <div className="pb-4 sm:pl-[calc(7.5em+1rem)]">
-                <ol className="gap-8 sm:columns-2">
-                  {course.lectures.map((lecture) => (
-                    <li key={lecture.url} className="break-inside-avoid">
-                      <Link
-                        href={lecture.url}
-                        className="flex items-baseline gap-3 border-b border-fd-border py-2 transition-colors hover:text-fd-primary"
-                      >
-                        <span className="w-8 shrink-0 text-sm tabular-nums text-fd-muted-foreground">
-                          {lectureNumber(lecture)}
-                        </span>
-                        <span>{lecture.label}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </details>
-          ),
-        )}
+        <div className="home-panel" style={accentOf(course)} aria-labelledby="panel-title" role="region">
+          <div key={course.slug} className="home-panel-body">
+            <header className="home-panel-head">
+              <h3 id="panel-title" className="text-[26px] leading-tight font-bold text-pretty sm:text-[34px]">
+                {course.name}
+              </h3>
+              <p className="mt-1 text-fd-muted-foreground">
+                {course.nameTh && <>{course.nameTh} · </>}
+                {countClasses(course.lectures)} คาบ · อ่านราว {minutes.toLocaleString('th-TH')} นาที
+              </p>
+            </header>
+
+            <ol className="home-cards mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {lectureCards(course.lectures).map((card, i) => (
+                <li key={card.url} className="home-card" style={{ '--i': i } as CSSProperties}>
+                  <span aria-hidden className="home-card-number">
+                    {card.number}
+                  </span>
+                  <div className="home-card-body">
+                    <Link href={card.url} className="home-card-title">
+                      <span className="sr-only">คาบ {card.number} </span>
+                      {card.title}
+                    </Link>
+                    {card.parts.length === 0 && (
+                      <p className="home-card-desc">{course.lectures.find((l) => l.url === card.url)?.description}</p>
+                    )}
+                    {card.parts.length > 0 && (
+                      <div className="relative z-10 mt-2 flex flex-wrap gap-1.5">
+                        {card.parts.map((part) => (
+                          <Link key={part.url} href={part.url} className="home-chip">
+                            <span className="font-mono text-xs font-medium text-fd-foreground">{part.number}</span>
+                            {part.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    <p className="home-card-foot">
+                      <Clock aria-hidden className="size-3.5" />
+                      <span>
+                        {card.minutes !== undefined && <>อ่านราว {card.minutes} นาที</>}
+                        {card.parts.length > 0 && <> · {card.parts.length} ตอน</>}
+                      </span>
+                      <ArrowRight aria-hidden className="home-card-arrow size-4" />
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
       </div>
     </section>
-  );
-}
-
-function CourseHeading({ course }: { course: DirectoryCourse }) {
-  return (
-    <>
-      <span className="col-span-full font-mono text-[13px] text-fd-muted-foreground sm:col-span-1">{course.code}</span>
-      <span>
-        <h3 className="text-[17px] font-semibold">{course.name}</h3>
-        {course.nameTh && <span className="block text-sm text-fd-muted-foreground">{course.nameTh}</span>}
-      </span>
-    </>
   );
 }

@@ -50,3 +50,37 @@ export function neighboursOf<T extends { url: string }>(list: T[], url: string):
   if (i === -1) return {};
   return { previous: unique[i - 1], next: unique[i + 1] };
 }
+
+export type CardLecture = Numbered & { url: string; label: string; lectureTitle?: string; minutes?: number; description?: string };
+export type LectureCard = {
+  number: string;
+  title: string;
+  url: string;
+  minutes?: number;
+  parts: { number: string; label: string; url: string }[];
+};
+
+// the landing page shows one card per class: a split lecture's parts become links on its card
+export function lectureCards(lectures: CardLecture[]): LectureCard[] {
+  const cards: (LectureCard & { lecture?: number; times: (number | undefined)[] })[] = [];
+  for (const page of lectures) {
+    const last = cards.at(-1);
+    if (page.part !== undefined && page.part > 1 && last && last.lecture === page.lecture) {
+      last.parts.push({ number: lectureNumber(page), label: page.label, url: page.url });
+      last.times.push(page.minutes);
+      continue;
+    }
+    cards.push({
+      lecture: page.lecture,
+      number: page.lecture === undefined ? '' : String(page.lecture),
+      title: page.part === undefined ? page.label : (page.lectureTitle ?? page.label),
+      url: page.url,
+      parts: page.part === undefined ? [] : [{ number: lectureNumber(page), label: page.label, url: page.url }],
+      times: [page.minutes],
+    });
+  }
+  return cards.map(({ lecture: _, times, ...card }) => ({
+    ...card,
+    minutes: times.every((t) => t !== undefined) ? times.reduce((sum, t) => sum + t, 0) : undefined,
+  }));
+}

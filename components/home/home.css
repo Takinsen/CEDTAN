@@ -55,104 +55,353 @@
   visibility: hidden;
 }
 
-/* a directory row unfolds instead of snapping open */
-.home-course {
-  interpolate-size: allow-keywords;
+/* each course paints its lecture numbers in its cover's hue, a light and a dark step */
+.home-banner,
+.home-panel {
+  --accent: var(--accent-light);
 }
 
-.home-course::details-content {
-  block-size: 0;
-  overflow: clip;
+.dark .home-banner,
+.dark .home-panel {
+  --accent: var(--accent-dark);
+}
+
+/* a course is a band lit from the right in its hue, its code set huge behind the name */
+.home-banner {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 132px;
+  padding: 20px 24px;
+  overflow: hidden;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 16px;
+  background: var(--color-fd-card);
+  outline: 2px solid transparent;
+  outline-offset: 3px;
   transition:
-    block-size 420ms cubic-bezier(0.3, 0.7, 0.2, 1),
-    content-visibility 420ms allow-discrete;
+    outline-color 1.4s ease-out,
+    border-color 400ms ease-out;
 }
 
-.home-course[open]::details-content {
-  block-size: auto;
+a.home-banner {
+  cursor: pointer;
 }
 
-/* the row a glide lands on flashes the surface tint, then fades back */
-.home-course > summary {
-  transition: background-color 1.4s ease-out;
+a.home-banner:hover,
+.home-banner[aria-current] {
+  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
 }
 
-.home-course[data-arrive] > summary {
-  background-color: var(--color-fd-card);
+a.home-banner:focus-visible {
+  outline-color: var(--color-fd-primary);
   transition: none;
 }
 
-.home-fade-edges {
-  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
-}
-
-/* the old cover holds its opacity and zoom under the new one for a second, then hides */
-.home-cover {
-  opacity: 0;
-  transition: opacity 0s 1000ms;
-}
-
-.home-cover-drift {
-  transform: scale(1.08);
-  transition: transform 0s 1000ms;
-}
-
-/* the new cover fades in on top and eases back from a slight zoom */
-.home-cover[data-on] {
-  z-index: 1;
-  opacity: 1;
-  transition: opacity 1000ms ease-out;
-}
-
-.home-cover[data-on] .home-cover-drift {
-  transform: scale(1);
-  transition: transform 16s ease-out;
-
-  @starting-style {
-    transform: scale(1.08);
-  }
-}
-
-/* a blurred 32px thumbnail holds the place until the cover arrives */
-.home-cover-thumb {
+.home-banner-glow {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: brightness(0.8) blur(22px);
-  transform: scale(1.15);
-}
-
-/* the full cover starts soft and pulls into focus once loaded */
-.home-cover-full {
-  opacity: 0;
-  filter: brightness(0.8) blur(18px);
-  transform: scale(1.04);
+  z-index: -1;
+  background: radial-gradient(ellipse 55% 140% at 92% 50%, color-mix(in oklab, var(--accent) 34%, transparent), transparent 70%);
+  opacity: 0.75;
+  transform-origin: 92% 50%;
   transition:
-    opacity 500ms ease-out,
-    filter 1200ms cubic-bezier(0.2, 0.7, 0.2, 1),
-    transform 1200ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    opacity 700ms ease-out,
+    transform 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.home-cover[data-loaded] .home-cover-full {
+a.home-banner:hover .home-banner-glow,
+.home-banner[aria-current] .home-banner-glow {
   opacity: 1;
-  filter: brightness(0.8);
-  transform: none;
+  transform: scale(1.25);
 }
 
-.home-rise {
-  animation: home-rise 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+/* the name stops short of the code, so the two never cross */
+.home-banner-text {
+  max-width: 55%;
 }
 
-@keyframes home-rise {
+.home-banner-code {
+  position: absolute;
+  right: 24px;
+  bottom: -24px;
+  z-index: 0;
+  font-size: 92px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px color-mix(in oklab, var(--accent) 60%, transparent);
+  user-select: none;
+  transition:
+    translate 1.2s cubic-bezier(0.2, 0.7, 0.2, 1),
+    -webkit-text-stroke-color 600ms ease-out;
+}
+
+a.home-banner:hover .home-banner-code,
+.home-banner[aria-current] .home-banner-code {
+  translate: -10px 0;
+  -webkit-text-stroke-color: var(--accent);
+}
+
+.home-banner.is-empty .home-banner-glow {
+  opacity: 0.25;
+}
+
+.home-banner.is-empty .home-banner-code {
+  -webkit-text-stroke-color: var(--color-fd-border);
+}
+
+.home-banner-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 12px;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 999px;
+  background: var(--color-fd-card);
+  color: var(--color-fd-muted-foreground);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* one card per class: a big number in the course hue, the title, its parts as chips */
+.home-card {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 12px;
+  background: var(--color-fd-card);
+  transition:
+    translate 250ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    border-color 250ms ease-out;
+}
+
+.home-card:hover {
+  translate: 0 -2px;
+  border-color: var(--accent);
+}
+
+.home-card:has(.home-card-title:focus-visible) {
+  outline: 2px solid var(--color-fd-primary);
+  outline-offset: 2px;
+}
+
+.home-card-number {
+  min-width: 1.3em;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  transition: translate 250ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.home-card:hover .home-card-number {
+  translate: 3px 0;
+}
+
+/* every card in a course the same height: title on top, then the parts or the question, minutes at the foot */
+.home-cards {
+  grid-auto-rows: 1fr;
+}
+
+.home-card-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.home-card-desc {
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-fd-muted-foreground);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* the foot of a card: reading time on the left, an arrow that leans in on hover */
+.home-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-fd-border);
+  font-size: 13px;
+  color: var(--color-fd-muted-foreground);
+}
+
+.home-card-body > :nth-last-child(2) {
+  margin-bottom: 12px;
+}
+
+.home-card-arrow {
+  margin-left: auto;
+  color: var(--accent);
+  opacity: 0.6;
+  transition:
+    translate 250ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 250ms ease-out;
+}
+
+.home-card:hover .home-card-arrow {
+  opacity: 1;
+  translate: 4px 0;
+}
+
+.home-card-title {
+  display: block;
+  font-weight: 600;
+  line-height: 1.45;
+  outline: none;
+}
+
+/* the whole card opens the lecture; the chips sit above this layer */
+.home-card-title::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.home-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 999px;
+  background: var(--color-fd-card);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--color-fd-muted-foreground);
+  transition:
+    border-color 200ms ease-out,
+    color 200ms ease-out;
+}
+
+.home-chip:hover {
+  border-color: var(--accent);
+  color: var(--color-fd-foreground);
+}
+
+/* a course still being written: a small tile, a faint glow, a code in hairline grey */
+.home-banner.is-small {
+  min-height: 104px;
+  padding: 14px 18px;
+}
+
+.home-banner.is-small .home-banner-code {
+  right: 12px;
+  bottom: -12px;
+  font-size: 48px;
+}
+
+.home-banner.is-small .home-banner-text {
+  max-width: 68%;
+}
+
+/* the courses down the side, the chosen course's lectures beside them */
+.home-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.home-courses ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (width >= 1024px) {
+  .home-split {
+    grid-template-columns: 320px minmax(0, 1fr);
+  }
+
+  .home-courses {
+    position: sticky;
+    top: 80px;
+  }
+}
+
+/* below that, the courses become a strip that scrolls sideways above the cards */
+@media (width < 1024px) {
+  .home-courses ul {
+    flex-direction: row;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 16px;
+    scrollbar-width: none;
+    margin-inline: -16px;
+    padding: 2px 16px 6px;
+  }
+
+  .home-courses li {
+    flex: 0 0 240px;
+    scroll-snap-align: start;
+  }
+}
+
+.home-courses .home-banner {
+  height: 100%;
+}
+
+/* the chosen course: a ring and a full glow in its hue, fading in where it is and out where it was */
+.home-pick {
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
+  border: 1px solid var(--accent);
+  border-radius: inherit;
+  background: radial-gradient(ellipse 70% 160% at 95% 50%, color-mix(in oklab, var(--accent) 40%, transparent), transparent 75%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 360ms ease-out;
+}
+
+.home-banner[aria-current] .home-pick {
+  opacity: 1;
+}
+
+.home-banner[aria-current] .home-banner-code {
+  -webkit-text-stroke-color: var(--accent);
+}
+
+.home-panel-head {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-fd-border);
+}
+
+.home-panel-head h3 {
+  width: fit-content;
+}
+
+/* switching course, calm: the new heading and cards rise into place, the cards a beat apart */
+.home-panel-body .home-panel-head {
+  animation: home-calm-in 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.home-panel-body .home-card {
+  animation: home-calm-in 380ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 25ms + 60ms);
+}
+
+@keyframes home-calm-in {
   from {
     opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
+    translate: 0 8px;
   }
 }
 
@@ -164,8 +413,57 @@
   .home-cover,
   .home-cover-drift,
   .home-cover-full,
-  .home-course::details-content,
-  .home-course > summary {
+  .home-banner,
+  .home-banner-glow,
+  .home-banner-code,
+  .home-card,
+  .home-card-number,
+  .home-card-arrow,
+  .home-chip {
     transition: none;
+  }
+
+  .home-panel-body .home-panel-head,
+  .home-panel-body .home-card {
+    animation: none !important;
+  }
+
+  .home-pick {
+    transition: none;
+  }
+
+  a.home-banner:hover .home-banner-glow,
+  .home-banner[aria-current] .home-banner-glow {
+    transform: none;
+  }
+
+  a.home-banner:hover .home-banner-code,
+  .home-banner[aria-current] .home-banner-code {
+    translate: none;
+  }
+
+  .home-card:hover,
+  .home-card:hover .home-card-number,
+  .home-card:hover .home-card-arrow {
+    translate: none;
+  }
+}
+
+/* in the phone strip, the code sits small above the name, so it never crosses the count */
+@media (width < 1024px) {
+  .home-courses .home-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 2px;
+  }
+
+  .home-courses .home-banner.is-small .home-banner-code {
+    position: static;
+    font-size: 30px;
+  }
+
+  .home-courses .home-banner.is-small .home-banner-text {
+    max-width: 100%;
   }
 }

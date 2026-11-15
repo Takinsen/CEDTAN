@@ -3,7 +3,8 @@
 import Image from 'next/image';
 import { ArrowDown, Pause, Play } from 'lucide-react';
 import { useEffect, useRef, useState, type FocusEvent, type MouseEvent } from 'react';
-import { copiesFor, easeInOutCubic, exitProgress, nearestIndex, wrapOffset } from './strip';
+import { copiesFor, exitProgress, nearestIndex, wrapOffset } from './strip';
+import { OPEN_COURSE } from './course-directory';
 
 export type HeroCourse = {
   slug: string;
@@ -18,53 +19,13 @@ export type HeroCourse = {
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f3f3f3]';
 const NAME = 'mt-2 max-w-[16ch] text-balance text-[clamp(40px,7.5vw,96px)] font-bold leading-[1.1] tracking-[-0.015em]';
 
-const GLIDE_MS = 900;
 const COPY_FADE = 1.7;
 const STRIP_FADE = 2.2;
-const CANCEL_GLIDE = ['wheel', 'touchstart', 'keydown'] as const;
-let glideJob = 0;
 
-// scroll the window to a point over GLIDE_MS, dropped as soon as the reader scrolls themselves
-function glideTo(top: number, done: () => void) {
-  const from = window.scrollY;
-  const start = performance.now();
-  const job = ++glideJob;
-  const cancel = () => glideJob++;
-  const stop = () => CANCEL_GLIDE.forEach((type) => window.removeEventListener(type, cancel));
-  CANCEL_GLIDE.forEach((type) => window.addEventListener(type, cancel, { passive: true }));
-
-  requestAnimationFrame(function step(now) {
-    if (job !== glideJob) return stop();
-    const k = Math.min(1, (now - start) / GLIDE_MS);
-    window.scrollTo({ top: from + (top - from) * easeInOutCubic(k), behavior: 'instant' });
-    if (k < 1) return void requestAnimationFrame(step);
-    stop();
-    done();
-  });
-}
-
-// open a course in the directory below: glide to it, then unfold and light its row
+// a ready course opens full screen in the directory; a course still being written scrolls to its tile
 function openCourse(event: MouseEvent<HTMLAnchorElement>, slug: string) {
-  const target = document.getElementById(`course-${slug}`);
-  if (!(target instanceof HTMLDetailsElement)) return;
-  event.preventDefault();
-
-  // land on the row, but never short of the hero's foot, so no strip of hero shows under the nav
-  const margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
-  const heroHeight = event.currentTarget.closest('section')?.offsetHeight ?? 0;
-  const top = Math.max(target.getBoundingClientRect().top + window.scrollY - margin, heroHeight);
-
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    target.open = true;
-    window.scrollTo({ top, behavior: 'instant' });
-    return;
-  }
-
-  glideTo(top, () => {
-    target.open = true;
-    target.dataset.arrive = '';
-    requestAnimationFrame(() => requestAnimationFrame(() => delete target.dataset.arrive));
-  });
+  const asked = new CustomEvent(OPEN_COURSE, { detail: slug, cancelable: true });
+  if (!window.dispatchEvent(asked)) event.preventDefault();
 }
 
 // full-screen cover of one course at a time, picked by whichever chip crosses the middle

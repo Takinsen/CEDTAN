@@ -110,7 +110,7 @@ meaning was added by someone who read the slides and decided what mattered. A co
 in the margin says *this is the idea to remember*, *this is the trap*, *this is the worked
 example*. Learn the five marks once and you can skim any page in the site.
 
-Every rule below holds on every page except the landing hero, which is a recorded exception
+Every rule below holds on every page except the landing hero and the directory under it, a recorded exception
 (Landing Hero, and ADR 0002).
 
 The system therefore invests almost nothing in surface and almost everything in structure.
@@ -228,7 +228,7 @@ constant while the window grows. The table of contents disappears below 1280px a
 becomes a drawer below 768px.
 
 The landing page opens with a full-screen course hero (see Landing Hero below), then a
-1024px column holding the lecture directory and the disclaimer. No sidebar, no table of
+1400px column, the width of the nav, holding the lecture directory and the disclaimer. No sidebar, no table of
 contents.
 
 Vertical rhythm is a small fixed set: 24px between blocks and paragraphs, 48px above a part
@@ -443,19 +443,47 @@ lecture page is not.
   Hovering does not stop them, and a hovered chip only brightens; the chip at the tick still
   picks. They stop when the pause button is pressed, while a chip holds keyboard focus (tabbing
   to a chip shows that course), and under `prefers-reduced-motion`.
-- **Glide:** a chip or `ดูทุกคาบ` scrolls the window to the course in 900ms, ease-in-out cubic,
-  never stopping short of the hero's foot, so no band of hero stays under the nav. It drops the glide the moment the reader wheels, touches or presses a key. The row then
-  unfolds and its summary flashes the surface tint, fading over 1.4s. The exit is tied to scroll
+- **Into the directory:** a chip of a ready course or `ดูทุกคาบ` picks that course in the
+  directory and scrolls the directory into view, smoothly, or at once under reduced motion. A
+  chip of a course still being written scrolls to its tile. The exit is tied to scroll
   position, not to the button: across the hero's height the copy lifts 72px and fades, the
   strips fade faster, and a black layer dims the cover to 55%. Faded parts turn `hidden`, so
   nothing invisible can be clicked or tabbed to. Reduced motion jumps with none of it.
 
 ### Lecture Directory
 
-Under the hero, one hairline row per course: code, name and Thai name, lecture count, and a
-chevron. A row opens to the lectures in two columns, unfolding over 420ms where the browser can
-animate `::details-content` and at once where it cannot. Every course is folded on arrival
-except the one this browser opened last. The choice lives in `localStorage` under `cedtan:last-course`.
+Under the hero, the courses run down a 320px column on the left, sticky under the nav, and the
+chosen course's lectures fill the rest. Below 1024px the courses become a strip that scrolls
+sideways above the cards.
+
+Each course is a tile on the surface tint at a 16px radius, lit from the right by a glow in the
+course **accent**, the cover's own hue (`accent` in `lib/courses.ts`): a 700 step in light and a
+400 step in dark, each at least 4.4:1 on the surface. Its code is set at 48px in 700 as an
+outline in the accent, cropped by the tile's foot; the name and the class count sit at the left
+and stop at 68% of the width, so they never cross the code. On a phone the code sits small
+above the name. The chosen course gets a ring and a full glow in its hue. A course still being
+written comes last, faint, with `กำลังเรียบเรียง`, and cannot be picked. The covers stay in the
+hero: shown again here they read as a repeat. The accent appears only on the landing page; a
+lecture page keeps the five legend hues.
+
+The panel opens with the course name (700, 34px), then its Thai name, class count and total
+reading minutes, over a hairline. Below it, one card per class, three across, two on a tablet,
+one on a phone (`lectureCards` in `lib/lecture-order.ts`), every card in a course the same
+height: the class number in the accent at 30px, the title, then either the page's description
+(the question it answers, three lines at most) or a split lecture's parts as chips, and a foot over a hairline: a clock, `อ่านราว N นาที`
+(plus `· N ตอน` for a split lecture), and an arrow in the accent that leans 4px in on hover. The whole card opens the lecture's first page; the chips sit above that
+link and open each part.
+
+Motion: picking a course fades the ring and glow out on the old tile and in on the new one
+over 360ms, in place; the new heading and cards rise 8px into place, the cards 25ms apart. A
+hovered tile swells its glow and slides its code 10px left; a hovered card lifts 2px, its number
+steps 3px right and its border takes the accent. Nothing flies across the list: a highlight
+that travelled between tiles crossed the names under it. Reduced motion drops all of it.
+
+On arrival the panel shows the course named in the link (`#course-<slug>`), else the one this
+browser picked last (`localStorage`, `cedtan:last-course`), else the first. Picking a course
+replaces the hash rather than adding a history entry, and no element carries that id, so the
+browser neither jumps nor focuses a tile.
 
 ### Named Rules
 

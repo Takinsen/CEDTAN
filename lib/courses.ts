@@ -8,6 +8,8 @@ export type Course = {
   nameTh?: string;
   description: string;
   cover?: string;
+  // the cover's own hue, light and dark steps; the landing page numbers its lecture cards in it
+  accent: { light: string; dark: string };
 };
 
 export type CourseLecture = {
@@ -15,6 +17,9 @@ export type CourseLecture = {
   label: string;
   lecture?: number;
   part?: number;
+  lectureTitle?: string;
+  minutes?: number;
+  description?: string;
 };
 
 export const courses: Course[] = [
@@ -26,6 +31,7 @@ export const courses: Course[] = [
     description:
       'software-defined servers, networks และ storage, containers และ service orchestration, cloud และ edge computing, infrastructure as code',
     cover: '/images/courses/2110506-sds-cover-4k.webp',
+    accent: { light: '#1d4ed8', dark: '#7aa2ff' },
   },
   {
     slug: '2110413-csy',
@@ -35,6 +41,7 @@ export const courses: Course[] = [
     description:
       'หลักการของความมั่นคง, การเข้ารหัสลับแบบกุญแจสมมาตรและกุญแจสาธารณะ, การย่อยสาร, การพิสูจน์ตัวจริง, การควบคุมการเข้าถึง, ความมั่นคงของวิสาหกิจและของเครือข่าย',
     cover: '/images/courses/2110413-csy-cover-4k.webp',
+    accent: { light: '#b91c1c', dark: '#ff7a70' },
   },
   {
     slug: '2110313-os',
@@ -44,6 +51,7 @@ export const courses: Course[] = [
     description:
       'OS services, process, concurrent programming, synchronization, deadlock, memory, device และ file management, system call และ API',
     cover: '/images/courses/2110313-os-cover-4k.webp',
+    accent: { light: '#15803d', dark: '#4ade80' },
   },
   {
     slug: '2110356-emb',
@@ -53,6 +61,7 @@ export const courses: Course[] = [
     description:
       'พื้นฐานของระบบฝังตัวและเฟิร์มแวร์, ระบบประมวลผลแบบเวลาจริง, ระบบควบคุมป้อนกลับ, โพรโทคอลการสื่อสาร, วงจรหน่วยความจำ, สัญญาณขัดจังหวะ',
     cover: '/images/courses/2110356-emb-cover-4k.webp',
+    accent: { light: '#b45309', dark: '#fbbf24' },
   },
   {
     slug: '2110405-ai',
@@ -62,6 +71,7 @@ export const courses: Course[] = [
     description:
       'AI optimization, logic และ Prolog, Naïve Bayes และ Bayesian belief networks, clustering, neural networks และ deep learning, recommender systems, sequence modeling, generative AI',
     cover: '/images/courses/2110405-ai-cover-4k.webp',
+    accent: { light: '#7e22ce', dark: '#c084fc' },
   },
   {
     slug: '2110471-cn',
@@ -71,6 +81,7 @@ export const courses: Course[] = [
     description:
       'โครงสร้างและตัวแบบของเครือข่าย, สถาปัตยกรรมอินเทอร์เน็ต, protocol stack ทั้งห้าชั้นและการทำงานของแต่ละชั้น',
     cover: '/images/courses/2110471-cn-cover-4k.webp',
+    accent: { light: '#0e7490', dark: '#22d3ee' },
   },
 ];
 
@@ -84,6 +95,9 @@ export function courseLectures(slug: string): CourseLecture[] {
       label: page.data.sidebarTitle ?? page.data.title,
       lecture: page.data.lecture,
       part: page.data.part,
+      lectureTitle: page.data.lectureTitle,
+      minutes: page.data.readingMinutes,
+      description: page.data.description,
     }))
     .sort(compareLectures);
 }
